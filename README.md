@@ -12,6 +12,26 @@ decision-support prototype.
 - **DB**: SQLite
 - **LLM provider**: Anthropic Claude API
 
+### Note on LLM provider choice
+
+The Milestone II design doc (Section 8) lists a multi-provider setup
+per agent — GPT-4o-mini, Gemini-2.0-Flash, DeepSeek-R1, Qwen2-72B —
+under the stated principle "off-the-shelf LLMs selected per task, no
+fine-tuning." This implementation runs every agent (clinical
+extraction, RAG reranking, fusion reasoning, the optimizer, and
+CrewAI's own orchestration layer) on Claude instead.
+
+This is a deliberate, consistent substitution, not an oversight or a
+partial implementation: the same underlying principle holds (an
+off-the-shelf, pretrained, non-fine-tuned LLM chosen per task) with a
+single vendor rather than four, which keeps auth/config/error-handling
+uniform across every agent and avoids juggling four separate provider
+SDKs, rate limits, and pricing models in a course-timeline prototype.
+Every agent's system prompt and role remains task-specific per the
+original design (e.g. the RAG reranker's relevance-scoring prompt
+differs entirely from the fusion agent's differential-diagnosis
+prompt) — only the model vendor is unified.
+
 ## Status
 
 The full pipeline is implemented end to end: clinical extraction →
