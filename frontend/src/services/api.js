@@ -7,7 +7,12 @@
  * server actually responded (absent for a pure network failure).
  */
 
-const API_BASE_URL = "http://localhost:8000";
+// Build-time override (Vite convention: only VITE_-prefixed vars are
+// exposed to client code). Falls back to localhost:8000 for local dev
+// (`npm run dev`) and for Docker Compose, since the browser reaches the
+// backend via its published host port either way -- not through the
+// compose-internal service network, which the browser can't resolve.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const NETWORK_ERROR_MESSAGE =
   "Could not reach the MedOrchestrate server. Check your connection and try again.";

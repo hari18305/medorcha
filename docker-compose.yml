@@ -1,22 +1,55 @@
-version: "3.9"
-
 services:
   backend:
-    build: ./backend
+    build:
+      # Context is the repo root, not ./backend -- the Dockerfile's
+      # COPY requirements.txt/backend/data all assume paths relative to
+      # the repo root (requirements.txt lives there, not inside
+      # backend/), so the context has to match.
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      # Overrides .env's QDRANT_URL (blank -> embedded local store) so
+      # the backend container talks to the qdrant service over the
+      # compose network by its service name, rather than each host
+      # picking a different Qdrant per how it happens to run. .env's
+      # QDRANT_URL stays blank for non-Docker local dev (uvicorn run
+      # directly), which keeps using the embedded data/qdrant_local/
+      # store instead.
+      QDRANT_URL: http://qdrant:6333
     volumes:
-      - ./backend:/app
+      # Live-reloads on backend code changes without a rebuild, matching
+      # how the backend is run outside Docker too (see README). data/ is
+      # mounted (not just copied at build time) so the SQLite dev DB and
+      # the local Qdrant store persist across container restarts.
+      - ./backend:/app/backend
       - ./data:/app/data
+    depends_on:
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # Browser-facing URL -- reaches the backend via its published
+        # host port (localhost:8000), not the compose-internal service
+        # name, since the browser (not the frontend container) makes
+        # this call. See frontend/src/services/api.js.
+        VITE_API_BASE_URL: http://localhost:8000
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
+    depends_on:
+      - backend
 
   qdrant:
     image: qdrant/qdrant:latest

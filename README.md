@@ -170,6 +170,50 @@ npm run build
 
 ---
 
+## Docker Quickstart
+
+Runs the whole system (backend + frontend + a real Qdrant server) in
+containers — no local Python/Node install required, and no local
+`data/qdrant_local/` embedded store (the compose `qdrant` service is a
+real server instead; see `docker-compose.yml`'s `QDRANT_URL` override).
+
+```bash
+cp .env.example .env
+# edit .env and fill in ANTHROPIC_API_KEY (required for real diagnoses;
+# see the "Status" section above for what happens without one)
+
+docker compose up --build
+```
+
+This starts three services:
+
+- `qdrant` — vector DB, `http://localhost:6333`
+- `backend` — FastAPI, `http://localhost:8000` (health check: `/health`)
+- `frontend` — static build served on `http://localhost:5173`
+
+**One-time step after the first `up`:** the `qdrant` service starts
+empty — populate it exactly like the non-Docker setup, just run inside
+the backend container:
+
+```bash
+docker compose exec backend python -m backend.rag.ingest
+```
+
+Then open `http://localhost:5173` and submit a case. `docker compose
+down` stops everything; add `-v` to also drop the `qdrant_data` volume
+(re-ingest required after that).
+
+```bash
+docker compose down
+```
+
+To confirm the backend is actually reachable through its container
+(rather than assuming the healthcheck passing means the same thing):
+
+```bash
+curl http://localhost:8000/health
+```
+
 ## Quick reference: what needs to run, and in what order
 
 1. `venv` activated, `pip install -r requirements.txt` done — once.
@@ -189,8 +233,10 @@ MedOrchestrate/
 │   ├── rag/                   # BioBERT embeddings + Qdrant ingest/retrieve/rerank
 │   ├── services/              # orchestrator (CrewAI), confidence, storage (SQLite), logging
 │   ├── models/schemas.py      # Shared Pydantic schemas -- single source of truth
-│   └── tests/                 # ~140 offline tests
+│   ├── tests/                 # ~140 offline tests
+│   └── Dockerfile
 ├── frontend/
+│   ├── Dockerfile              # multi-stage: npm build -> static `serve`
 │   └── src/
 │       ├── pages/             # CaseSubmission, Processing, Report, Review
 │       ├── components/        # ConfidenceBar, ReportSummary
