@@ -65,6 +65,8 @@ regardless of which of the five providers is active.
 """
 
 import os
+import threading
+import time
 
 _client = None  # cached at module level; provider doesn't change mid-process
 
@@ -179,6 +181,83 @@ def reset_client_cache() -> None:
 
 
 # --------------------------------------------------------------------------
+# Rate limiter -- confirmed necessary live, not speculative: a real
+# 17-case evaluation run against gemini-3.5-flash-lite's free tier
+# (15 requests/minute) failed 82.4% of cases with 429 RESOURCE_EXHAUSTED
+# after the first case or two consumed the whole per-minute budget.
+#
+# This has to cover two genuinely different call paths sharing the same
+# real quota: this module's own adapter functions (_gemini_complete /
+# _mistral_complete, called from clinical/fusion/optimizer/evidence),
+# AND CrewAI's own native-provider completion classes, which construct
+# their own google.genai/mistralai client internally and are *not*
+# reachable through this module's client factory at all -- so this
+# can't be solved by throttling inside get_llm_client() alone.
+# orchestrator.py calls throttle_llm_call_sync() directly, once per
+# agent step, immediately before crew.kickoff() -- see its own comment
+# for why that's the one place that sees every real call this pipeline
+# makes, from either path.
+#
+# A simple blocking sleep (not asyncio.sleep) is deliberate: run_case()
+# is fully synchronous end to end (see orchestrator.py's module
+# docstring), and every LLM call in this codebase -- both the adapter
+# functions here and CrewAI's own -- ultimately happens one at a time
+# within that single synchronous flow, never concurrently, so there's
+# nothing async to cooperate with; a plain threading.Lock is enough.
+# --------------------------------------------------------------------------
+
+_rate_limit_lock = threading.Lock()
+_recent_request_times: list[float] = []
+
+
+def _get_rpm_budget() -> int | None:
+    """Requests-per-minute budget for the active provider, read live
+    (like get_model_name(), not frozen at import) so a changed .env
+    setting or a test's monkeypatch both take effect immediately.
+
+    Deliberately under Gemini's published free-tier quota (12 vs 15)
+    for margin -- multiple clock sources (this process's timer vs
+    Google's own request-counting window) drifting by even a couple
+    seconds at the boundary is enough to trigger a 429 right at the
+    edge. None disables throttling entirely -- appropriate for
+    anthropic/bedrock/vertex, whose standard tiers aren't this tightly
+    capped, and left off for mistral by default too unless its own
+    free tier proves similarly tight (set MISTRAL_RPM_BUDGET if so).
+    """
+    provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+    if provider == "gemini":
+        return int(os.getenv("GEMINI_RPM_BUDGET") or 12)
+    if provider == "mistral":
+        raw = os.getenv("MISTRAL_RPM_BUDGET")
+        return int(raw) if raw else None
+    return None
+
+
+def throttle_llm_call_sync() -> None:
+    """Blocks (if needed) so this process's real calls to the active
+    LLM_PROVIDER stay under that provider's per-minute budget. A no-op
+    for providers with no configured budget. Call once immediately
+    before every real network call to the provider -- see module
+    comment above for why both call paths need this.
+    """
+    budget = _get_rpm_budget()
+    if not budget:
+        return
+
+    with _rate_limit_lock:
+        now = time.monotonic()
+        recent = [t for t in _recent_request_times if now - t < 60]
+        if len(recent) >= budget:
+            wait_seconds = 60 - (now - recent[0]) + 0.5
+            if wait_seconds > 0:
+                time.sleep(wait_seconds)
+            now = time.monotonic()
+            recent = [t for t in _recent_request_times if now - t < 60]
+        recent.append(now)
+        _recent_request_times[:] = recent
+
+
+# --------------------------------------------------------------------------
 # Gemini / Mistral adapter -- presents the Anthropic SDK's
 # .messages.create() / response.content[0].text shape over a genuinely
 # different underlying SDK, so agent code never needs to know which
@@ -218,6 +297,8 @@ async def _gemini_complete(*, model: str, max_tokens: int, system: str, messages
     from google import genai
     from google.genai import types
 
+    throttle_llm_call_sync()
+
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     # Gemini's role for the model's own turns is "model", not
     # "assistant" -- everything else about the shape matches what
@@ -249,6 +330,8 @@ async def _gemini_complete(*, model: str, max_tokens: int, system: str, messages
 
 async def _mistral_complete(*, model: str, max_tokens: int, system: str, messages: list[dict]) -> str:
     from mistralai import Mistral
+
+    throttle_llm_call_sync()
 
     client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
     # Mistral's chat format is already OpenAI-style (system as a

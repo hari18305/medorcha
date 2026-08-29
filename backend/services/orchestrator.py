@@ -60,6 +60,7 @@ from backend.models.schemas import (
 )
 from backend.services import storage
 from backend.services.confidence import THRESHOLD, compute_confidence
+from backend.services import llm_client
 from backend.services.llm_client import get_crewai_model_string
 from backend.services.logging import log_event
 
@@ -457,7 +458,20 @@ def _execute(agent: Agent, task: Task) -> str:
     their arguments), skipping that decision step in tests changes
     nothing about the business logic under test -- only whether a real
     Claude call happens.
+
+    Rate limiting: throttle_llm_call_sync() here, not just inside
+    llm_client.py's own adapter functions, because crew.kickoff() below
+    makes its own real call to the active provider through CrewAI's own
+    native completion classes -- which construct their own SDK client
+    internally and are never routed through llm_client.get_llm_client()
+    at all. This is the one place in the whole pipeline that sees every
+    real LLM call regardless of which of the two call paths (this
+    module's tools, or CrewAI's own decision layer) makes it. Confirmed
+    necessary live: without this, a real evaluation run against
+    Gemini's free tier failed 82% of cases with 429 RESOURCE_EXHAUSTED
+    after the first case or two exhausted the per-minute quota.
     """
+    llm_client.throttle_llm_call_sync()
     crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
     result = crew.kickoff()
     return str(result)

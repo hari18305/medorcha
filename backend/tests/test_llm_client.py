@@ -29,9 +29,12 @@ def _reset_between_tests(monkeypatch):
         "VERTEX_CLAUDE_MODEL_ID",
         "GEMINI_MODEL_ID",
         "MISTRAL_MODEL_ID",
+        "GEMINI_RPM_BUDGET",
+        "MISTRAL_RPM_BUDGET",
     ]:
         monkeypatch.delenv(var, raising=False)
     llm_client.reset_client_cache()
+    llm_client._recent_request_times.clear()
     yield
     llm_client.reset_client_cache()
 
@@ -113,6 +116,99 @@ def test_client_is_cached_across_calls():
     first = llm_client.get_llm_client()
     second = llm_client.get_llm_client()
     assert first is second
+
+
+# --------------------------------------------------------------------------
+# Rate limiter -- confirmed necessary live (see llm_client.py's own
+# comment): a real 17-case evaluation run against Gemini's free tier
+# failed 82.4% of cases with 429s until this was added. time.sleep and
+# time.monotonic are monkeypatched so these tests run instantly instead
+# of actually waiting up to 60s.
+# --------------------------------------------------------------------------
+
+
+def test_no_throttling_for_default_provider(monkeypatch):
+    """anthropic (the default) has no configured RPM budget -- must
+    never sleep, regardless of how many calls happen."""
+    sleep_calls = []
+    monkeypatch.setattr(llm_client.time, "sleep", lambda s: sleep_calls.append(s))
+
+    for _ in range(50):
+        llm_client.throttle_llm_call_sync()
+
+    assert sleep_calls == []
+
+
+def test_gemini_throttles_once_budget_exhausted(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("GEMINI_RPM_BUDGET", "3")
+
+    fake_now = [1000.0]
+    monkeypatch.setattr(llm_client.time, "monotonic", lambda: fake_now[0])
+    sleep_calls = []
+
+    def fake_sleep(seconds):
+        sleep_calls.append(seconds)
+        fake_now[0] += seconds  # simulate time passing during the sleep
+
+    monkeypatch.setattr(llm_client.time, "sleep", fake_sleep)
+
+    # First 3 calls (the budget) should not need to sleep at all.
+    for _ in range(3):
+        llm_client.throttle_llm_call_sync()
+    assert sleep_calls == []
+
+    # The 4th call exceeds the budget within the same 60s window --
+    # must sleep roughly until the oldest of the 3 tracked calls ages
+    # out (60s after it was recorded, plus this module's 0.5s margin).
+    llm_client.throttle_llm_call_sync()
+    assert len(sleep_calls) == 1
+    assert 59.5 <= sleep_calls[0] <= 60.5
+
+
+def test_gemini_does_not_throttle_when_calls_are_spread_out(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("GEMINI_RPM_BUDGET", "3")
+
+    fake_now = [1000.0]
+    monkeypatch.setattr(llm_client.time, "monotonic", lambda: fake_now[0])
+    sleep_calls = []
+    monkeypatch.setattr(llm_client.time, "sleep", lambda s: sleep_calls.append(s))
+
+    for _ in range(3):
+        llm_client.throttle_llm_call_sync()
+    # Enough real time has passed that the tracked calls have aged out
+    # of the 60s window -- a 4th call should proceed immediately.
+    fake_now[0] += 61
+    llm_client.throttle_llm_call_sync()
+
+    assert sleep_calls == []
+
+
+def test_mistral_has_no_budget_by_default(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "mistral")
+    sleep_calls = []
+    monkeypatch.setattr(llm_client.time, "sleep", lambda s: sleep_calls.append(s))
+
+    for _ in range(50):
+        llm_client.throttle_llm_call_sync()
+
+    assert sleep_calls == []
+
+
+def test_mistral_rpm_budget_override_is_honored(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "mistral")
+    monkeypatch.setenv("MISTRAL_RPM_BUDGET", "1")
+
+    fake_now = [1000.0]
+    monkeypatch.setattr(llm_client.time, "monotonic", lambda: fake_now[0])
+    sleep_calls = []
+    monkeypatch.setattr(llm_client.time, "sleep", lambda s: sleep_calls.append(s))
+
+    llm_client.throttle_llm_call_sync()
+    assert sleep_calls == []
+    llm_client.throttle_llm_call_sync()
+    assert len(sleep_calls) == 1
 
 
 # --------------------------------------------------------------------------
