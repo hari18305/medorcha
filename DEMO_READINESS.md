@@ -70,6 +70,60 @@ work — the mechanics are now proven end-to-end on this architecture,
 but Claude's own reasoning quality on this exact prompt set hasn't
 been observed yet, only Gemini's.
 
+### Update 2026-08-30: a real 4-case subset, and an honest rate-limit finding
+
+Ran a second, larger real batch (`CASE002`, `CASE003_image_only`,
+`CASE007_high_confidence_candidate`, `CASE008_low_confidence_candidate`)
+after adding a rate limiter (`throttle_llm_call_sync()` in
+`llm_client.py`) to `.env`'s free-tier `GEMINI_RPM_BUDGET=12`. Result:
+**2 of 4 succeeded genuinely, 2 failed on 429s despite the limiter**:
+
+- `CASE003_image_only`: **SUCCESS**, 183.4s, confidence 0.574 — full
+  3-iteration optimizer path exercised for real (strategies: narrow →
+  paraphrase → expand), correctly landed on `review_required=True`
+  since confidence stayed below 0.65 after all 3 iterations.
+- `CASE008_low_confidence_candidate`: **SUCCESS**, 125.2s, confidence
+  0.533 — same full optimizer path, same correct HITL routing.
+- `CASE002_text_only`, `CASE007_high_confidence_candidate`: **FAILED**
+  on 429 RESOURCE_EXHAUSTED.
+
+Root cause of the failures, precisely: **CrewAI has its own internal
+retry-on-error logic** (`agent/core.py`'s `_handle_execution_error` →
+`execute_task` → `_handle_execution_error` → ...) that makes fresh real
+API calls when a step errors — each retry is a real network call this
+project's rate limiter never sees, because the limiter only gates entry
+into `crew.kickoff()` once per step, not CrewAI's own internal retries
+inside a single `kickoff()`. The evaluation-run logs show 3+ separate
+real 429/success attempts for a single logical "fusion" step a few
+seconds apart, confirming this. Not fixable without either a paid tier
+(trivially solves it — 15 req/min is a free-tier-only cap) or patching
+CrewAI's own internals (out of scope for this timeline).
+
+**Practical read for the actual demo**: three separate real, genuine
+successes now exist across two sessions (this one plus the original
+CASE002 run), including two that exercised the full 3-iteration
+optimizer path correctly. A single interactive demo case — submitted
+by a human, with natural pauses for narration — is far less likely to
+trigger this than a scripted back-to-back batch was. If you want to
+eliminate the risk entirely rather than just reduce it, any paid tier
+(Gemini pay-as-you-go, or a working Anthropic/Bedrock/Vertex key) removes
+this ceiling outright.
+
+**Docker status as of tonight (2026-08-30)**: the running container had
+`google-genai` live-patched in (`pip install` + restart, not baked into
+the image) and was verified healthy and working before this session
+ended. A `docker compose build` to bake it into the image properly
+(now that `.dockerignore` and `requirements.txt` are both fixed, see
+git log) was interrupted mid-`pip install` — genuinely stuck for 30+
+minutes with zero CPU/network activity, a different failure mode than
+the earlier `.dockerignore` build-context hang, cause not further
+diagnosed tonight. Docker Desktop and WSL2 were shut down cleanly
+rather than left hung. **Next session: `docker compose up -d --build`
+should work cleanly now** (both real bugs from tonight are fixed) —
+if the build stalls again at the `pip install` step specifically with
+no progress for several minutes, that's a fresh issue, not a repeat of
+either bug already fixed here.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.
