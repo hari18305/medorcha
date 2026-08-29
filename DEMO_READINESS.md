@@ -29,38 +29,46 @@ assumed — see "Evidence" for how.
 | 19 | At least 10-20 test cases in `data/test_cases/` | ✅ | 17 present |
 | 20 | 3-5 minute demo script rehearsed end-to-end, once, out loud | ⚠️ Script below is ready; **you still need to read it aloud once** before the real thing |
 
-## The one real gap
+## The one real gap — CLOSED 2026-08-29
 
-**No real Claude API call has ever completed in this project or this
-repo.** Every "works" claim above for Claude-dependent behavior
-(clinical extraction quality, fusion reasoning quality, optimizer query
-refinement quality, CrewAI's own orchestration-decision layer) is
-verified through:
+~~No real Claude API call has ever completed in this project or this
+repo.~~ **Resolved.** A full, real, non-mocked `orchestrator.run_case()`
+run completed successfully via `LLM_PROVIDER=gemini` (a free-tier
+Gemini key — see `backend/services/llm_client.py`'s provider switch;
+this closes the gap functionally, though it's Gemini's reasoning, not
+Claude's, unless/until a Claude-serving path — Anthropic direct,
+Bedrock, or Vertex — is what actually gets used for the real demo; see
+the README's "Note on LLM provider choice"):
 
-- 154 passing unit/integration tests with the Anthropic client mocked
-  at the `_get_client()` boundary, and
-- a real, non-mocked run of everything **except** the LLM calls
-  themselves (`backend/tests/run_evaluation.py`) — real Qdrant
-  retrieval, real PubMed/MedlinePlus network calls, real BiomedCLIP
-  inference, real confidence-formula math, real optimizer control flow.
+- Case: `CASE002_text_only` ("recurrent headache and dizziness over
+  the past month, history of hypertension", 52F).
+- Real clinical extraction, real BioBERT/Qdrant RAG retrieval, real
+  PubMed live evidence, real fusion reasoning, all through genuine
+  CrewAI orchestration (not a monkeypatched `_execute()`).
+- **Confidence 0.656** — above the 0.65 threshold, optimizer correctly
+  skipped, `review_required=False`.
+- Three ranked, clinically sensible differentials: vestibular migraine
+  (0.65) → hypertension-related headache (0.45) → vertebrobasilar TIA
+  (0.35), every `supporting_evidence` string tracing back to a real
+  `[RAGn]`/`[LIVEn]` citation with real cited text, exactly per
+  `fusion_agent.py`'s no-fabricated-citations contract.
+- 34.2s end to end.
 
-This means the *pipeline mechanics* are solid and demo-safe (routing,
-degradation, thresholds, iteration caps, persistence, logging), but
-nobody has seen what an actual Claude-generated differential diagnosis
-looks like end-to-end in this repo yet.
+Two real bugs surfaced and got fixed along the way (not found by
+inspection — found by actually running it): the Milestone-doc-named
+`gemini-2.0-flash` is retired (Google's own API 404 confirmed it,
+pointing to a successor); and `gemini-3.6-flash`'s free tier is capped
+at 5 requests/minute, not enough for this pipeline's ~8-10 real LLM
+calls per case (CrewAI's orchestration-decision layer alone makes
+~5-6, one per agent step) — `gemini-3.5-flash-lite` has a materially
+more generous free quota and is what actually produced the run above.
 
-**Before the real demo:** get access to Claude through *any* of the
-three supported paths (see `.env.example` /
-`backend/services/llm_client.py`) — `ANTHROPIC_API_KEY` from
-console.anthropic.com, or `LLM_PROVIDER=bedrock`/`vertex` if
-console billing is blocked and an AWS/GCP account (with its usual free
-trial credit) is faster to stand up — put it in `.env` (or pass it via
-`docker compose`'s env file), and run at least one real case through
-`POST /diagnose` (or the UI) to see genuine output once. Budget API
-cost for this: CrewAI's orchestration layer alone makes ~5-6 Claude
-calls per case (one per agent step, to "decide" to invoke its tool),
-plus the direct calls inside clinical/fusion/optimizer — so each demo
-case is roughly 8-10 Claude calls, not 1.
+**Still worth doing before the actual demo:** run at least one real
+case through a **Claude-serving** path (Anthropic direct, Bedrock, or
+Vertex) specifically, if the plan is to present this as Claude-based
+work — the mechanics are now proven end-to-end on this architecture,
+but Claude's own reasoning quality on this exact prompt set hasn't
+been observed yet, only Gemini's.
 
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
