@@ -12,7 +12,7 @@ from anthropic import AsyncAnthropic
 from pydantic import ValidationError
 
 from backend.models.schemas import ClinicalFindings
-from backend.services.llm_client import get_async_anthropic_client, get_model_name
+from backend.services.llm_client import get_llm_client, get_model_name
 
 MODEL = get_model_name()
 
@@ -73,12 +73,12 @@ def _get_client() -> AsyncAnthropic:
     global _client
     if _client is None:
         # Routed through llm_client so this agent works unchanged
-        # against Anthropic direct, Bedrock, or Vertex -- see
-        # backend/services/llm_client.py for why and how to switch
-        # (LLM_PROVIDER in .env). Kept as this module's own
+        # against Anthropic direct, Bedrock, Vertex, Gemini, or Mistral
+        # -- see backend/services/llm_client.py for why and how to
+        # switch (LLM_PROVIDER in .env). Kept as this module's own
         # _get_client() specifically so existing tests that
         # monkeypatch clinical_agent._get_client keep working.
-        _client = get_async_anthropic_client()
+        _client = get_llm_client()
     return _client
 
 

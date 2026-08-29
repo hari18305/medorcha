@@ -19,7 +19,8 @@ per agent — GPT-4o-mini, Gemini-2.0-Flash, DeepSeek-R1, Qwen2-72B —
 under the stated principle "off-the-shelf LLMs selected per task, no
 fine-tuning." This implementation runs every agent (clinical
 extraction, RAG reranking, fusion reasoning, the optimizer, and
-CrewAI's own orchestration layer) on Claude instead.
+CrewAI's own orchestration layer) on a single model by default instead
+(`LLM_PROVIDER=anthropic` — Claude).
 
 This is a deliberate, consistent substitution, not an oversight or a
 partial implementation: the same underlying principle holds (an
@@ -31,6 +32,15 @@ Every agent's system prompt and role remains task-specific per the
 original design (e.g. the RAG reranker's relevance-scoring prompt
 differs entirely from the fusion agent's differential-diagnosis
 prompt) — only the model vendor is unified.
+
+`LLM_PROVIDER` also accepts `gemini` and `mistral` as a functional
+fallback if no Claude-serving path (Anthropic direct, Bedrock, or
+Vertex — see "Switching LLM provider" below) is reachable in time.
+Gemini specifically is one of the four models this project's own
+Milestone II doc originally named, so using it isn't off-design if it
+comes to that — but be clear about which provider actually produced a
+given run's output rather than presenting Gemini/Mistral output as
+Claude's.
 
 ## Status
 
@@ -136,6 +146,17 @@ different cloud's auth/billing path — nothing else about the app
 changes. See `backend/services/llm_client.py` for exactly what each
 provider needs installed (`pip install boto3` for Bedrock,
 `pip install google-auth google-cloud-aiplatform` for Vertex).
+
+As a further fallback, `LLM_PROVIDER=gemini` or `LLM_PROVIDER=mistral`
+route through Google's Gemini API or Mistral's API instead — both have
+low-friction free-tier keys (no cloud account/billing needed:
+aistudio.google.com and console.mistral.ai respectively). Unlike
+Bedrock/Vertex, **this is a genuinely different model, not Claude
+served differently** — see "Note on LLM provider choice" above before
+using this for anything you'll present as Claude-based work. Requires
+`pip install google-genai` (Gemini) or `pip install mistralai litellm`
+(Mistral — litellm specifically because Mistral isn't one of CrewAI's
+natively-bundled providers the way the others are).
 
 ### 6. Ingest the offline knowledge base (one-time, required for RAG)
 

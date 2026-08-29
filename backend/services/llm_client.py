@@ -1,20 +1,28 @@
-"""Provider-selectable Anthropic-compatible client factory.
+"""Provider-selectable LLM client factory.
 
 Every agent that calls Claude directly (clinical, fusion, optimizer,
 evidence) previously constructed its own `AsyncAnthropic()` client,
 which only reads ANTHROPIC_API_KEY. This module centralizes that
-construction behind one env var, LLM_PROVIDER, so the app can run
-against Anthropic's direct API, AWS Bedrock, or Google Cloud Vertex AI
--- interchangeably, without touching each agent's code -- because all
-three surfaces are still genuinely Claude, served through a different
-cloud's auth/billing instead of Anthropic's own console. That matters
-here specifically because getting an Anthropic API key requires
-billing setup that can be a real blocker under a tight deadline, while
-a new AWS/GCP account commonly comes with free trial credit.
+construction behind one env var, LLM_PROVIDER, with two tiers of
+options:
 
-Set LLM_PROVIDER in .env to one of: "anthropic" (default), "bedrock",
-"vertex". Each provider's own extra credentials are read directly from
-the environment by that provider's SDK client (not duplicated here):
+  - "anthropic" (default), "bedrock", "vertex": all three are
+    genuinely Claude, just served through a different cloud's
+    auth/billing instead of Anthropic's own console -- useful because
+    getting an Anthropic API key needs billing setup that can be a
+    real blocker under a tight deadline, while a new AWS/GCP account
+    commonly comes with free trial credit.
+  - "gemini", "mistral": genuinely different model vendors, offered
+    as a last-resort fallback if none of the above work out in time.
+    Both have low-friction free-tier API keys. Note: this is a
+    materially different claim than "we used Claude" -- see the
+    README's "Note on LLM provider choice" section before using this
+    for anything you'll present as Claude-based work.
+
+Set LLM_PROVIDER in .env to one of: "anthropic", "bedrock", "vertex",
+"gemini", "mistral". Each provider's own credentials are read directly
+from the environment by that provider's SDK client (not duplicated
+here):
   - anthropic: ANTHROPIC_API_KEY
   - bedrock:   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
                (standard boto3 env vars; requires `pip install boto3`
@@ -24,17 +32,36 @@ the environment by that provider's SDK client (not duplicated here):
                GOOGLE_APPLICATION_CREDENTIALS (path to a service
                account JSON key; requires `pip install google-auth
                google-cloud-aiplatform`)
+  - gemini:    GEMINI_API_KEY (from aistudio.google.com -- a free-tier
+               key, no billing/cloud account needed; requires
+               `pip install google-genai`)
+  - mistral:   MISTRAL_API_KEY (from console.mistral.ai -- has a free
+               tier; requires `pip install mistralai`). Also needs
+               `pip install litellm` for CrewAI's orchestration layer
+               specifically -- "mistral" isn't one of CrewAI's
+               natively-bundled providers the way anthropic/bedrock/
+               gemini are (confirmed by CrewAI's own error message
+               listing native providers if litellm is missing).
 
 Model IDs differ by hosting surface, not just by model version -- see
 get_model_name(). The defaults below were correct as of 2026-08; if a
-provider's console shows a different exact ID for the Claude model you
-have access to, override it via the *_CLAUDE_MODEL_ID env vars below
-rather than editing this file.
+provider's console shows a different exact ID for the model you have
+access to, override it via the *_MODEL_ID env vars below rather than
+editing this file.
 
-Each agent still keeps its own `_get_client()` function (calling into
-this module) rather than importing get_async_anthropic_client()
-directly everywhere -- that's deliberate, so existing tests that
-monkeypatch `<agent_module>._get_client` keep working unchanged.
+Every agent still keeps its own `_get_client()` function (calling into
+this module) rather than importing get_llm_client() directly
+everywhere -- that's deliberate, so existing tests that monkeypatch
+`<agent_module>._get_client` keep working unchanged.
+
+Gemini and Mistral don't share the Anthropic SDK's `.messages.create()`
+/ `response.content[0].text` shape, so for those two providers
+get_llm_client() returns a small adapter (_AdapterClient below) that
+presents that exact same shape while calling the real Gemini/Mistral
+SDK underneath -- this is what lets every agent's existing call sites
+(`client.messages.create(model=..., system=..., max_tokens=...,
+messages=...)` / `response.content[0].text`) stay completely unchanged
+regardless of which of the five providers is active.
 """
 
 import os
@@ -42,10 +69,11 @@ import os
 _client = None  # cached at module level; provider doesn't change mid-process
 
 
-def get_async_anthropic_client():
-    """Returns a cached async client for whichever LLM_PROVIDER is
-    configured. Same .messages.create() interface regardless of
-    provider -- callers don't need to branch on provider at all."""
+def get_llm_client():
+    """Returns a cached client for whichever LLM_PROVIDER is
+    configured, always exposing `.messages.create(model=, max_tokens=,
+    system=, messages=) -> object with .content[0].text` -- callers
+    never need to branch on provider."""
     global _client
     if _client is not None:
         return _client
@@ -63,6 +91,10 @@ def get_async_anthropic_client():
             project_id=os.getenv("VERTEX_PROJECT_ID"),
             region=os.getenv("VERTEX_REGION") or "us-east5",
         )
+    elif provider == "gemini":
+        _client = _AdapterClient(_gemini_complete)
+    elif provider == "mistral":
+        _client = _AdapterClient(_mistral_complete)
     else:
         from anthropic import AsyncAnthropic
 
@@ -90,14 +122,22 @@ def get_model_name() -> str:
         return os.getenv("BEDROCK_CLAUDE_MODEL_ID") or "anthropic.claude-sonnet-5"
     if provider == "vertex":
         return os.getenv("VERTEX_CLAUDE_MODEL_ID") or "claude-sonnet-5"
+    if provider == "gemini":
+        # Matches the exact model your Milestone II design doc names
+        # for this role (Section 8) -- override if you have access to
+        # a newer Gemini model and want to use it instead.
+        return os.getenv("GEMINI_MODEL_ID") or "gemini-2.0-flash"
+    if provider == "mistral":
+        return os.getenv("MISTRAL_MODEL_ID") or "mistral-large-latest"
     return os.getenv("ANTHROPIC_CLAUDE_MODEL_ID") or "claude-sonnet-5"
 
 
 def get_crewai_model_string() -> str:
-    """CrewAI's LLM (via LiteLLM) expects a provider-prefixed model
-    string in a different format from the anthropic SDK's own `model=`
-    value -- e.g. "bedrock/anthropic.claude-sonnet-5", not
-    "anthropic.claude-sonnet-5" alone.
+    """CrewAI's LLM (via its own native provider support, or LiteLLM
+    for providers outside that native list) expects a provider-
+    prefixed model string in a different format from the direct SDK
+    calls' own `model=` value -- e.g. "bedrock/anthropic.claude-
+    sonnet-5", not "anthropic.claude-sonnet-5" alone.
     """
     provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
     model = get_model_name()
@@ -105,6 +145,11 @@ def get_crewai_model_string() -> str:
         return f"bedrock/{model}"
     if provider == "vertex":
         return f"vertex_ai/{model}"
+    if provider == "gemini":
+        return f"gemini/{model}"
+    if provider == "mistral":
+        # Requires `pip install litellm` -- see module docstring.
+        return f"mistral/{model}"
     return f"anthropic/{model}"
 
 
@@ -113,3 +158,71 @@ def reset_client_cache() -> None:
     LLM_PROVIDER mid-session. Not used by application code."""
     global _client
     _client = None
+
+
+# --------------------------------------------------------------------------
+# Gemini / Mistral adapter -- presents the Anthropic SDK's
+# .messages.create() / response.content[0].text shape over a genuinely
+# different underlying SDK, so agent code never needs to know which
+# provider is active. See module docstring for why.
+# --------------------------------------------------------------------------
+
+
+class _AnthropicShapedContentBlock:
+    def __init__(self, text: str):
+        self.text = text
+
+
+class _AnthropicShapedResponse:
+    def __init__(self, text: str):
+        self.content = [_AnthropicShapedContentBlock(text)]
+
+
+class _MessagesShim:
+    def __init__(self, complete_fn):
+        self._complete = complete_fn
+
+    async def create(self, *, model, max_tokens, system, messages):
+        text = await self._complete(model=model, max_tokens=max_tokens, system=system, messages=messages)
+        return _AnthropicShapedResponse(text)
+
+
+class _AdapterClient:
+    """Duck-types as an AsyncAnthropic client: `.messages.create(...)`
+    only -- nothing else in this codebase calls any other method on
+    the client, so nothing else needs to be adapted."""
+
+    def __init__(self, complete_fn):
+        self.messages = _MessagesShim(complete_fn)
+
+
+async def _gemini_complete(*, model: str, max_tokens: int, system: str, messages: list[dict]) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    # Gemini's role for the model's own turns is "model", not
+    # "assistant" -- everything else about the shape matches what
+    # every agent already builds (role + plain-string content).
+    contents = [
+        {"role": "model" if m["role"] == "assistant" else "user", "parts": [{"text": m["content"]}]}
+        for m in messages
+    ]
+    response = await client.aio.models.generate_content(
+        model=model,
+        contents=contents,
+        config=types.GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens),
+    )
+    return response.text
+
+
+async def _mistral_complete(*, model: str, max_tokens: int, system: str, messages: list[dict]) -> str:
+    from mistralai import Mistral
+
+    client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+    # Mistral's chat format is already OpenAI-style (system as a
+    # regular message with role="system"), so no role remapping needed
+    # beyond prepending the system prompt.
+    full_messages = [{"role": "system", "content": system}, *messages]
+    response = await client.chat.complete_async(model=model, messages=full_messages, max_tokens=max_tokens)
+    return response.choices[0].message.content

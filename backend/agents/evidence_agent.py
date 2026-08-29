@@ -44,7 +44,7 @@ import httpx
 from anthropic import AsyncAnthropic
 
 from backend.models.schemas import LiveEvidence, LiveEvidenceSource
-from backend.services.llm_client import get_async_anthropic_client, get_model_name
+from backend.services.llm_client import get_llm_client, get_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -110,10 +110,10 @@ def _get_anthropic_client() -> AsyncAnthropic:
     global _anthropic_client
     if _anthropic_client is None:
         # See backend/services/llm_client.py -- provider-selectable via
-        # LLM_PROVIDER (anthropic/bedrock/vertex) in .env. Kept as this
+        # LLM_PROVIDER (anthropic/bedrock/vertex/gemini/mistral) in .env. Kept as this
         # module's own _get_anthropic_client() so existing tests that
         # monkeypatch evidence_agent._get_anthropic_client keep working.
-        _anthropic_client = get_async_anthropic_client()
+        _anthropic_client = get_llm_client()
     return _anthropic_client
 
 
