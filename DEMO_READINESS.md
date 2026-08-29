@@ -49,8 +49,12 @@ degradation, thresholds, iteration caps, persistence, logging), but
 nobody has seen what an actual Claude-generated differential diagnosis
 looks like end-to-end in this repo yet.
 
-**Before the real demo:** get an `ANTHROPIC_API_KEY` from
-console.anthropic.com, put it in `.env` (or pass it via
+**Before the real demo:** get access to Claude through *any* of the
+three supported paths (see `.env.example` /
+`backend/services/llm_client.py`) — `ANTHROPIC_API_KEY` from
+console.anthropic.com, or `LLM_PROVIDER=bedrock`/`vertex` if
+console billing is blocked and an AWS/GCP account (with its usual free
+trial credit) is faster to stand up — put it in `.env` (or pass it via
 `docker compose`'s env file), and run at least one real case through
 `POST /diagnose` (or the UI) to see genuine output once. Budget API
 cost for this: CrewAI's orchestration layer alone makes ~5-6 Claude
