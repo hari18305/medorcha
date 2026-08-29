@@ -68,6 +68,14 @@ import os
 
 _client = None  # cached at module level; provider doesn't change mid-process
 
+# See _gemini_complete()'s comment: newer Gemini models spend part of
+# the output budget on internal "thinking" before the visible answer.
+# 2048 was enough headroom in live testing against gemini-3.6-flash
+# for this app's short prompts (extraction/reranking/refinement, not
+# long-form generation) -- override GEMINI_THINKING_TOKEN_PADDING if a
+# real call still comes back truncated for a longer prompt.
+THINKING_TOKEN_PADDING = int(os.getenv("GEMINI_THINKING_TOKEN_PADDING") or 2048)
+
 
 def get_llm_client():
     """Returns a cached client for whichever LLM_PROVIDER is
@@ -123,10 +131,13 @@ def get_model_name() -> str:
     if provider == "vertex":
         return os.getenv("VERTEX_CLAUDE_MODEL_ID") or "claude-sonnet-5"
     if provider == "gemini":
-        # Matches the exact model your Milestone II design doc names
-        # for this role (Section 8) -- override if you have access to
-        # a newer Gemini model and want to use it instead.
-        return os.getenv("GEMINI_MODEL_ID") or "gemini-2.0-flash"
+        # Milestone II's design doc (Section 8) names "Gemini-2.0-
+        # Flash" for this role, but that model was retired by Google
+        # (confirmed live: the API itself now 404s on it and points to
+        # this replacement) -- gemini-3.6-flash is the current
+        # equivalent-tier model as of 2026-08. Override via
+        # GEMINI_MODEL_ID if your account's available models differ.
+        return os.getenv("GEMINI_MODEL_ID") or "gemini-3.6-flash"
     if provider == "mistral":
         return os.getenv("MISTRAL_MODEL_ID") or "mistral-large-latest"
     return os.getenv("ANTHROPIC_CLAUDE_MODEL_ID") or "claude-sonnet-5"
@@ -211,7 +222,20 @@ async def _gemini_complete(*, model: str, max_tokens: int, system: str, messages
     response = await client.aio.models.generate_content(
         model=model,
         contents=contents,
-        config=types.GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens),
+        config=types.GenerateContentConfig(
+            system_instruction=system,
+            # Newer Gemini models spend part of the output-token budget
+            # on internal "thinking" before the visible answer, on top
+            # of max_tokens. Confirmed live: gemini-3.6-flash silently
+            # returns an empty/truncated response (finish_reason=
+            # MAX_TOKENS) at this app's normal (small, tuned for a
+            # non-thinking model) max_tokens values -- thinking_budget=
+            # 0 to disable it outright was rejected by this model (400
+            # INVALID_ARGUMENT), so instead the visible budget is
+            # padded with a flat allowance for thinking. If a call
+            # still comes back truncated, raise THINKING_TOKEN_PADDING.
+            max_output_tokens=max_tokens + THINKING_TOKEN_PADDING,
+        ),
     )
     return response.text
 

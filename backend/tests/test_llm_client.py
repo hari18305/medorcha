@@ -48,7 +48,7 @@ def _reset_between_tests(monkeypatch):
         ("anthropic", "claude-sonnet-5", "anthropic/claude-sonnet-5"),
         ("bedrock", "anthropic.claude-sonnet-5", "bedrock/anthropic.claude-sonnet-5"),
         ("vertex", "claude-sonnet-5", "vertex_ai/claude-sonnet-5"),
-        ("gemini", "gemini-2.0-flash", "gemini/gemini-2.0-flash"),
+        ("gemini", "gemini-3.6-flash", "gemini/gemini-3.6-flash"),
         ("mistral", "mistral-large-latest", "mistral/mistral-large-latest"),
     ],
 )
@@ -174,7 +174,12 @@ async def test_gemini_complete_returns_response_text(fake_genai_module, monkeypa
     assert call_kwargs["model"] == "gemini-2.0-flash"
     assert call_kwargs["contents"] == [{"role": "user", "parts": [{"text": "hello"}]}]
     assert call_kwargs["config"].kwargs["system_instruction"] == "You are a test system prompt."
-    assert call_kwargs["config"].kwargs["max_output_tokens"] == 100
+    # 100 + THINKING_TOKEN_PADDING, not the bare max_tokens -- Gemini's
+    # "thinking" models spend part of the output budget on internal
+    # reasoning before the visible answer; see _gemini_complete's
+    # comment (confirmed live against gemini-3.6-flash, which silently
+    # returned an empty/truncated response without this padding).
+    assert call_kwargs["config"].kwargs["max_output_tokens"] == 100 + llm_client.THINKING_TOKEN_PADDING
 
 
 @pytest.mark.asyncio
