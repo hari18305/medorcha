@@ -14,3 +14,11 @@ open_clip_torch
 torch
 pillow
 langfuse
+
+# google-genai: only needed if LLM_PROVIDER=gemini (see
+# backend/services/llm_client.py). In requirements.txt (not left
+# optional like boto3/google-cloud-aiplatform for bedrock/vertex,
+# or mistralai/litellm for mistral) because Gemini is this project's
+# actual working provider as of 2026-08 -- confirmed with real,
+# successful end-to-end runs -- not just a documented fallback option.
+google-genai

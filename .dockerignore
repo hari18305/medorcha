@@ -1,0 +1,25 @@
+# Backend's docker-compose build context is the repo root (needed so
+# COPY requirements.txt/backend/data can find them -- see
+# docker-compose.yml's comment). Without this file, Docker hashes and
+# uploads the ENTIRE repo root as build context on every build,
+# including venv/ (1.8GB, thousands of small files) -- confirmed live
+# to hang for 100+ minutes doing exactly that over Windows/WSL2's file
+# sharing bridge. None of the excluded paths below are needed inside
+# the image; the Dockerfile only COPYs requirements.txt, backend/, and
+# data/ explicitly.
+
+venv/
+frontend/node_modules/
+frontend/dist/
+.git/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+logs/
+data/qdrant_local/
+data/images/uploads/
+.venv/
+.idea/
+.vscode/

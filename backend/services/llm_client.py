@@ -33,8 +33,11 @@ here):
                account JSON key; requires `pip install google-auth
                google-cloud-aiplatform`)
   - gemini:    GEMINI_API_KEY (from aistudio.google.com -- a free-tier
-               key, no billing/cloud account needed; requires
-               `pip install google-genai`)
+               key, no billing/cloud account needed). google-genai is
+               in requirements.txt already (not left optional like the
+               others) -- Gemini is this project's actual working
+               provider as of 2026-08, confirmed via real end-to-end
+               runs, not just a documented fallback.
   - mistral:   MISTRAL_API_KEY (from console.mistral.ai -- has a free
                tier; requires `pip install mistralai`). Also needs
                `pip install litellm` for CrewAI's orchestration layer

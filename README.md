@@ -153,10 +153,29 @@ low-friction free-tier keys (no cloud account/billing needed:
 aistudio.google.com and console.mistral.ai respectively). Unlike
 Bedrock/Vertex, **this is a genuinely different model, not Claude
 served differently** — see "Note on LLM provider choice" above before
-using this for anything you'll present as Claude-based work. Requires
-`pip install google-genai` (Gemini) or `pip install mistralai litellm`
-(Mistral — litellm specifically because Mistral isn't one of CrewAI's
-natively-bundled providers the way the others are).
+using this for anything you'll present as Claude-based work.
+
+`google-genai` is already in `requirements.txt` — Gemini is this
+project's actual confirmed-working provider as of 2026-08 (real
+end-to-end runs, not just a documented fallback), so it isn't left
+optional the way the others are. Mistral (`pip install mistralai
+litellm` — litellm specifically because Mistral isn't one of CrewAI's
+natively-bundled providers the way the others are) hasn't been tried
+live and stays optional.
+
+**Free-tier rate limits are real and this pipeline is call-heavy**:
+CrewAI's orchestration layer makes ~5-6 real calls per case on top of
+the direct per-agent calls, so a single case can need 8-20+ real
+requests (more with optimizer iterations). Gemini's free tier caps
+`gemini-3.5-flash-lite` (this provider's default model) at 15
+requests/minute — confirmed live: an un-throttled bulk run across all
+17 synthetic test cases failed 82% of them with 429s. This app now
+self-throttles to a configurable budget (`GEMINI_RPM_BUDGET` in
+`.env`, default 12, see `backend/services/llm_client.py`) *within one
+process* — running the evaluation harness and a live demo
+simultaneously against the same key will still contend for the same
+real quota, since each process's throttling doesn't know about the
+other.
 
 ### 6. Ingest the offline knowledge base (one-time, required for RAG)
 
