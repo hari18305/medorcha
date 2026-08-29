@@ -44,6 +44,7 @@ import httpx
 from anthropic import AsyncAnthropic
 
 from backend.models.schemas import LiveEvidence, LiveEvidenceSource
+from backend.services.llm_client import get_async_anthropic_client, get_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ MAX_ATTEMPTS = 2  # 1 initial attempt + 1 retry
 # longer ones are auto-summarized via Claude (falling back to a
 # truncated snippet if that call fails for any reason).
 ABSTRACT_SUMMARIZE_THRESHOLD_CHARS = 400
-CLAUDE_MODEL = "claude-sonnet-4-6"
+CLAUDE_MODEL = get_model_name()
 
 # --------------------------------------------------------------------------
 # Evidence-level heuristic -- PROTOTYPE SIMPLIFICATION.
@@ -108,7 +109,11 @@ _anthropic_client: AsyncAnthropic | None = None
 def _get_anthropic_client() -> AsyncAnthropic:
     global _anthropic_client
     if _anthropic_client is None:
-        _anthropic_client = AsyncAnthropic()
+        # See backend/services/llm_client.py -- provider-selectable via
+        # LLM_PROVIDER (anthropic/bedrock/vertex) in .env. Kept as this
+        # module's own _get_anthropic_client() so existing tests that
+        # monkeypatch evidence_agent._get_anthropic_client keep working.
+        _anthropic_client = get_async_anthropic_client()
     return _anthropic_client
 
 

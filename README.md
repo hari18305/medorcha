@@ -123,6 +123,20 @@ Open `.env` and fill in:
 
 **`.env` is git-ignored — never commit it.**
 
+#### Switching LLM provider
+
+By default the app calls Claude directly through Anthropic's own API
+(`LLM_PROVIDER=anthropic`, needs `ANTHROPIC_API_KEY`). If getting an
+Anthropic API key is blocked (billing setup, region, etc.), the same
+Claude models are also reachable through **AWS Bedrock** or **Google
+Cloud Vertex AI** — set `LLM_PROVIDER=bedrock` or `LLM_PROVIDER=vertex`
+in `.env` and fill in that provider's credentials instead (see the
+comments in `.env.example`). This is still genuinely Claude, just a
+different cloud's auth/billing path — nothing else about the app
+changes. See `backend/services/llm_client.py` for exactly what each
+provider needs installed (`pip install boto3` for Bedrock,
+`pip install google-auth google-cloud-aiplatform` for Vertex).
+
 ### 6. Ingest the offline knowledge base (one-time, required for RAG)
 
 The RAG agent queries a local Qdrant collection that starts empty. Populate it once:

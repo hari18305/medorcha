@@ -60,12 +60,8 @@ from backend.models.schemas import (
 )
 from backend.services import storage
 from backend.services.confidence import THRESHOLD, compute_confidence
+from backend.services.llm_client import get_crewai_model_string
 from backend.services.logging import log_event
-
-# litellm (CrewAI's LLM backend) expects a provider-prefixed model id --
-# unlike the other agents in this codebase, which call the Anthropic SDK
-# directly with the bare "claude-sonnet-4-6" string.
-CREWAI_MODEL = "anthropic/claude-sonnet-4-6"
 
 TOOL_PASSTHROUGH_EXPECTED_OUTPUT = (
     "The exact string returned by your tool call. Do not add commentary, "
@@ -78,7 +74,13 @@ _crewai_llm: LLM | None = None
 def _get_crewai_llm() -> LLM:
     global _crewai_llm
     if _crewai_llm is None:
-        _crewai_llm = LLM(model=CREWAI_MODEL)
+        # litellm (CrewAI's LLM backend) expects a provider-prefixed
+        # model id (e.g. "anthropic/claude-sonnet-5", or
+        # "bedrock/anthropic.claude-sonnet-5" under LLM_PROVIDER=
+        # bedrock) -- unlike the other agents in this codebase, which
+        # call the Anthropic-compatible SDK directly with the bare
+        # model id. See backend/services/llm_client.py.
+        _crewai_llm = LLM(model=get_crewai_model_string())
     return _crewai_llm
 
 

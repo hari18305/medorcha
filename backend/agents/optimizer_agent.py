@@ -38,10 +38,11 @@ from backend.models.schemas import (
     RAGEvidence,
 )
 from backend.services.confidence import THRESHOLD, compute_confidence
+from backend.services.llm_client import get_async_anthropic_client, get_model_name
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-6"
+MODEL = get_model_name()
 MAX_TOKENS = 512
 
 # Hard cap. The for-loop below is bounded by this constant -- there is
@@ -95,7 +96,11 @@ _client: AsyncAnthropic | None = None
 def _get_client() -> AsyncAnthropic:
     global _client
     if _client is None:
-        _client = AsyncAnthropic()
+        # See backend/services/llm_client.py -- provider-selectable via
+        # LLM_PROVIDER (anthropic/bedrock/vertex) in .env. Kept as this
+        # module's own _get_client() so existing tests that monkeypatch
+        # optimizer_agent._get_client keep working.
+        _client = get_async_anthropic_client()
     return _client
 
 
