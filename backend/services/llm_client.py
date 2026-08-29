@@ -134,10 +134,17 @@ def get_model_name() -> str:
         # Milestone II's design doc (Section 8) names "Gemini-2.0-
         # Flash" for this role, but that model was retired by Google
         # (confirmed live: the API itself now 404s on it and points to
-        # this replacement) -- gemini-3.6-flash is the current
-        # equivalent-tier model as of 2026-08. Override via
-        # GEMINI_MODEL_ID if your account's available models differ.
-        return os.getenv("GEMINI_MODEL_ID") or "gemini-3.6-flash"
+        # gemini-3.6-flash as the replacement). gemini-3.6-flash itself
+        # works but its free tier is capped at 5 requests/minute
+        # (confirmed live: a real case run hit 429 RESOURCE_EXHAUSTED
+        # partway through -- this pipeline's CrewAI orchestration layer
+        # alone makes ~5-6 real calls per case, on top of the direct
+        # per-agent calls, so 5/min isn't enough headroom for one case
+        # to complete). gemini-3.5-flash-lite gets a much more generous
+        # free-tier quota and is confirmed working -- used as the
+        # default for that reason. Override via GEMINI_MODEL_ID for a
+        # paid tier / a different model.
+        return os.getenv("GEMINI_MODEL_ID") or "gemini-3.5-flash-lite"
     if provider == "mistral":
         return os.getenv("MISTRAL_MODEL_ID") or "mistral-large-latest"
     return os.getenv("ANTHROPIC_CLAUDE_MODEL_ID") or "claude-sonnet-5"

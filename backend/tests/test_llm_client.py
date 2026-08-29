@@ -48,7 +48,7 @@ def _reset_between_tests(monkeypatch):
         ("anthropic", "claude-sonnet-5", "anthropic/claude-sonnet-5"),
         ("bedrock", "anthropic.claude-sonnet-5", "bedrock/anthropic.claude-sonnet-5"),
         ("vertex", "claude-sonnet-5", "vertex_ai/claude-sonnet-5"),
-        ("gemini", "gemini-3.6-flash", "gemini/gemini-3.6-flash"),
+        ("gemini", "gemini-3.5-flash-lite", "gemini/gemini-3.5-flash-lite"),
         ("mistral", "mistral-large-latest", "mistral/mistral-large-latest"),
     ],
 )
