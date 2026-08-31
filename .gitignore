@@ -41,5 +41,6 @@ data/images/uploads/
 install.log
 pip-log.txt
 
-# Claude Code session-local state (not project source)
-.claude/*.lock
+# Editor/session-local state (not project source)
+.claude/
+HANDOFF.md
