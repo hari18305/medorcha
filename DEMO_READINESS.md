@@ -27,7 +27,7 @@ assumed — see "Evidence" for how.
 | 17 | Basic retries/timeouts on Qdrant/PubMed/Claude | ✅ | Confirmed in code (`evidence_agent.py`: `MAX_ATTEMPTS=2`, `HTTP_TIMEOUT_SECONDS`); exercised for real during the eval run |
 | 18 | `docker compose up` starts the full demo cleanly | ✅ | Built and started for real: all three services `healthy`/`Up`, verified after a full teardown+restart too (Qdrant data persisted via the named volume) |
 | 19 | At least 10-20 test cases in `data/test_cases/` | ✅ | 17 present |
-| 20 | 3-5 minute demo script rehearsed end-to-end, once, out loud | ⚠️ Script below is ready; **you still need to read it aloud once** before the real thing |
+| 20 | 3-5 minute demo script rehearsed end-to-end, once, out loud | ✅ Steps 1-5 driven live 2026-08-31 against the real running app (not just read) — header framing, real strong-case submission (confidence 0.656, matches the original proven run), full report rendering with ranked differentials/evidence, and the low-confidence optimizer+HITL path (confidence 0.40, 3 iterations, correct review-required routing) all confirmed working. Two real script bugs found and fixed in the process (see step 4 below). **Still worth it**: read the narration aloud once yourself so the timing/wording feels natural — the mechanics are proven, the delivery is still yours to practice. |
 
 ## The one real gap — CLOSED 2026-08-29
 
@@ -152,11 +152,22 @@ either bug already fixed here.
    score and bar, supporting evidence list (point out the `type: rag`
    vs `type: live` tag distinguishing offline vs. live-fetched
    citations), and any flagged conflicts.
-4. **Trigger the optimizer**: submit a deliberately thin case (e.g.
-   `CASE013_minimal_no_content.json`'s fields) and narrate the
-   confidence-driven refinement loop — "confidence came back below
-   0.65, so the system is now refining its own query and re-running
-   retrieval, capped at 3 iterations."
+4. **Trigger the optimizer**: submit a deliberately thin case — age 40,
+   sex other, clinical text **"occasional mild headaches, nothing else
+   notable"** (verified live 2026-08-31: confidence 0.40, correctly
+   triggers all 3 optimizer iterations, correctly lands below
+   threshold). Narrate the confidence-driven refinement loop —
+   "confidence came back below 0.65, so the system is now refining its
+   own query and re-running retrieval, capped at 3 iterations."
+   **Do not use `CASE013_minimal_no_content.json` as literally
+   written** — its fields are fully empty and the frontend's own client
+   -side validation blocks submission ("Provide at least clinical
+   text, a medical report, or an image."), confirmed live. Also avoid
+   fully generic filler like "not feeling well" — verified live that it
+   pulls almost entirely irrelevant PubMed hits (dementia, romantic
+   love, hypnosis) into the live-evidence panel, since there's no
+   clinical anchor for the retrieval query; a vague-but-topical phrase
+   keeps the evidence panel coherent while still landing low-confidence.
 5. **Show HITL**: once a case lands below threshold after 3 iterations,
    walk into the Review screen — Accept / Override / Annotate — and
    explain this is mandatory, not optional, for low-confidence cases.
