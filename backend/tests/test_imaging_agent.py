@@ -19,7 +19,11 @@ from backend.agents.imaging_agent import (
     UnsupportedImageFormatError,
     analyze_image,
 )
-from backend.agents.imaging_labels import FINDING_LABELS, MODALITY_LABELS
+from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS
+
+BRAIN_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["MRI brain scan"]
+CHEST_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["chest X-ray"]
+ALL_FINDING_LABELS = [label for labels in FINDING_LABELS_BY_MODALITY.values() for label in labels]
 from backend.models.schemas import ImagingFindings
 
 DEMO_IMAGE_1 = Path("data/images/synthetic_demo_brain_mri_001.png")
@@ -66,7 +70,7 @@ def _make_bundle(image_embedding: torch.Tensor, text_embeddings: dict[str, torch
 
 def _uniform_text_embeddings(vector: torch.Tensor) -> dict[str, torch.Tensor]:
     """Every modality + finding label maps to the same embedding vector."""
-    return {label: vector.clone() for label in MODALITY_LABELS + FINDING_LABELS}
+    return {label: vector.clone() for label in MODALITY_LABELS + ALL_FINDING_LABELS}
 
 
 @pytest.fixture
@@ -88,6 +92,7 @@ async def test_valid_demo_image_returns_valid_schema(dominant_finding_bundle):
     assert isinstance(result, ImagingFindings)
     assert result.modality == "MRI brain scan"
     assert result.findings == ["normal brain MRI, no acute findings"]
+    assert result.unsupported_modality is False
     assert isinstance(result.confidence, float)
     assert 0.0 <= result.confidence <= 1.0
     assert result.confidence > 0.9  # near-perfect match should score high
@@ -101,17 +106,73 @@ async def test_valid_demo_image_jpg(dominant_finding_bundle):
 
 
 async def test_modality_hint_skips_modality_classification(dominant_finding_bundle):
-    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="CT scan")
+    # "chest X-ray" is a supported (has a findings model) modality, so
+    # finding classification still runs -- just against chest labels,
+    # since the hint bypasses the (irrelevant here) modality classifier.
+    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="chest X-ray")
 
-    assert result.modality == "CT scan"
+    assert result.modality == "chest X-ray"
+    assert result.unsupported_modality is False
     # only the findings classification call should have happened
-    assert dominant_finding_bundle.encode_text_calls == [FINDING_LABELS]
+    assert dominant_finding_bundle.encode_text_calls == [CHEST_FINDING_LABELS]
 
 
 async def test_no_hint_classifies_modality_then_findings(dominant_finding_bundle):
     await analyze_image(str(DEMO_IMAGE_1))
 
-    assert dominant_finding_bundle.encode_text_calls == [MODALITY_LABELS, FINDING_LABELS]
+    assert dominant_finding_bundle.encode_text_calls == [MODALITY_LABELS, BRAIN_FINDING_LABELS]
+
+
+async def test_hint_to_unsupported_modality_skips_findings_classification(dominant_finding_bundle):
+    # "CT scan" has no findings model configured -- must not be classified
+    # against some other modality's (e.g. brain) labels.
+    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="CT scan")
+
+    assert result.modality == "CT scan"
+    assert result.unsupported_modality is True
+    assert result.confidence == 0.0
+    assert len(result.findings) == 1
+    assert "no findings model available for this modality" in result.findings[0]
+    # no encode_text call at all -- modality hint skipped modality
+    # classification, and the unsupported-modality check skipped
+    # findings classification before ever calling the tokenizer/model.
+    assert dominant_finding_bundle.encode_text_calls == []
+
+
+async def test_detected_unsupported_modality_skips_findings_classification(monkeypatch):
+    # No hint given, and the image itself scores highest against
+    # "unspecified medical image" (which also has no findings model).
+    image_embedding = torch.tensor([[1.0, 0.0]])
+    text_embeddings = _uniform_text_embeddings(torch.tensor([0.0, 1.0]))
+    text_embeddings["unspecified medical image"] = torch.tensor([1.0, 0.0])
+
+    model, preprocess, tokenizer = _make_bundle(image_embedding, text_embeddings)
+    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: (model, preprocess, tokenizer))
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.modality == "unspecified medical image"
+    assert result.unsupported_modality is True
+    # only the modality classification call happened -- findings
+    # classification was correctly skipped
+    assert model.encode_text_calls == [MODALITY_LABELS]
+
+
+async def test_chest_xray_modality_gets_chest_findings(monkeypatch):
+    image_embedding = torch.tensor([[1.0, 0.0]])
+    text_embeddings = _uniform_text_embeddings(torch.tensor([0.0, 1.0]))
+    text_embeddings["chest X-ray"] = torch.tensor([1.0, 0.0])
+    text_embeddings["pulmonary nodule or mass"] = torch.tensor([1.0, 0.0])
+
+    model, preprocess, tokenizer = _make_bundle(image_embedding, text_embeddings)
+    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: (model, preprocess, tokenizer))
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.modality == "chest X-ray"
+    assert result.unsupported_modality is False
+    assert result.findings == ["pulmonary nodule or mass"]
+    assert model.encode_text_calls == [MODALITY_LABELS, CHEST_FINDING_LABELS]
 
 
 async def test_missing_file_raises_typed_error(monkeypatch):
@@ -153,8 +214,10 @@ async def test_undecodable_content_with_allowed_extension_raises_typed_error(tmp
 
 
 async def test_findings_never_empty_when_all_scores_below_threshold(monkeypatch):
-    # All labels equally (orthogonally) similar -> uniform softmax over 13
-    # finding labels is ~1/13 ≈ 0.077, below FINDING_SCORE_THRESHOLD (0.15).
+    # All labels equally (orthogonally) similar, including modality labels
+    # -> "MRI brain scan" wins the modality tie (stable sort, first listed),
+    # then uniform softmax over its 13 finding labels is ~1/13 ≈ 0.077,
+    # below FINDING_SCORE_THRESHOLD (0.15).
     image_embedding = torch.tensor([[1.0, 0.0]])
     text_embeddings = _uniform_text_embeddings(torch.tensor([0.0, 1.0]))
 
@@ -163,8 +226,9 @@ async def test_findings_never_empty_when_all_scores_below_threshold(monkeypatch)
 
     result = await analyze_image(str(DEMO_IMAGE_1))
 
-    assert result.findings == [FINDING_LABELS[0]]
-    expected_score = 1.0 / len(FINDING_LABELS)
+    assert result.modality == "MRI brain scan"
+    assert result.findings == [BRAIN_FINDING_LABELS[0]]
+    expected_score = 1.0 / len(BRAIN_FINDING_LABELS)
     assert math.isclose(result.confidence, expected_score, rel_tol=1e-4)
 
 

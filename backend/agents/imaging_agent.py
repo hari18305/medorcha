@@ -22,7 +22,11 @@ import open_clip
 import torch
 from PIL import Image, UnidentifiedImageError
 
-from backend.agents.imaging_labels import FINDING_LABELS, MODALITY_LABELS
+from backend.agents.imaging_labels import (
+    FINDING_LABELS_BY_MODALITY,
+    MODALITY_LABELS,
+    SUPPORTED_FINDING_MODALITIES,
+)
 from backend.models.schemas import ImagingFindings
 
 MODEL_ID = "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
@@ -44,6 +48,17 @@ FINDING_SCORE_THRESHOLD = 0.15
 # CLIP-style logit scale applied to cosine similarities before softmax,
 # matching BiomedCLIP's training configuration.
 LOGIT_SCALE = 100.0
+
+# Returned as the sole `findings` entry (with confidence 0.0) when the
+# detected/hinted modality has no findings model configured -- see
+# imaging_labels.FINDING_LABELS_BY_MODALITY. Deliberately does not
+# resemble a real finding, and callers should prefer checking
+# ImagingFindings.unsupported_modality over string-matching this.
+UNSUPPORTED_MODALITY_MESSAGE = (
+    "no findings model available for this modality (supported: "
+    + ", ".join(SUPPORTED_FINDING_MODALITIES)
+    + ")"
+)
 
 
 class ImagingAgentError(RuntimeError):
@@ -116,7 +131,7 @@ def _zero_shot_scores(
 
 def _run_zero_shot_classification(
     path: Path, modality_hint: str | None
-) -> tuple[str, list[str], float]:
+) -> tuple[str, list[str], float, bool]:
     """Synchronous, CPU/GPU-bound BiomedCLIP inference. Run via an executor."""
     try:
         image = Image.open(path).convert("RGB")
@@ -138,14 +153,22 @@ def _run_zero_shot_classification(
         else:
             modality = modality_hint
 
-        finding_scores = _zero_shot_scores(model, tokenizer, image_features, FINDING_LABELS)
+        finding_labels = FINDING_LABELS_BY_MODALITY.get(modality)
+        if finding_labels is None:
+            # No findings model for this modality -- do NOT classify
+            # against some other modality's labels (that's exactly what
+            # silently produced brain-related "findings" for a chest
+            # X-ray before this check existed). Be honest instead.
+            return modality, [UNSUPPORTED_MODALITY_MESSAGE], 0.0, True
+
+        finding_scores = _zero_shot_scores(model, tokenizer, image_features, finding_labels)
 
     top_label, top_score = finding_scores[0]
     findings = [label for label, score in finding_scores if score > FINDING_SCORE_THRESHOLD]
     if not findings:
         findings = [top_label]
 
-    return modality, findings, float(top_score)
+    return modality, findings, float(top_score), False
 
 
 async def analyze_image(image_path: str, modality_hint: str | None = None) -> ImagingFindings:
@@ -155,12 +178,23 @@ async def analyze_image(image_path: str, modality_hint: str | None = None) -> Im
     is optional, and callers upstream (e.g. the orchestrator) are responsible
     for skipping this agent entirely when no image was provided, rather than
     passing an empty/None path in here.
+
+    If the detected/hinted modality has no findings model configured (see
+    imaging_labels.FINDING_LABELS_BY_MODALITY), the returned
+    ImagingFindings has unsupported_modality=True, confidence=0.0, and a
+    findings list with one honest placeholder entry -- callers must check
+    unsupported_modality rather than trusting `findings` at face value.
     """
     path = _validate_image_path(image_path)
 
     loop = asyncio.get_running_loop()
-    modality, findings, confidence = await loop.run_in_executor(
+    modality, findings, confidence, unsupported = await loop.run_in_executor(
         None, _run_zero_shot_classification, path, modality_hint
     )
 
-    return ImagingFindings(modality=modality, findings=findings, confidence=confidence)
+    return ImagingFindings(
+        modality=modality,
+        findings=findings,
+        confidence=confidence,
+        unsupported_modality=unsupported,
+    )

@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 import backend.agents.fusion_agent as fusion_agent
-from backend.agents.fusion_agent import FusionError, fuse
+from backend.agents.fusion_agent import FusionError, _format_imaging, fuse
 from backend.models.schemas import (
     ClinicalFindings,
     EvidenceItem,
@@ -261,3 +261,30 @@ async def test_raises_after_two_invalid_responses(mock_anthropic_client):
         await fuse(CLINICAL, None, EMPTY_RAG, EMPTY_LIVE)
 
     assert mock_anthropic_client.messages.create.await_count == 2
+
+
+def test_format_imaging_unsupported_modality_tells_llm_not_to_use_it():
+    # Must not leak the raw "no findings model available..." placeholder
+    # as if it were a real finding, and must explicitly instruct the LLM
+    # to disregard imaging for this case -- this is the fusion-prompt
+    # side of the same fix that stops rag_agent from querying on it.
+    unsupported = ImagingFindings(
+        modality="chest X-ray",
+        findings=["no findings model available for this modality (supported: MRI brain scan, chest X-ray)"],
+        confidence=0.0,
+        unsupported_modality=True,
+    )
+
+    formatted = _format_imaging(unsupported)
+
+    assert "NOT ASSESSED" in formatted
+    assert "no findings model available" not in formatted
+    assert "as if no imaging were provided" in formatted
+
+
+def test_format_imaging_supported_modality_unchanged():
+    formatted = _format_imaging(IMAGING)
+
+    assert "MRI brain scan" in formatted
+    assert "white matter hyperintensity" in formatted
+    assert "0.95" in formatted

@@ -34,6 +34,12 @@ class ImagingFindings(BaseModel):
     modality: str
     findings: list[str]
     confidence: float
+    # True when the detected/hinted modality has no findings model
+    # configured (see imaging_labels.FINDING_LABELS_BY_MODALITY) -- the
+    # image was NOT classified against an unrelated modality's labels.
+    # Downstream consumers (rag_agent, fusion_agent) must check this
+    # rather than trusting `findings` at face value when it's True.
+    unsupported_modality: bool = False
 
 
 class EvidenceItem(BaseModel):

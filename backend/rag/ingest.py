@@ -540,6 +540,141 @@ CORPUS = [
             "antihypertensive treatment."
         ),
     },
+    {
+        "doc_id": "pulmonary_nodule_mass_chest_xray",
+        "source": "synthetic",
+        "text": (
+            "A pulmonary nodule is a rounded opacity on chest X-ray or CT "
+            "up to 3 cm in diameter; a rounded opacity larger than 3 cm is "
+            "conventionally termed a mass and carries a substantially "
+            "higher likelihood of malignancy. Key risk factors that raise "
+            "concern for a malignant nodule or mass include current or "
+            "former smoking (the single strongest risk factor, with risk "
+            "rising with pack-years), age over 50, a prior history of "
+            "cancer, and irregular or spiculated margins on imaging, as "
+            "opposed to the smooth, well-circumscribed margins more "
+            "typical of a benign granuloma or hamartoma. Any new nodule "
+            "or mass identified on chest X-ray in a patient with a "
+            "smoking history warrants dedicated chest CT for "
+            "characterization and, depending on size and risk profile, "
+            "either short-interval imaging follow-up or tissue sampling "
+            "(bronchoscopy, CT-guided biopsy, or surgical resection). A "
+            "silhouette that appears rounded near the cardiac or "
+            "mediastinal border on a single chest X-ray view can "
+            "represent a true pulmonary or mediastinal mass, a prominent "
+            "vascular structure, or a projectional artifact of the "
+            "cardiac silhouette itself, which is why a single-view chest "
+            "X-ray finding of this kind should prompt correlation with a "
+            "lateral view or CT rather than being characterized from the "
+            "frontal view alone."
+        ),
+    },
+    {
+        "doc_id": "pneumonia_chest_xray",
+        "source": "synthetic",
+        "text": (
+            "Pneumonia on chest X-ray classically appears as a focal or "
+            "multifocal area of consolidation -- an airspace opacity that "
+            "obscures the normal lung markings and may contain air "
+            "bronchograms -- most often lobar or segmental in "
+            "distribution for bacterial causes, or more diffuse and "
+            "bilateral (interstitial) for atypical or viral causes. "
+            "Clinical presentation typically includes fever, productive "
+            "cough, pleuritic chest pain, and dyspnea, though presentation "
+            "can be subtler in older adults, who may present with "
+            "confusion or general decline rather than classic respiratory "
+            "symptoms. Risk factors include smoking (which impairs "
+            "mucociliary clearance and local immune defense), chronic "
+            "lung disease, immunosuppression, and recent viral upper "
+            "respiratory infection. Chest X-ray findings can lag behind "
+            "clinical presentation by 24-48 hours and can persist for "
+            "weeks after clinical recovery, so a persistent opacity after "
+            "treatment does not necessarily indicate treatment failure --  "
+            "but a new or enlarging opacity, especially in a smoker, "
+            "should prompt consideration of an underlying obstructing "
+            "lesion (such as a tumor) causing a post-obstructive "
+            "pneumonia, rather than assuming a straightforward community-"
+            "acquired infection."
+        ),
+    },
+    {
+        "doc_id": "copd_emphysema_chest_xray",
+        "source": "synthetic",
+        "text": (
+            "Chronic obstructive pulmonary disease (COPD), encompassing "
+            "emphysema and chronic bronchitis, is overwhelmingly driven "
+            "by cigarette smoking in developed countries, with cumulative "
+            "pack-years correlating with disease severity. Chest X-ray "
+            "findings in emphysema include hyperinflation (flattened "
+            "diaphragms, increased retrosternal air space on lateral "
+            "view), a narrow and elongated cardiac silhouette from "
+            "reduced venous return, and reduced peripheral lung "
+            "vascular markings from destroyed alveolar-capillary "
+            "surface area; bullae -- large, thin-walled air-filled "
+            "spaces -- may be visible in advanced disease. These changes "
+            "can alter the apparent size and shape of the heart and "
+            "great vessels on a frontal chest X-ray, which is a common "
+            "source of a cardiac silhouette being misread as enlarged "
+            "or distorted in a long-term smoker even without primary "
+            "cardiac disease. COPD substantially increases the risk of "
+            "pneumonia, pneumothorax (from bullae rupture), and lung "
+            "cancer, so any new focal opacity, nodule, or mass in a "
+            "patient with known or suspected COPD should be worked up on "
+            "its own merits rather than attributed to the underlying "
+            "COPD."
+        ),
+    },
+    {
+        "doc_id": "cardiomegaly_chest_xray",
+        "source": "synthetic",
+        "text": (
+            "Cardiomegaly on a frontal chest X-ray is conventionally "
+            "assessed using the cardiothoracic ratio -- the maximal "
+            "transverse cardiac diameter divided by the maximal internal "
+            "thoracic diameter -- with a ratio greater than 0.5 "
+            "suggestive of cardiac enlargement, though this rule of thumb "
+            "is only reliable on a properly positioned posteroanterior "
+            "(PA) film; an anteroposterior (AP) or poorly inspired film "
+            "can artifactually magnify the cardiac silhouette and "
+            "mimic cardiomegaly in a structurally normal heart. Causes "
+            "include chronic hypertension, valvular disease, "
+            "cardiomyopathy, and pericardial effusion (which produces a "
+            "distinctive globular, symmetrically enlarged silhouette "
+            "rather than a chamber-specific bulge). A rounded opacity "
+            "projecting over or adjacent to the cardiac silhouette can "
+            "represent true chamber enlargement, a pericardial or "
+            "epicardial fat pad, a hiatal hernia projecting behind the "
+            "heart, or a separate pulmonary or mediastinal mass "
+            "coincidentally overlapping the cardiac border on a single "
+            "frontal view -- distinguishing between these requires a "
+            "lateral view, echocardiography, or CT, not the frontal "
+            "chest X-ray in isolation."
+        ),
+    },
+    {
+        "doc_id": "pleural_effusion_pneumothorax_chest_xray",
+        "source": "synthetic",
+        "text": (
+            "Pleural effusion on an upright chest X-ray classically "
+            "produces blunting of the costophrenic angle and a meniscus-"
+            "shaped opacity that rises laterally, becoming a more "
+            "homogeneous whiteout of the hemithorax as volume increases; "
+            "causes include heart failure, pneumonia (parapneumonic "
+            "effusion), malignancy, and pulmonary embolism. Pneumothorax "
+            "appears as a visible pleural line with absent lung markings "
+            "peripheral to it, and can be spontaneous (more common in "
+            "tall, thin young smokers, from ruptured subpleural blebs) or "
+            "secondary to underlying lung disease such as COPD, where "
+            "ruptured bullae are the typical mechanism; a large or "
+            "tension pneumothorax is a medical emergency requiring "
+            "immediate decompression. Both findings can coexist with, or "
+            "be mistaken for, other chest X-ray abnormalities, so "
+            "clinical correlation (acute pleuritic pain and dyspnea for "
+            "pneumothorax; positional dyspnea and lower-extremity edema "
+            "for effusion from heart failure) is essential rather than "
+            "relying on the imaging appearance alone."
+        ),
+    },
 ]
 
 

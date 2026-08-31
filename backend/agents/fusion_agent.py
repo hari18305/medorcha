@@ -134,6 +134,13 @@ def _format_clinical(clinical: ClinicalFindings) -> str:
 def _format_imaging(imaging: ImagingFindings | None) -> str:
     if imaging is None:
         return "(no imaging performed/provided for this case)"
+    if imaging.unsupported_modality:
+        return (
+            f"Modality: {imaging.modality}\n"
+            "Findings: NOT ASSESSED -- this prototype has no findings model "
+            f"for this modality. Do not reason about imaging findings for "
+            f"this case; treat it as if no imaging were provided."
+        )
     return (
         f"Modality: {imaging.modality}\n"
         f"Findings: {', '.join(imaging.findings)}\n"

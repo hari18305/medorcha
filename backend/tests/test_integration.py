@@ -42,7 +42,7 @@ import backend.agents.optimizer_agent as optimizer_agent
 import backend.rag.reranker as reranker
 import backend.rag.retriever as retriever
 import backend.services.orchestrator as orchestrator
-from backend.agents.imaging_labels import FINDING_LABELS, MODALITY_LABELS
+from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS
 from backend.models.schemas import CaseInput, Patient
 from backend.services import storage
 from backend.services.confidence import THRESHOLD
@@ -341,7 +341,10 @@ class _FakeImagingModel:
 
 def _install_imaging_mocks(monkeypatch, modality="MRI brain scan", finding="white matter hyperintensity"):
     image_embedding = torch.tensor([[1.0, 0.0]])
-    text_embeddings = {label: torch.tensor([0.0, 1.0]) for label in MODALITY_LABELS + FINDING_LABELS}
+    all_finding_labels = [label for labels in FINDING_LABELS_BY_MODALITY.values() for label in labels]
+    text_embeddings = {
+        label: torch.tensor([0.0, 1.0]) for label in MODALITY_LABELS + all_finding_labels
+    }
     text_embeddings[modality] = torch.tensor([1.0, 0.0])
     text_embeddings[finding] = torch.tensor([1.0, 0.0])
     fake_model = _FakeImagingModel(image_embedding, text_embeddings)

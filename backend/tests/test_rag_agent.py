@@ -124,6 +124,27 @@ def test_build_query_empty_findings_returns_empty_string():
     assert _build_query(empty, None) == ""
 
 
+def test_build_query_omits_unsupported_modality_findings():
+    # A placeholder "no findings model available..." entry must never
+    # reach the retrieval query -- it's not a real clinical finding, and
+    # embedding/searching it produces misleading evidence (this is
+    # exactly the mechanism that surfaced brain-related evidence for a
+    # real uploaded chest X-ray before imaging.unsupported_modality
+    # existed).
+    unsupported = ImagingFindings(
+        modality="CT scan",
+        findings=["no findings model available for this modality (supported: MRI brain scan, chest X-ray)"],
+        confidence=0.0,
+        unsupported_modality=True,
+    )
+
+    query = _build_query(CASE001_FINDINGS, unsupported)
+
+    assert "headache" in query
+    assert "imaging findings" not in query
+    assert "no findings model" not in query
+
+
 def test_build_fallback_query_uses_top_symptoms_only():
     fallback = _build_fallback_query(CASE001_FINDINGS)
 
