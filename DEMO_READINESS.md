@@ -144,10 +144,14 @@ either bug already fixed here.
    deliberate, not filler text.
 2. **Submit a strong case**: age/sex + clinical text ("headache and
    dizziness, history of hypertension") + the synthetic demo MRI image.
-   Narrate while it's in flight: "this fans out to a clinical-text
+   Narrate while it's in flight: "this runs through a clinical-text
    agent, a BiomedCLIP imaging agent, a BioBERT/Qdrant retrieval agent
    against an offline biomedical knowledge base, and a live
-   PubMed/MedlinePlus evidence agent — running in parallel."
+   PubMed/MedlinePlus evidence agent, each stage feeding the next."
+   (Corrected 2026-09-01: `orchestrator.py`'s `run_case()` calls each
+   agent via `_run_sync()` in a flat sequence — clinical, then imaging,
+   then RAG, then live evidence, then fusion — not concurrently. Don't
+   say "in parallel" if asked to point at where that happens in code.)
 3. **Show the report**: ranked differential diagnoses, confidence
    score and bar, supporting evidence list (point out the `type: rag`
    vs `type: live` tag distinguishing offline vs. live-fetched
