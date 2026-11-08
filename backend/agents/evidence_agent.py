@@ -146,12 +146,28 @@ def _get_anthropic_client() -> AsyncAnthropic:
 
 
 _TAG_RE = re.compile(r"<[^>]+>")
+# Block-level tags are a visual break: removing them with NO replacement glues
+# neighbouring text together ("<h4>Background</h4>Pneumothorax..." ->
+# "BackgroundPneumothorax...", "...cancer</li><li>Being on..." ->
+# "cancerBeing on..."). Inline tags (<i>, <b>, <sub>) are removed with no
+# space so "<i>migraine</i>s" stays one word.
+_BLOCK_TAG_RE = re.compile(r"</?(?:h[1-6]|p|ul|ol|br|div|tr|td|th|table|section)\b[^>]*>", re.IGNORECASE)
 
 
 def _strip_html(text: str | None) -> str:
+    """HTML -> plain text for live-evidence titles/summaries: block tags
+    become spaces, list items are joined with "; " (the last ending in "."),
+    entities are decoded, and the space a removed tag leaves before
+    punctuation is closed up. Wording is never changed."""
     if not text:
         return ""
-    return html.unescape(_TAG_RE.sub("", text)).strip()
+    text = re.sub(r"</li>\s*(?=</[uo]l>)", ". ", text, flags=re.IGNORECASE)
+    text = re.sub(r"</li>", "; ", text, flags=re.IGNORECASE)
+    text = _BLOCK_TAG_RE.sub(" ", text)
+    text = html.unescape(_TAG_RE.sub("", text))
+    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\s+([.,;:?!)])", r"\1", text)
+    return re.sub(r"\.\s*\.", ".", text)
 
 
 def _truncate(text: str, limit: int = 300) -> str:

@@ -432,6 +432,40 @@ async def test_search_clinicaltrials_timeout_raises_unavailable(monkeypatch):
 
 
 # --------------------------------------------------------------------------
+# _strip_html -- regression for text run together after tag removal
+# --------------------------------------------------------------------------
+
+
+def test_strip_html_keeps_section_labels_and_paragraphs_apart():
+    # Real Europe PMC shape: no whitespace between the label tag and the text.
+    raw = "<h4>Background</h4>Pneumothorax is a common emergency.<h4>Methods</h4>A rat model was established."
+
+    assert evidence_agent._strip_html(raw) == (
+        "Background Pneumothorax is a common emergency. Methods A rat model was established."
+    )
+
+
+def test_strip_html_joins_list_items_instead_of_gluing_them():
+    # Real MedlinePlus shape: paragraphs and list items with no whitespace.
+    raw = (
+        "<p>It is called pneumothorax.</p><p>Causes include:</p>"
+        "<ul><li>Lung diseases such as pneumonia</li><li>Being on a breathing machine</li></ul>"
+    )
+
+    assert evidence_agent._strip_html(raw) == (
+        "It is called pneumothorax. Causes include: Lung diseases such as pneumonia; Being on a breathing machine."
+    )
+
+
+def test_strip_html_does_not_split_words_at_inline_tags_or_leave_stray_spaces():
+    assert evidence_agent._strip_html("Candesartan for <i>migraine</i>s, and <b>CO</b><sub>2</sub>.") == (
+        "Candesartan for migraines, and CO2."
+    )
+    assert evidence_agent._strip_html("a &amp; b &lt;c&gt;") == "a & b <c>"
+    assert evidence_agent._strip_html(None) == "" and evidence_agent._strip_html("") == ""
+
+
+# --------------------------------------------------------------------------
 # _dedupe_by_title
 # --------------------------------------------------------------------------
 
