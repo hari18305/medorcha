@@ -30,6 +30,7 @@ from backend.models.schemas import ImagingFindings
 DEMO_IMAGE_1 = Path("data/images/synthetic_demo_brain_mri_001.png")
 DEMO_IMAGE_2 = Path("data/images/synthetic_demo_brain_mri_002.jpg")
 DEMO_IMAGE_CT = Path("data/images/synthetic_demo_ct_scan_001.png")
+DEMO_IMAGE_CHEST = Path("data/images/synthetic_demo_chest_xray_001.png")
 
 
 class _RecordingTokenizer:
@@ -217,6 +218,34 @@ async def test_valid_ct_demo_image_decodes_and_returns_valid_schema(dominant_fin
     assert result.modality == "CT scan"
     assert result.unsupported_modality is False
     assert result.findings  # never empty
+
+
+async def test_valid_chest_xray_demo_image_decodes_and_returns_valid_schema(dominant_finding_bundle):
+    # Same real-file check as the CT one above, for the chest X-ray demo
+    # image -- confirms it's a genuinely decodable, supported image.
+    result = await analyze_image(str(DEMO_IMAGE_CHEST), modality_hint="chest X-ray")
+
+    assert isinstance(result, ImagingFindings)
+    assert result.modality == "chest X-ray"
+    assert result.unsupported_modality is False
+    assert result.findings  # never empty
+    assert dominant_finding_bundle.encode_text_calls == [CHEST_FINDING_LABELS]
+
+
+@pytest.mark.parametrize(
+    "slug", ["brain_mri", "ct_scan", "chest_xray"]
+)
+def test_each_supported_modality_has_two_to_three_decodable_demo_images(slug):
+    # Phase 1b: "2-3 small synthetic placeholder images per supported
+    # modality in data/images/" -- guards against a modality silently
+    # losing its demo images (chest X-ray had none until this was added).
+    from PIL import Image
+
+    files = sorted(Path("data/images").glob(f"synthetic_demo_{slug}_*"))
+    assert 2 <= len(files) <= 3, f"{slug}: expected 2-3 demo images, found {len(files)}"
+    for file in files:
+        with Image.open(file) as image:
+            image.verify()
 
 
 async def test_missing_file_raises_typed_error(monkeypatch):
