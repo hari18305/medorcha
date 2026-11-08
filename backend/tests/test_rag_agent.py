@@ -7,8 +7,11 @@ query-building, the retrieve -> rerank pipeline, and the low-score
 fallback logic in rag_agent.py are all genuinely exercised.
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
 
+import backend.agents.rag_agent as rag_agent_module
 import backend.rag.reranker as reranker_module
 import backend.rag.retriever as retriever_module
 from backend.agents.rag_agent import (
@@ -225,3 +228,87 @@ async def test_run_rag_gives_up_after_one_retry_if_still_low(fake_qdrant, monkey
 
     assert len(fake_model.calls) == 2  # exactly one retry, not more
     assert all(item.score < LOW_SCORE_THRESHOLD for item in result.evidence)
+
+
+# --------------------------------------------------------------------------
+# Phase 13: case memory + visual memory merged into RAGEvidence
+# --------------------------------------------------------------------------
+
+
+def test_run_rag_merges_clinician_verified_text_precedent(fake_qdrant, monkeypatch):
+    _patch_cross_encoder(monkeypatch, [[4.0, 3.0, 2.0]])
+    monkeypatch.setattr(
+        rag_agent_module,
+        "retrieve_case_memory",
+        lambda query, top_k=3: [{"text": "prior similar case", "source": "clinician_verified:dr_lee", "score": 0.9}],
+    )
+
+    import asyncio
+
+    result = asyncio.run(run_rag(CASE001_FINDINGS, CASE001_IMAGING))
+
+    tagged = [e for e in result.evidence if e.source.startswith("clinician_verified:")]
+    assert len(tagged) == 1
+    assert tagged[0].text == "prior similar case"
+    assert tagged[0].source == "clinician_verified:dr_lee"
+
+
+def test_run_rag_case_memory_failure_degrades_gracefully(fake_qdrant, monkeypatch):
+    _patch_cross_encoder(monkeypatch, [[4.0, 3.0, 2.0]])
+
+    def _boom(query, top_k=3):
+        raise RuntimeError("qdrant unreachable")
+
+    monkeypatch.setattr(rag_agent_module, "retrieve_case_memory", _boom)
+
+    import asyncio
+
+    result = asyncio.run(run_rag(CASE001_FINDINGS, CASE001_IMAGING))
+
+    assert not any(e.source.startswith("clinician_verified:") for e in result.evidence)
+    assert len(result.evidence) == 3  # the 3 real KB hits are still returned
+
+
+async def test_run_rag_merges_visual_precedent_when_image_present_and_supported(fake_qdrant, monkeypatch):
+    _patch_cross_encoder(monkeypatch, [[4.0, 3.0, 2.0]])
+    monkeypatch.setattr(rag_agent_module, "retrieve_case_memory", lambda query, top_k=3: [])
+    fake_retrieve_visual = AsyncMock(
+        return_value=[{"text": "visually similar prior scan", "source": "visual_precedent:dr_lee", "score": 0.8}]
+    )
+    monkeypatch.setattr(rag_agent_module, "retrieve_visual_memory", fake_retrieve_visual)
+
+    result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING, image_path="data/images/synthetic_demo_brain_mri_001.png")
+
+    fake_retrieve_visual.assert_awaited_once()
+    tagged = [e for e in result.evidence if e.source.startswith("visual_precedent:")]
+    assert len(tagged) == 1
+    assert tagged[0].text == "visually similar prior scan"
+
+
+async def test_run_rag_skips_visual_precedent_when_no_image_path(fake_qdrant, monkeypatch):
+    _patch_cross_encoder(monkeypatch, [[4.0, 3.0, 2.0]])
+    monkeypatch.setattr(rag_agent_module, "retrieve_case_memory", lambda query, top_k=3: [])
+    fake_retrieve_visual = AsyncMock(return_value=[])
+    monkeypatch.setattr(rag_agent_module, "retrieve_visual_memory", fake_retrieve_visual)
+
+    await run_rag(CASE001_FINDINGS, CASE001_IMAGING, image_path=None)
+
+    fake_retrieve_visual.assert_not_called()
+
+
+async def test_run_rag_skips_visual_precedent_for_unsupported_modality(fake_qdrant, monkeypatch):
+    _patch_cross_encoder(monkeypatch, [[4.0, 3.0, 2.0]])
+    monkeypatch.setattr(rag_agent_module, "retrieve_case_memory", lambda query, top_k=3: [])
+    fake_retrieve_visual = AsyncMock(return_value=[])
+    monkeypatch.setattr(rag_agent_module, "retrieve_visual_memory", fake_retrieve_visual)
+
+    unsupported = ImagingFindings(
+        modality="chest X-ray",
+        findings=["no findings model available for this modality (supported: MRI brain scan, chest X-ray)"],
+        confidence=0.0,
+        unsupported_modality=True,
+    )
+
+    await run_rag(CASE001_FINDINGS, unsupported, image_path="data/images/some_chest_xray.png")
+
+    fake_retrieve_visual.assert_not_called()

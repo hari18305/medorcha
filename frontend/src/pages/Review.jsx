@@ -26,6 +26,9 @@ export default function Review({ report, onBack, onReviewed }) {
   const [overrideDiagnosis, setOverrideDiagnosis] = useState("");
   const [annotationNote, setAnnotationNote] = useState("");
   const [reviewer, setReviewer] = useState("");
+  // Optional 1-5 rating (Phase 11) -- null means "not rated", not 0;
+  // never required for submission.
+  const [rating, setRating] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
@@ -58,7 +61,12 @@ export default function Review({ report, onBack, onReviewed }) {
 
     setSubmitting(true);
     try {
-      const result = await submitReview(report.case_id, { decision, annotation, reviewer: reviewer.trim() });
+      const result = await submitReview(report.case_id, {
+        decision,
+        annotation,
+        reviewer: reviewer.trim(),
+        rating,
+      });
       setConfirmation(result);
     } catch (err) {
       setError(err.message || "Failed to submit the review.");
@@ -77,6 +85,9 @@ export default function Review({ report, onBack, onReviewed }) {
           </p>
           {confirmation.annotation && (
             <p className="mt-2 rounded-md bg-white px-3 py-2 text-sm text-slate-600">{confirmation.annotation}</p>
+          )}
+          {confirmation.rating != null && (
+            <p className="mt-2 text-sm text-emerald-700">Confidence rating: {confirmation.rating} / 5</p>
           )}
         </div>
         <button
@@ -199,6 +210,38 @@ export default function Review({ report, onBack, onReviewed }) {
               placeholder="Dr. …"
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <span className="block text-sm font-medium text-slate-700">
+              Your confidence in this review <span className="font-normal text-slate-400">(optional)</span>
+            </span>
+            <div className="mt-2 flex items-center gap-1" role="radiogroup" aria-label="Reviewer confidence rating, 1 to 5">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === value}
+                  aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                  onClick={() => setRating(rating === value ? null : value)}
+                  className={`text-2xl leading-none transition ${
+                    rating != null && value <= rating ? "text-amber-400" : "text-slate-300 hover:text-amber-300"
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+              {rating != null && (
+                <button
+                  type="button"
+                  onClick={() => setRating(null)}
+                  className="ml-2 text-xs text-slate-400 hover:text-slate-600"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           <button

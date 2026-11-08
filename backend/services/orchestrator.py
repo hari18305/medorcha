@@ -59,7 +59,7 @@ from backend.models.schemas import (
     RAGEvidence,
 )
 from backend.services import storage
-from backend.services.confidence import THRESHOLD, compute_confidence
+from backend.services.confidence import THRESHOLD, compute_confidence_breakdown
 from backend.services import llm_client
 from backend.services.llm_client import get_crewai_model_string
 from backend.services.logging import log_event
@@ -105,6 +105,11 @@ class _CaseContext:
     live: LiveEvidence | None = None
     fusion: FusionResult | None = None
     confidence: float | None = None
+    # Phase 14: the full {"s_rag","s_web","agreement","confidence"}
+    # breakdown behind `confidence` above -- persisted alongside the
+    # report (see routes.py's POST /diagnose) so weight_tuner.py can
+    # later recalibrate w1/w2/w3 from real accept/override outcomes.
+    confidence_breakdown: dict | None = None
     review_required: bool = False
     iterations: int = 0
     call_log: list[dict] = field(default_factory=list)
@@ -244,7 +249,7 @@ class RAGTool(BaseTool):
         ctx = self._context
         start = time.perf_counter()
         try:
-            ctx.rag = _run_sync(run_rag(ctx.clinical, ctx.imaging))
+            ctx.rag = _run_sync(run_rag(ctx.clinical, ctx.imaging, image_path=ctx.case.image_path))
             _log_agent_call(ctx, "rag", 0, "success", (time.perf_counter() - start) * 1000)
             return f"retrieved {len(ctx.rag.evidence)} offline evidence item(s)"
         except Exception as exc:  # Qdrant connection failure, etc.
@@ -302,8 +307,11 @@ class FusionTool(BaseTool):
         ctx = self._context
         start = time.perf_counter()
         try:
-            ctx.fusion = _run_sync(fuse(ctx.clinical, ctx.imaging, ctx.rag, ctx.live))
-            ctx.confidence = compute_confidence(ctx.rag, ctx.live, ctx.fusion)
+            ctx.fusion = _run_sync(
+                fuse(ctx.clinical, ctx.imaging, ctx.rag, ctx.live, image_path=ctx.case.image_path)
+            )
+            ctx.confidence_breakdown = compute_confidence_breakdown(ctx.rag, ctx.live, ctx.fusion)
+            ctx.confidence = ctx.confidence_breakdown["confidence"]
             _log_agent_call(ctx, "fusion", 0, "success", (time.perf_counter() - start) * 1000)
             return (
                 f"fusion produced {len(ctx.fusion.diagnoses)} diagnos(es), "
@@ -338,9 +346,12 @@ class OptimizerTool(BaseTool):
         ctx = self._context
         start = time.perf_counter()
         try:
-            result = _run_sync(optimize(ctx.case, ctx.clinical, ctx.imaging, ctx.fusion, ctx.confidence))
+            result = _run_sync(
+                optimize(ctx.case, ctx.clinical, ctx.imaging, ctx.fusion, ctx.confidence, ctx.confidence_breakdown)
+            )
             ctx.fusion = result["final_fusion"]
             ctx.confidence = result["final_confidence"]
+            ctx.confidence_breakdown = result.get("final_breakdown")
             ctx.review_required = result["review_required"]
             ctx.iterations = result["iterations"]
 
@@ -491,6 +502,25 @@ def _combine_evidence(rag: RAGEvidence | None, live: LiveEvidence | None) -> lis
     return combined
 
 
+# Phase 14: run_case()'s public signature/return type (FinalReport) is
+# relied on by many existing tests and by the API layer's response
+# model, so it isn't changed here to also return the confidence
+# breakdown. Instead, the breakdown for the most recently completed
+# case_id is cached here and popped by get_confidence_breakdown() --
+# routes.py's POST /diagnose reads it immediately after run_case()
+# returns, to pass into storage.save_report()'s optional
+# confidence_breakdown param (see backend/services/confidence.py /
+# backend/services/weight_tuner.py for why Phase 14 needs it persisted).
+_LAST_CONFIDENCE_BREAKDOWN: dict[str, dict] = {}
+
+
+def get_confidence_breakdown(case_id: str) -> dict | None:
+    """Pops and returns the confidence breakdown computed for case_id's
+    most recent run_case() call, or None if run_case() never got far
+    enough to compute one (e.g. a completely empty case)."""
+    return _LAST_CONFIDENCE_BREAKDOWN.pop(case_id, None)
+
+
 def run_case(case: CaseInput) -> FinalReport:
     context = _CaseContext(case=case)
 
@@ -530,6 +560,9 @@ def run_case(case: CaseInput) -> FinalReport:
     # Step 6: assemble FinalReport.
     fusion = context.fusion or FusionResult(diagnoses=[], overall_confidence=0.0, conflicts=[])
     confidence = context.confidence if context.confidence is not None else 0.0
+
+    if context.confidence_breakdown is not None:
+        _LAST_CONFIDENCE_BREAKDOWN[case.case_id] = context.confidence_breakdown
 
     return FinalReport(
         case_id=case.case_id,

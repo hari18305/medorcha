@@ -44,3 +44,11 @@ pip-log.txt
 # Editor/session-local state (not project source)
 .claude/
 HANDOFF.md
+
+# Evaluation run logs and intermediate per-run outputs (point-in-time,
+# regenerate with backend/tests/run_evaluation.py). The three *_final*
+# markdown reports are force-added as the recorded results snapshots.
+backend/tests/*.log
+backend/tests/eval_*.csv
+backend/tests/eval_*.md
+backend/tests/mode2_items.csv

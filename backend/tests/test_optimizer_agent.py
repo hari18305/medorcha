@@ -229,3 +229,27 @@ async def test_hard_cap_never_exceeds_three_even_with_all_failures(mock_pipeline
     assert result["iterations"] <= MAX_ITERATIONS
     assert len(result["iteration_log"]) <= MAX_ITERATIONS
     assert mock_pipeline["select_strategy"].await_count == MAX_ITERATIONS
+
+
+async def test_image_path_passed_through_unchanged_on_every_iteration(mock_pipeline):
+    """The image itself doesn't change across iterations -- only the text
+    query does (Phase 7 spec) -- so every re-run_rag()/re-fuse() call
+    within one optimize() session must receive the SAME case.image_path,
+    unmodified."""
+    image_case = CaseInput(
+        case_id="CASE_IMG", patient=Patient(age=52, sex="female"), image_path="data/images/synthetic_demo_brain_mri_001.png"
+    )
+    mock_pipeline["select_strategy"].side_effect = [
+        _refinement("expand", "query v1"),
+        _refinement("narrow", "query v2"),
+        _refinement("paraphrase", "query v3"),
+    ]
+    mock_pipeline["run_rag"].return_value = _rag(0.5)
+    mock_pipeline["fuse"].side_effect = [_fusion(0.5), _fusion(0.5), _fusion(0.5)]
+
+    await optimize(image_case, CLINICAL, None, _fusion(0.3), initial_confidence=0.3)
+
+    for call in mock_pipeline["run_rag"].await_args_list:
+        assert call.kwargs["image_path"] == image_case.image_path
+    for call in mock_pipeline["fuse"].await_args_list:
+        assert call.kwargs["image_path"] == image_case.image_path

@@ -46,10 +46,13 @@ Claude's.
 
 The full pipeline is implemented end to end: clinical extraction →
 imaging classification → offline RAG retrieval → live evidence →
-evidence fusion → confidence scoring → iterative optimization →
-CrewAI orchestration → FastAPI HTTP layer → SQLite persistence →
-structured/redacted logging → a 4-screen React frontend (submission,
-processing, report, human-in-the-loop review).
+**joint image+text evidence fusion** → confidence scoring → iterative
+optimization → CrewAI orchestration → FastAPI HTTP layer → SQLite
+persistence → structured/redacted logging → a 4-screen React frontend
+(submission, processing, report, human-in-the-loop review) → clinician
+feedback captured as retrievable case memory (text **and** visual) →
+periodic confidence-weight recalibration from real accept/override
+outcomes.
 
 **Running the pipeline for real requires a valid `ANTHROPIC_API_KEY`**
 (see below) — several steps (clinical extraction, fusion reasoning, the
@@ -57,6 +60,62 @@ optimizer, and CrewAI's own agent-decision layer) call Claude directly.
 Without a key, `/diagnose` will return a clean `500` rather than hang
 or crash (the backend degrades gracefully), but it won't produce a real
 diagnosis.
+
+### Joint multimodal fusion
+
+`fuse()` (`backend/agents/fusion_agent.py`) attaches the case's actual
+image bytes to its LLM call — via `call_multimodal()` in
+`backend/services/llm_client.py` — whenever all of these hold: an image
+is present, its modality has a real BiomedCLIP findings model
+(`unsupported_modality=False`), and the active `LLM_PROVIDER` has
+confirmed vision support (`supports_vision()`: anthropic/bedrock/vertex/
+gemini today; mistral defaults to `False`, unconfirmed). In every other
+case it falls back to the original text-only path (BiomedCLIP's
+candidate labels, or the "NOT ASSESSED" wording for an unsupported
+modality) — always logged, so a report reviewer can tell "no image" from
+"the provider can't use one."
+
+### Case memory (text + visual)
+
+When a clinician overrides a diagnosis (`POST /review/{case_id}` with
+`decision: "override"`), the correction is embedded and stored as
+retrievable evidence for future similar cases:
+
+- **Text** (`backend/rag/case_memory.py`): always written, in the
+  `medorchestrate_case_memory` Qdrant collection (BioBERT/768-dim,
+  separate from the curated KB), tagged `clinician_verified:<reviewer>`.
+- **Visual** (`backend/rag/visual_memory.py`, new): additionally written
+  when the case had an image in a supported modality, in the
+  `medorchestrate_visual_memory` collection — a **separate embedding
+  space** (BiomedCLIP's image encoder, whatever dimension that actually
+  is, determined at runtime — never assumed to match BioBERT's 768),
+  tagged `visual_precedent:<reviewer>`.
+
+Both get folded into `RAGEvidence` on later similar cases (`run_rag()`)
+and reach the fusion prompt with an explicit "this is a past-case
+precedent, weigh it accordingly, don't treat it as infallible" framing.
+
+### Confidence weight recalibration
+
+`backend/services/weight_tuner.py` periodically refits the confidence
+formula's `w1`/`w2`/`w3` (never the fixed `THRESHOLD=0.65`) from real
+clinician accept/override outcomes — gated against small samples
+(`min_reviews`, default 10), fully audited
+(`confidence_weight_history`), and never run automatically:
+
+```bash
+python -m backend.services.weight_tuner
+```
+
+### Evaluation (`backend/tests/run_evaluation.py`)
+
+```bash
+python -m backend.tests.run_evaluation              # Mode 1: synthetic in-house cases
+python -m backend.tests.run_evaluation --mode2       # Mode 2: real MedQA/PubMedQA subset (needs `pip install datasets` + network)
+python -m backend.tests.run_evaluation --mode3       # Mode 3: imaging mini-benchmark + with/without-raw-image fusion comparison
+python -m backend.tests.run_evaluation --case-memory-ablation  # required ablation: with vs. without text case memory
+python -m backend.tests.run_evaluation --full        # everything above in one run
+```
 
 ---
 

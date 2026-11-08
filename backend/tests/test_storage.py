@@ -213,3 +213,103 @@ def test_agent_logs_scoped_per_case():
 
     assert len(storage.get_agent_logs("CASE001")) == 1
     assert len(storage.get_agent_logs("CASE002")) == 1
+
+
+# --------------------------------------------------------------------------
+# Phase 13/14 schema additions
+# --------------------------------------------------------------------------
+
+
+def test_init_tables_creates_case_memory_log_and_weight_history_tables():
+    with storage._get_connection() as conn:
+        rows = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
+        ).fetchall()
+    table_names = {row["name"] for row in rows}
+    assert {"case_memory_log", "confidence_weight_history"} <= table_names
+
+
+def test_reviews_rating_round_trips():
+    stored = storage.save_review(
+        "CASE001", {"decision": "accept", "annotation": None, "reviewer": "Dr. Smith", "rating": 4}
+    )
+    assert stored["rating"] == 4
+
+    reviews = storage.get_reviews("CASE001")
+    assert reviews[0]["rating"] == 4
+
+
+def test_reviews_rating_defaults_to_none_when_omitted():
+    stored = storage.save_review("CASE001", {"decision": "accept", "annotation": None, "reviewer": "Dr. Smith"})
+    assert stored["rating"] is None
+
+
+def test_save_report_persists_and_returns_confidence_breakdown():
+    breakdown = {"s_rag": 0.7, "s_web": 0.5, "agreement": 1.0, "confidence": 0.62}
+    storage.save_report("CASE001", REPORT, confidence_breakdown=breakdown)
+
+    assert storage.get_report_breakdown("CASE001") == breakdown
+
+
+def test_get_report_breakdown_none_when_never_saved():
+    storage.save_report("CASE001", REPORT)  # no breakdown passed
+    assert storage.get_report_breakdown("CASE001") is None
+
+
+def test_close_case_sets_status_closed():
+    storage.save_case(CASE, status="completed")
+    storage.close_case("CASE001")
+    with storage._get_connection() as conn:
+        row = conn.execute("SELECT status FROM cases WHERE case_id = ?", ("CASE001",)).fetchone()
+    assert row["status"] == "closed"
+
+
+def test_log_case_memory_embedding_round_trips_both_memory_types():
+    storage.log_case_memory_embedding(case_id="CASE001", review_id=1, qdrant_point_id="point-a", memory_type="text")
+    storage.log_case_memory_embedding(case_id="CASE001", review_id=1, qdrant_point_id="point-b", memory_type="visual")
+
+    rows = storage.get_case_memory_log("CASE001")
+    assert len(rows) == 2
+    assert {r["memory_type"] for r in rows} == {"text", "visual"}
+    assert {r["qdrant_point_id"] for r in rows} == {"point-a", "point-b"}
+
+
+def test_log_case_memory_embedding_rejects_invalid_memory_type():
+    with pytest.raises(ValueError):
+        storage.log_case_memory_embedding(case_id="CASE001", review_id=None, qdrant_point_id="x", memory_type="bogus")
+
+
+def test_weight_history_round_trips_and_current_row_is_most_recent():
+    assert storage.get_current_weight_row() is None  # no recalibration yet
+
+    storage.save_weight_update(0.4, 0.3, 0.3, num_reviews_used=10, notes="initial")
+    storage.save_weight_update(0.5, 0.25, 0.25, num_reviews_used=15, notes="second pass")
+
+    current = storage.get_current_weight_row()
+    assert current["w1"] == 0.5
+    assert current["num_reviews_used"] == 15
+
+    history = storage.get_weight_history()
+    assert len(history) == 2
+    assert history[0]["notes"] == "initial"
+    assert history[1]["notes"] == "second pass"
+
+
+def test_get_reports_with_reviews_joins_breakdown_and_decision():
+    storage.save_report("CASE001", REPORT, confidence_breakdown={"s_rag": 0.7, "s_web": 0.5, "agreement": 1.0, "confidence": 0.62})
+    storage.save_review("CASE001", {"decision": "accept", "annotation": None, "reviewer": "Dr. Smith"})
+
+    rows = storage.get_reports_with_reviews()
+
+    assert len(rows) == 1
+    assert rows[0]["case_id"] == "CASE001"
+    assert rows[0]["decision"] == "accept"
+    assert rows[0]["predicted_confidence"] == 0.62
+    assert rows[0]["s_rag"] == 0.7
+
+
+def test_get_reports_with_reviews_excludes_reports_without_breakdown():
+    storage.save_report("CASE001", REPORT)  # no breakdown
+    storage.save_review("CASE001", {"decision": "accept", "annotation": None, "reviewer": "Dr. Smith"})
+
+    assert storage.get_reports_with_reviews() == []

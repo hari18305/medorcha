@@ -242,6 +242,20 @@ def fake_genai_module(monkeypatch):
 
     fake_types.GenerateContentConfig = _FakeGenerateContentConfig
 
+    class _FakePart:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        @classmethod
+        def from_bytes(cls, **kwargs):
+            return cls(kind="bytes", **kwargs)
+
+        @classmethod
+        def from_text(cls, **kwargs):
+            return cls(kind="text", **kwargs)
+
+    fake_types.Part = _FakePart
+
     fake_google = types.ModuleType("google")
     fake_google.genai = fake_genai
 
@@ -374,3 +388,117 @@ async def test_gemini_adapter_messages_create_matches_anthropic_shape(fake_genai
     # This is the exact shape every agent's _call_model() reads --
     # response.content[0].text -- regardless of provider.
     assert response.content[0].text == "fake gemini response text"
+
+
+# --------------------------------------------------------------------------
+# supports_vision() -- hand-maintained capability table (Phase 0, NEW in v5).
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "provider,expected",
+    [
+        ("anthropic", True),
+        ("bedrock", True),
+        ("vertex", True),
+        ("gemini", True),
+        ("mistral", False),  # unconfirmed -- must default conservatively
+        ("nonsense-provider", False),
+        ("", False),
+    ],
+)
+def test_supports_vision_capability_table(provider, expected):
+    assert llm_client.supports_vision(provider) is expected
+
+
+# --------------------------------------------------------------------------
+# call_multimodal() -- image attachment + graceful fallback (Phase 0, NEW
+# in v5). A tiny real PNG file is written to a temp path so
+# _read_image_as_base64() has real bytes to read.
+# --------------------------------------------------------------------------
+
+_TINY_PNG_BYTES = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108020000009077"
+    "53de0000000c4944415408d763f8cfc0c00000030101002d20e5920000000049454e44ae426082"
+)
+
+
+@pytest.fixture
+def tiny_png(tmp_path):
+    path = tmp_path / "tiny.png"
+    path.write_bytes(_TINY_PNG_BYTES)
+    return str(path)
+
+
+@pytest.mark.asyncio
+async def test_call_multimodal_no_image_path_falls_back_to_text_only(monkeypatch):
+    fake_client = MagicMock()
+    fake_client.messages.create = AsyncMock(return_value=llm_client._AnthropicShapedResponse("text-only reply"))
+    monkeypatch.setattr(llm_client, "get_llm_client", lambda: fake_client)
+
+    result = await llm_client.call_multimodal("a prompt", None, provider="anthropic")
+
+    assert result == "text-only reply"
+    fake_client.messages.create.assert_awaited_once()
+    sent_content = fake_client.messages.create.call_args.kwargs["messages"][0]["content"]
+    assert sent_content == "a prompt"  # plain string, no image block
+
+
+@pytest.mark.asyncio
+async def test_call_multimodal_attaches_image_for_anthropic_family(tiny_png, monkeypatch):
+    fake_client = MagicMock()
+    fake_client.messages.create = AsyncMock(return_value=llm_client._AnthropicShapedResponse("saw the image"))
+    monkeypatch.setattr(llm_client, "get_llm_client", lambda: fake_client)
+
+    result = await llm_client.call_multimodal("describe this scan", tiny_png, provider="anthropic")
+
+    assert result == "saw the image"
+    content = fake_client.messages.create.call_args.kwargs["messages"][0]["content"]
+    assert isinstance(content, list)
+    types_sent = {block["type"] for block in content}
+    assert types_sent == {"image", "text"}
+    image_block = next(b for b in content if b["type"] == "image")
+    assert image_block["source"]["media_type"] == "image/png"
+    assert image_block["source"]["data"]  # non-empty base64 payload
+
+
+@pytest.mark.asyncio
+async def test_call_multimodal_attaches_image_for_gemini(tiny_png, fake_genai_module, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+
+    result = await llm_client.call_multimodal("describe this scan", tiny_png, provider="gemini")
+
+    assert result == "fake gemini response text"
+    call_kwargs = fake_genai_module["client_instance"].aio.models.generate_content.call_args.kwargs
+    parts = call_kwargs["contents"][0]["parts"]
+    assert len(parts) == 2  # image part + text part
+
+
+@pytest.mark.asyncio
+async def test_call_multimodal_falls_back_to_text_for_provider_without_vision(tiny_png, monkeypatch, caplog):
+    fake_client = MagicMock()
+    fake_client.messages.create = AsyncMock(return_value=llm_client._AnthropicShapedResponse("text fallback"))
+    monkeypatch.setattr(llm_client, "get_llm_client", lambda: fake_client)
+
+    with caplog.at_level("WARNING"):
+        result = await llm_client.call_multimodal("describe this scan", tiny_png, provider="mistral")
+
+    assert result == "text fallback"
+    sent_content = fake_client.messages.create.call_args.kwargs["messages"][0]["content"]
+    assert sent_content == "describe this scan"  # image was NOT attached
+    assert any("falling back to a text-only call" in r.message for r in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_call_multimodal_never_raises_for_unsupported_provider_even_with_image(tiny_png, monkeypatch):
+    """Defensive: an unrecognized provider string must still degrade
+    gracefully (text-only), never raise -- see the module docstring's
+    "never raise, never silently drop the image without a log line"
+    contract (the log line is covered by the test above)."""
+    fake_client = MagicMock()
+    fake_client.messages.create = AsyncMock(return_value=llm_client._AnthropicShapedResponse("ok"))
+    monkeypatch.setattr(llm_client, "get_llm_client", lambda: fake_client)
+
+    result = await llm_client.call_multimodal("prompt", tiny_png, provider="some-future-provider")
+
+    assert result == "ok"

@@ -9,6 +9,7 @@ poll GET /diagnose/{case_id} until it's ready) is a natural fast-follow
 once this works, not implemented here.
 """
 
+import asyncio
 import json
 import uuid
 from pathlib import Path
@@ -16,10 +17,12 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import ValidationError
 
-from backend.agents.imaging_agent import ALLOWED_EXTENSIONS
+from backend.agents.clinical_agent import extract_clinical_findings
+from backend.agents.imaging_agent import ALLOWED_EXTENSIONS, analyze_image
 from backend.api.schemas import ReviewRequest, ReviewResponse
-from backend.models.schemas import CaseInput, FinalReport, Patient
-from backend.services import storage
+from backend.models.schemas import CaseInput, ClinicalFindings, FinalReport, Patient
+from backend.rag import case_memory, visual_memory
+from backend.services import orchestrator, storage
 from backend.services.logging import log_event
 from backend.services.orchestrator import run_case
 
@@ -130,7 +133,11 @@ def diagnose(
         raise HTTPException(status_code=500, detail="Internal server error while processing the case") from exc
 
     storage.save_case(case, status="completed")
-    storage.save_report(resolved_case_id, report)
+    # Phase 14: persist the confidence breakdown alongside the report so
+    # weight_tuner.py can later recalibrate w1/w2/w3 from real
+    # accept/override outcomes joined against these exact numbers.
+    breakdown = orchestrator.get_confidence_breakdown(resolved_case_id)
+    storage.save_report(resolved_case_id, report, confidence_breakdown=breakdown)
     return report
 
 
@@ -149,6 +156,57 @@ def get_diagnosis(case_id: str) -> FinalReport:
     return report
 
 
+def _write_case_memory_for_override(case_id: str, review_id: int | None, diagnosis_text: str, reviewer: str) -> None:
+    """Phase 13: on a clinician override, capture the correction as
+    retrievable evidence for future similar cases -- ALWAYS a text
+    case-memory entry, and ADDITIONALLY a visual entry when the case had
+    an image in a supported modality at diagnosis time.
+
+    Clinical/imaging findings aren't persisted from the original
+    /diagnose call, so they're re-derived here from the stored
+    CaseInput -- this only runs on the (comparatively rare) override
+    path, not the hot request path. Every step is wrapped so a failure
+    here degrades to "no case-memory entry written this time", never a
+    500 on the review submission itself, which has already been
+    persisted by the time this runs.
+    """
+    case = storage.get_case(case_id)
+    if case is None:
+        return  # defensive only -- submit_review() already 404s otherwise
+
+    try:
+        clinical = asyncio.run(extract_clinical_findings(case.clinical_text, case.medical_report))
+    except Exception as exc:
+        log_event("api_error", endpoint="/review", case_id=case_id, error=f"case-memory clinical re-extraction failed: {exc}")
+        clinical = ClinicalFindings(demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[])
+
+    imaging = None
+    if case.image_path:
+        try:
+            imaging = asyncio.run(analyze_image(case.image_path))
+        except Exception as exc:
+            log_event("api_error", endpoint="/review", case_id=case_id, error=f"case-memory imaging re-analysis failed: {exc}")
+
+    try:
+        case_memory.add_clinician_verified_case(
+            case_id=case_id, clinical=clinical, imaging=imaging,
+            diagnosis_text=diagnosis_text, reviewer=reviewer, review_id=review_id,
+        )
+    except Exception as exc:
+        log_event("api_error", endpoint="/review", case_id=case_id, error=f"text case-memory write failed: {exc}")
+
+    if case.image_path and imaging is not None and not imaging.unsupported_modality:
+        try:
+            asyncio.run(
+                visual_memory.add_visual_case_memory(
+                    case_id=case_id, image_path=case.image_path, modality=imaging.modality,
+                    diagnosis_text=diagnosis_text, reviewer=reviewer, review_id=review_id,
+                )
+            )
+        except Exception as exc:
+            log_event("api_error", endpoint="/review", case_id=case_id, error=f"visual case-memory write failed: {exc}")
+
+
 @router.post("/review/{case_id}", response_model=ReviewResponse)
 def submit_review(case_id: str, review: ReviewRequest) -> ReviewResponse:
     if storage.get_report(case_id) is None:
@@ -156,11 +214,17 @@ def submit_review(case_id: str, review: ReviewRequest) -> ReviewResponse:
 
     stored = storage.save_review(case_id, review.model_dump())
 
+    if review.decision == "override" and review.annotation and review.annotation.strip():
+        _write_case_memory_for_override(case_id, stored["id"], review.annotation.strip(), review.reviewer)
+
+    storage.close_case(case_id)
+
     return ReviewResponse(
         case_id=stored["case_id"],
         decision=stored["decision"],
         reviewer=stored["reviewer"],
         annotation=stored["annotation"],
+        rating=stored.get("rating"),
         timestamp=stored["timestamp"],
         recorded=True,
     )
@@ -181,6 +245,7 @@ def get_review(case_id: str) -> ReviewResponse:
         decision=review["decision"],
         reviewer=review["reviewer"],
         annotation=review["annotation"],
+        rating=review.get("rating"),
         timestamp=review["timestamp"],
         recorded=True,
     )

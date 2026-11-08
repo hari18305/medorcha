@@ -10,6 +10,9 @@ pymupdf
 httpx
 pytest
 pytest-asyncio
+# Direct dependency as of Phase 14 (backend/services/weight_tuner.py's
+# scipy.optimize.minimize call) -- previously only present transitively.
+scipy
 open_clip_torch
 torch
 pillow
@@ -22,3 +25,10 @@ langfuse
 # actual working provider as of 2026-08 -- confirmed with real,
 # successful end-to-end runs -- not just a documented fallback option.
 google-genai
+
+# datasets: only needed for backend/tests/run_evaluation.py's Phase 17
+# Mode 2 (real MedQA/PubMedQA subset, via Hugging Face). Left optional
+# (like boto3/mistralai above) -- not required for the core pipeline or
+# its test suite, and Mode 2 degrades to a clearly-logged "unavailable"
+# result rather than crashing when this isn't installed.
+# datasets

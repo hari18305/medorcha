@@ -6,16 +6,36 @@ Retrieval (retriever.py) and reranking (reranker.py) are both
 synchronous, CPU/IO-bound calls, so the pipeline runs inside asyncio's
 default executor -- same pattern as imaging_agent.py -- keeping this a
 proper async function without blocking the event loop.
+
+Case memory (Phase 13): run_rag() also folds in clinician-verified text
+precedents (retriever.retrieve_case_memory(), tagged
+"clinician_verified:<reviewer>") and, when the current case has an
+image in a supported modality, visually-similar past-case precedents
+(visual_memory.retrieve_visual_memory(), tagged
+"visual_precedent:<reviewer>") -- both merged into the same returned
+RAGEvidence.evidence list, distinguishable from ordinary KB evidence (and
+from each other) by their tagged `source` string. Neither ever
+participates in the reranker's cross-encoder scoring below (that's only
+for the raw KB candidates) -- they're appended with their own retrieval
+score after reranking, since "similarity to a past clinician
+correction" and "cross-encoder relevance to the KB" aren't the same
+signal and shouldn't be blended.
 """
 
 import asyncio
+import logging
 
 from backend.models.schemas import ClinicalFindings, EvidenceItem, ImagingFindings, RAGEvidence
 from backend.rag.reranker import rerank
-from backend.rag.retriever import retrieve
+from backend.rag.retriever import retrieve, retrieve_case_memory
+from backend.rag.visual_memory import retrieve_visual_memory
+
+logger = logging.getLogger(__name__)
 
 RETRIEVE_TOP_K = 10
 RERANK_TOP_K = 5
+CASE_MEMORY_TOP_K = 3
+VISUAL_MEMORY_TOP_K = 3
 
 # If every reranked result scores below this, the first query is
 # treated as having failed to find relevant evidence and a broadened
@@ -59,6 +79,7 @@ async def run_rag(
     findings: ClinicalFindings,
     imaging: ImagingFindings | None,
     query_override: str | None = None,
+    image_path: str | None = None,
 ) -> RAGEvidence:
     """query_override lets a caller (e.g. optimizer_agent.py, re-running
     retrieval with a Claude-refined query) skip the normal
@@ -66,6 +87,13 @@ async def run_rag(
     the low-score fallback below still applies -- a refined query that
     still scores poorly falls back to just the top symptoms, same as
     the default path.
+
+    image_path (Phase 13, NEW in v5): the case's raw image, if any --
+    used ONLY to query the visual case-memory collection (image
+    similarity, not text similarity). Passing it has no effect on the
+    text query built above. Visual-memory retrieval is skipped entirely
+    (no meaningful query to run) when image_path is None, imaging is
+    None, or imaging.unsupported_modality is True.
     """
     query = query_override or _build_query(findings, imaging)
     if not query:
@@ -84,4 +112,30 @@ async def run_rag(
     evidence = [
         EvidenceItem(text=r["text"], source=r["source"], score=r["score"]) for r in results
     ]
+
+    # Phase 13: clinician-verified text precedents, merged in alongside
+    # the KB results above -- tagged "clinician_verified:<reviewer>" so
+    # they're distinguishable at a glance (see retrieve_case_memory()).
+    try:
+        case_memory_hits = await loop.run_in_executor(None, retrieve_case_memory, query, CASE_MEMORY_TOP_K)
+    except Exception as exc:  # Qdrant down, etc. -- degrade, don't fail the whole RAG step
+        logger.warning("run_rag(): case-memory retrieval failed, skipping: %s", exc)
+        case_memory_hits = []
+    evidence.extend(
+        EvidenceItem(text=hit["text"] or "", source=hit["source"], score=hit["score"]) for hit in case_memory_hits
+    )
+
+    # Phase 13: visually-similar past-case precedents -- only when the
+    # CURRENT case actually has an image in a supported modality; there
+    # is no meaningful visual query to run otherwise.
+    if image_path and imaging is not None and not imaging.unsupported_modality:
+        try:
+            visual_hits = await retrieve_visual_memory(image_path, top_k=VISUAL_MEMORY_TOP_K)
+        except Exception as exc:  # Qdrant down, BiomedCLIP failure, etc.
+            logger.warning("run_rag(): visual-memory retrieval failed, skipping: %s", exc)
+            visual_hits = []
+        evidence.extend(
+            EvidenceItem(text=hit["text"] or "", source=hit["source"], score=hit["score"]) for hit in visual_hits
+        )
+
     return RAGEvidence(evidence=evidence)

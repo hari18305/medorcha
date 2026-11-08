@@ -9,7 +9,9 @@ function under test and asserting it matches itself.
 
 import pytest
 
+import backend.services.storage as storage
 from backend.services.confidence import (
+    DEFAULT_WEIGHTS,
     THRESHOLD,
     W1_RAG,
     W2_WEB,
@@ -18,8 +20,21 @@ from backend.services.confidence import (
     _compute_s_rag,
     _compute_s_web,
     compute_confidence,
+    compute_confidence_breakdown,
+    get_current_weights,
 )
 from backend.models.schemas import EvidenceItem, FusionResult, LiveEvidence, LiveEvidenceSource, RAGEvidence
+
+
+@pytest.fixture(autouse=True)
+def _isolated_weight_history(tmp_path, monkeypatch):
+    """Every test in this module runs against an isolated temp SQLite
+    file, never the real dev database -- compute_confidence() now reads
+    weights via storage.get_current_weight_row(), and this suite's
+    hand-computed expected values all assume DEFAULT_WEIGHTS unless a
+    test explicitly recalibrates."""
+    monkeypatch.setattr(storage, "DB_PATH", str(tmp_path / "test_confidence.db"))
+    storage._init_tables()
 
 
 def _rag(scores: list[float]) -> RAGEvidence:
@@ -150,3 +165,47 @@ def test_compute_confidence_result_bounded_between_zero_and_one():
     fusion = _fusion([])
     result = compute_confidence(rag, live, fusion)
     assert 0.0 <= result <= 1.0
+
+
+# --------------------------------------------------------------------------
+# get_current_weights() / compute_confidence_breakdown() -- Phase 14
+# --------------------------------------------------------------------------
+
+
+def test_get_current_weights_falls_back_to_defaults_when_never_recalibrated():
+    assert get_current_weights() == DEFAULT_WEIGHTS
+
+
+def test_get_current_weights_reads_most_recent_recalibration():
+    storage.save_weight_update(0.5, 0.25, 0.25, num_reviews_used=12)
+
+    assert get_current_weights() == {"w1": 0.5, "w2": 0.25, "w3": 0.25}
+
+
+def test_compute_confidence_breakdown_exposes_all_components():
+    rag = _rag([0.9, 0.7, 0.5])  # S_rag = 0.7
+    live = _live(["high", "moderate"])  # S_web = 0.8
+    fusion = _fusion([])  # A = 1.0
+
+    breakdown = compute_confidence_breakdown(rag, live, fusion)
+
+    assert breakdown["s_rag"] == pytest.approx(0.7)
+    assert breakdown["s_web"] == pytest.approx(0.8)
+    assert breakdown["agreement"] == 1.0
+    assert breakdown["confidence"] == pytest.approx(0.82)
+    assert compute_confidence(rag, live, fusion) == pytest.approx(breakdown["confidence"])
+
+
+def test_compute_confidence_uses_recalibrated_weights():
+    rag = _rag([0.7])  # S_rag = 0.7
+    live = _live([])  # S_web = 0.0
+    fusion = _fusion([])  # A = 1.0
+
+    default_result = compute_confidence(rag, live, fusion)  # 0.4*0.7 + 0.3*1.0 = 0.58
+
+    storage.save_weight_update(0.1, 0.1, 0.8, num_reviews_used=10)
+    recalibrated_result = compute_confidence(rag, live, fusion)  # 0.1*0.7 + 0.8*1.0 = 0.87
+
+    assert default_result == pytest.approx(0.58)
+    assert recalibrated_result == pytest.approx(0.87)
+    assert recalibrated_result != default_result

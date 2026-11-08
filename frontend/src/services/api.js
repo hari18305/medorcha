@@ -73,7 +73,7 @@ export function getDiagnosis(caseId) {
   return safeFetch(`${API_BASE_URL}/diagnose/${encodeURIComponent(caseId)}`);
 }
 
-/** POST /review/{case_id} -- review = { decision, annotation, reviewer } */
+/** POST /review/{case_id} -- review = { decision, annotation, reviewer, rating } -- rating is optional, 1-5 or null. */
 export function submitReview(caseId, review) {
   return safeFetch(`${API_BASE_URL}/review/${encodeURIComponent(caseId)}`, {
     method: "POST",

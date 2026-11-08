@@ -190,6 +190,7 @@ def test_review_accept(mock_run_case):
         "decision": "accept",
         "reviewer": "Dr. Smith",
         "annotation": None,
+        "rating": None,
         "recorded": True,
     }
 

@@ -18,8 +18,16 @@ class ReviewRequest(BaseModel):
     # structured field for it -- the frontend puts whatever diagnosis
     # the reviewer picked/typed in here, e.g. "Override diagnosis:
     # Migraine with aura"), which is why both require it non-empty.
+    # Phase 13: on "override", this exact string is what gets embedded
+    # as the case-memory diagnosis text (both text and, for image
+    # cases, visual).
     annotation: str | None = None
     reviewer: str
+    # Optional 1-5 clinician confidence-in-the-review rating (Phase 11).
+    # Persisted but NOT consumed by Phase 14's recalibration (see
+    # weight_tuner.py's collect_review_outcomes()) -- only the
+    # accept/override decision itself feeds that.
+    rating: int | None = None
 
     @model_validator(mode="after")
     def _annotation_required_for_annotate_or_override(self) -> "ReviewRequest":
@@ -30,11 +38,18 @@ class ReviewRequest(BaseModel):
             )
         return self
 
+    @model_validator(mode="after")
+    def _rating_bounds(self) -> "ReviewRequest":
+        if self.rating is not None and not (1 <= self.rating <= 5):
+            raise ValueError("'rating' must be between 1 and 5")
+        return self
+
 
 class ReviewResponse(BaseModel):
     case_id: str
     decision: str
     reviewer: str
     annotation: str | None
+    rating: int | None = None
     timestamp: str
     recorded: bool

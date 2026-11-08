@@ -22,24 +22,46 @@ backend/services/confidence.py is responsible for blending this with
 other signals (e.g. imaging confidence, evidence quality/quantity) via
 a weighted formula (w1/w2/w3). Nothing here should be read as a final
 answer.
+
+Joint multimodal fusion (NEW in v5): when a case has an image in a
+supported modality, this agent's LLM call receives the actual image
+bytes alongside the structured findings/evidence -- not just
+BiomedCLIP's text-label summary of it. See _should_attach_image() for
+the exact gating logic and call_multimodal() in llm_client.py for how
+the image is actually attached per provider. When the raw image can't
+be attached (no provider vision support, no image_path, imaging is
+None, or the modality is unsupported), fusion falls back to the
+original text-only reasoning path -- degrading gracefully, never
+raising, and always logging which path was taken and why so a report
+reviewer can tell the two "no image" cases apart (missing vs.
+unsupported-by-provider).
 """
 
 import json
 import logging
+import os
 import re
 
 from anthropic import AsyncAnthropic
 from pydantic import ValidationError
 
 from backend.models.schemas import ClinicalFindings, FusionResult, ImagingFindings, LiveEvidence, RAGEvidence
-from backend.services.llm_client import get_llm_client, get_model_name
+from backend.services.llm_client import call_multimodal, get_llm_client, get_model_name, supports_vision
 
 logger = logging.getLogger(__name__)
 
 MODEL = get_model_name()
 MAX_TOKENS = 2048
 
-SYSTEM_PROMPT = """You are a clinical evidence-fusion reasoning system. You are given \
+_PRECEDENT_FRAMING = (
+    "Evidence tagged with a source starting with 'clinician_verified' or "
+    "'visual_precedent' is a precedent from a similar past case a human "
+    "clinician actually reviewed and corrected -- weight it accordingly, "
+    "but do not treat it as infallible; it is one more input, not a "
+    "ground truth override of your own reasoning."
+)
+
+SYSTEM_PROMPT = f"""You are a clinical evidence-fusion reasoning system. You are given \
 structured clinical findings, optional imaging findings, offline \
 knowledge-base evidence, and live evidence (from PubMed/guideline \
 sources), and must synthesize them into a ranked differential \
@@ -59,6 +81,8 @@ that diagnosis must be an empty list -- reason from clinical/imaging \
 findings alone in that case, and reflect the lack of evidence backing \
 with a lower confidence score rather than fabricating support.
 
+{_PRECEDENT_FRAMING}
+
 Explicitly compare the different evidence sources against each other. \
 Whenever imaging findings, offline evidence, and live evidence point in \
 different directions (e.g. imaging suggests X but live evidence \
@@ -69,20 +93,42 @@ enough evidence to compare, conflicts should be an empty list.
 Return ONLY a single JSON object -- no prose, no markdown code fences, \
 no explanation -- matching exactly this shape:
 
-{
+{{
   "diagnoses": [
-    {"name": "<diagnosis name>", "confidence": <number 0-1>, "supporting_evidence": ["[RAG1] ...", "[LIVE2] ..."], "rank": 1},
+    {{"name": "<diagnosis name>", "confidence": <number 0-1>, "supporting_evidence": ["[RAG1] ...", "[LIVE2] ..."], "rank": 1}},
     ...
   ],
   "overall_confidence": <number 0-1>,
   "conflicts": ["<short description of a disagreement between sources>", ...]
-}
+}}
 
 Rank diagnoses from most to least likely (rank 1 = most likely). \
 "overall_confidence" is your own raw confidence in this differential \
 given the available evidence -- a separate downstream step combines it \
 with other signals into a final score, so just be honest about how \
 much the available evidence actually supports your reasoning."""
+
+# Used only for the joint image+text call (_should_attach_image() ==
+# True): same contract as SYSTEM_PROMPT above, plus explicit framing
+# that the model's own direct read of the attached image is the primary
+# signal and BiomedCLIP's candidate-label output is a secondary
+# sanity-check -- not the other way around -- and that a disagreement
+# between the two is itself a new, real conflict type worth flagging.
+IMAGE_SYSTEM_PROMPT = f"""{SYSTEM_PROMPT}
+
+You have ALSO been given the actual medical image itself, attached to \
+this message, alongside a fast pre-filter's candidate label(s) for it \
+(BiomedCLIP, a zero-shot classifier bounded to a small fixed label set). \
+Look at the image directly and form your own read of it -- that direct \
+visual read is the PRIMARY signal. Use the pre-filter's candidate \
+label(s) only as a secondary sanity-check: confirm, refine, or override \
+them based on what you actually see in the image. If your own read of \
+the image meaningfully disagrees with the pre-filter's label(s) -- e.g. \
+you see a different finding, or no finding where one was suggested -- \
+add a short, human-readable description of that specific disagreement \
+to the "conflicts" list (this is a genuinely new conflict type: a \
+disagreement between the pre-filter and your own direct visual read, \
+not just a disagreement between text evidence sources)."""
 
 CORRECTION_MESSAGE = (
     "That response was not valid JSON matching the required schema, or "
@@ -93,7 +139,7 @@ CORRECTION_MESSAGE = (
     "actually given to you."
 )
 
-_TAG_RE = re.compile(r"^\[(RAG\d+|LIVE\d+)\]")
+_TAG_RE = re.compile(r"^\[(RAG\d+|LIVE\d+|MEM\d+|VIS\d+)\]")
 
 
 class FusionError(RuntimeError):
@@ -172,6 +218,25 @@ def _format_live_evidence(live: LiveEvidence) -> tuple[str, set[str]]:
         )
     block = "\n".join(lines) if lines else "(no live evidence retrieved)"
     return block, ids
+
+
+def _format_precedent_evidence(evidence: RAGEvidence | None, tag: str) -> tuple[str, set[str]]:
+    """Formats an extension-seam precedent block (Phase 5's `case_memory`
+    / `visual_precedent` params) with its own bracketed ID namespace
+    (e.g. [MEM1], [VIS1]) and explicit "this is a past-case precedent,
+    not infallible" framing -- kept visibly distinct from the static
+    offline-KB/live-evidence sections. Returns ("", set()) when `evidence`
+    is None or empty so an unused seam adds nothing to the prompt.
+    """
+    if evidence is None or not evidence.evidence:
+        return "", set()
+    ids: set[str] = set()
+    lines = []
+    for i, item in enumerate(evidence.evidence, start=1):
+        eid = f"{tag}{i}"
+        ids.add(eid)
+        lines.append(f"[{eid}] (source: {item.source}, score: {item.score:.2f}) {item.text}")
+    return "\n".join(lines), ids
 
 
 def _is_completely_empty(
@@ -273,14 +338,35 @@ def _parse_response(text: str, valid_ids: set[str]) -> FusionResult:
     )
 
 
-async def _call_model(client: AsyncAnthropic, messages: list[dict]) -> str:
+async def _call_model(client: AsyncAnthropic, messages: list[dict], system: str = SYSTEM_PROMPT) -> str:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
+        system=system,
         messages=messages,
     )
     return response.content[0].text
+
+
+def _should_attach_image(
+    imaging: ImagingFindings | None, image_path: str | None, provider: str
+) -> tuple[bool, str]:
+    """Phase 5's gating logic for the joint image+text call, plus a
+    human-readable reason -- logged either way so a report reviewer can
+    tell "no image was ever provided" apart from "an image existed but
+    the provider can't use it" apart from "the modality isn't one this
+    prototype classifies," all of which land on the same text-only
+    fallback but for different, worth-distinguishing reasons.
+    """
+    if image_path is None:
+        return False, "no image_path was provided for this case"
+    if imaging is None:
+        return False, "an image_path was given but imaging findings are unavailable (degrading to text-only)"
+    if imaging.unsupported_modality:
+        return False, f"modality {imaging.modality!r} has no findings model -- imaging is treated as not provided"
+    if not supports_vision(provider):
+        return False, f"LLM_PROVIDER={provider!r} has no confirmed vision support"
+    return True, f"attaching raw image ({imaging.modality}) alongside text for provider {provider!r}"
 
 
 async def fuse(
@@ -288,13 +374,18 @@ async def fuse(
     imaging: ImagingFindings | None,
     rag: RAGEvidence,
     live: LiveEvidence,
+    image_path: str | None = None,
+    case_memory: RAGEvidence | None = None,
+    visual_precedent: RAGEvidence | None = None,
 ) -> FusionResult:
     if _is_completely_empty(clinical, imaging, rag, live):
         return FusionResult(diagnoses=[], overall_confidence=0.0, conflicts=[])
 
     rag_block, rag_ids = _format_rag_evidence(rag)
     live_block, live_ids = _format_live_evidence(live)
-    valid_ids = rag_ids | live_ids
+    mem_block, mem_ids = _format_precedent_evidence(case_memory, "MEM")
+    vis_block, vis_ids = _format_precedent_evidence(visual_precedent, "VIS")
+    valid_ids = rag_ids | live_ids | mem_ids | vis_ids
 
     user_message = (
         f"Clinical findings:\n{_format_clinical(clinical)}\n\n"
@@ -302,6 +393,42 @@ async def fuse(
         f"Offline knowledge-base evidence:\n{rag_block}\n\n"
         f"Live evidence:\n{live_block}"
     )
+    if mem_block:
+        user_message += (
+            "\n\nClinician-verified text precedent (from a similar past case's "
+            f"symptoms/history):\n{mem_block}"
+        )
+    if vis_block:
+        user_message += (
+            "\n\nVisually-similar past-case precedent (from a similar-looking past "
+            f"image):\n{vis_block}"
+        )
+
+    provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+    attach_image, reason = _should_attach_image(imaging, image_path, provider)
+    logger.info("fuse(): %s (%s)", "multimodal path" if attach_image else "text-only path", reason)
+
+    if attach_image:
+        raw_response = await call_multimodal(
+            user_message, image_path, provider=provider, role="deep", system=IMAGE_SYSTEM_PROMPT
+        )
+        try:
+            return _parse_response(raw_response, valid_ids)
+        except (json.JSONDecodeError, ValueError, ValidationError) as first_error:
+            logger.warning("fuse(): invalid multimodal response, retrying once: %s", first_error)
+            retry_prompt = (
+                f"{user_message}\n\n[Your previous response was invalid]\n{raw_response}\n\n"
+                f"{CORRECTION_MESSAGE}"
+            )
+            retry_response = await call_multimodal(
+                retry_prompt, image_path, provider=provider, role="deep", system=IMAGE_SYSTEM_PROMPT
+            )
+            try:
+                return _parse_response(retry_response, valid_ids)
+            except (json.JSONDecodeError, ValueError, ValidationError) as second_error:
+                raise FusionError(
+                    f"Failed to produce a valid FusionResult JSON after retry: {second_error}"
+                ) from second_error
 
     client = _get_client()
     messages = [{"role": "user", "content": user_message}]

@@ -96,7 +96,7 @@ def mock_agents(monkeypatch):
     for name, mock in mocks.items():
         monkeypatch.setattr(orchestrator, name, mock)
 
-    # compute_confidence() is real math tested separately in
+    # compute_confidence_breakdown() is real math tested separately in
     # test_confidence.py -- here we want direct control over the
     # confidence value to deterministically exercise the optimizer
     # branch, not whatever the formula derives from the mocked
@@ -105,10 +105,10 @@ def mock_agents(monkeypatch):
     # default; individual tests override this to go below THRESHOLD.
     confidence_holder = {"value": 0.8}
 
-    def _fake_compute_confidence(rag, live, fusion):
-        return confidence_holder["value"]
+    def _fake_compute_confidence_breakdown(rag, live, fusion):
+        return {"s_rag": 0.0, "s_web": 0.0, "agreement": 0.0, "confidence": confidence_holder["value"]}
 
-    monkeypatch.setattr(orchestrator, "compute_confidence", _fake_compute_confidence)
+    monkeypatch.setattr(orchestrator, "compute_confidence_breakdown", _fake_compute_confidence_breakdown)
     mocks["confidence_holder"] = confidence_holder
     return mocks
 

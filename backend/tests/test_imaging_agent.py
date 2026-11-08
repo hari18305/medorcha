@@ -22,12 +22,14 @@ from backend.agents.imaging_agent import (
 from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS
 
 BRAIN_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["MRI brain scan"]
+CT_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["CT scan"]
 CHEST_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["chest X-ray"]
 ALL_FINDING_LABELS = [label for labels in FINDING_LABELS_BY_MODALITY.values() for label in labels]
 from backend.models.schemas import ImagingFindings
 
 DEMO_IMAGE_1 = Path("data/images/synthetic_demo_brain_mri_001.png")
 DEMO_IMAGE_2 = Path("data/images/synthetic_demo_brain_mri_002.jpg")
+DEMO_IMAGE_CT = Path("data/images/synthetic_demo_ct_scan_001.png")
 
 
 class _RecordingTokenizer:
@@ -124,11 +126,14 @@ async def test_no_hint_classifies_modality_then_findings(dominant_finding_bundle
 
 
 async def test_hint_to_unsupported_modality_skips_findings_classification(dominant_finding_bundle):
-    # "CT scan" has no findings model configured -- must not be classified
-    # against some other modality's (e.g. brain) labels.
-    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="CT scan")
+    # "unspecified medical image" has no findings model configured --
+    # must not be classified against some other modality's (e.g. brain)
+    # labels. (MRI, CT, and chest X-ray are all genuinely supported --
+    # see FINDING_LABELS_BY_MODALITY -- this is the one deliberate
+    # catch-all bucket left unsupported.)
+    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="unspecified medical image")
 
-    assert result.modality == "CT scan"
+    assert result.modality == "unspecified medical image"
     assert result.unsupported_modality is True
     assert result.confidence == 0.0
     assert len(result.findings) == 1
@@ -173,6 +178,45 @@ async def test_chest_xray_modality_gets_chest_findings(monkeypatch):
     assert result.unsupported_modality is False
     assert result.findings == ["pulmonary nodule or mass"]
     assert model.encode_text_calls == [MODALITY_LABELS, CHEST_FINDING_LABELS]
+
+
+async def test_ct_scan_modality_gets_ct_findings(monkeypatch):
+    image_embedding = torch.tensor([[1.0, 0.0]])
+    text_embeddings = _uniform_text_embeddings(torch.tensor([0.0, 1.0]))
+    text_embeddings["CT scan"] = torch.tensor([1.0, 0.0])
+    text_embeddings["hypodense lesion"] = torch.tensor([1.0, 0.0])
+
+    model, preprocess, tokenizer = _make_bundle(image_embedding, text_embeddings)
+    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: (model, preprocess, tokenizer))
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.modality == "CT scan"
+    assert result.unsupported_modality is False
+    assert result.findings == ["hypodense lesion"]
+    assert model.encode_text_calls == [MODALITY_LABELS, CT_FINDING_LABELS]
+
+
+async def test_ct_scan_modality_hint_skips_modality_classification(dominant_finding_bundle):
+    # CT scan is a supported (has a findings model) modality, so finding
+    # classification still runs -- just against CT labels, since the
+    # hint bypasses the (irrelevant here) modality classifier.
+    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="CT scan")
+
+    assert result.modality == "CT scan"
+    assert result.unsupported_modality is False
+    assert dominant_finding_bundle.encode_text_calls == [CT_FINDING_LABELS]
+
+
+async def test_valid_ct_demo_image_decodes_and_returns_valid_schema(dominant_finding_bundle):
+    # Uses the real synthetic CT demo image file (not just a mocked
+    # embedding) to confirm it's a genuinely decodable, supported image.
+    result = await analyze_image(str(DEMO_IMAGE_CT), modality_hint="CT scan")
+
+    assert isinstance(result, ImagingFindings)
+    assert result.modality == "CT scan"
+    assert result.unsupported_modality is False
+    assert result.findings  # never empty
 
 
 async def test_missing_file_raises_typed_error(monkeypatch):

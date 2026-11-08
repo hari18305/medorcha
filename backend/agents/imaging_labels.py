@@ -34,8 +34,10 @@ MODALITY_LABELS = [
 # brain-related RAG evidence) for a chest X-ray before this modality
 # had its own labels -- confirmed against a real uploaded chest X-ray.
 #
-# "CT scan" and "unspecified medical image" are deliberately absent:
-# this prototype has no findings model for either yet.
+# "unspecified medical image" is deliberately absent: this prototype
+# has no findings model for it. Extend by adding a new key + a
+# genuinely-relevant label list for that modality, never by reusing
+# another modality's labels.
 FINDING_LABELS_BY_MODALITY: dict[str, list[str]] = {
     "MRI brain scan": [
         "normal brain MRI, no acute findings",
@@ -50,6 +52,18 @@ FINDING_LABELS_BY_MODALITY: dict[str, list[str]] = {
         "cerebral atrophy",
         "edema",
         "vascular malformation",
+        "no significant abnormality",
+    ],
+    "CT scan": [
+        "normal head CT, no acute findings",
+        "hypodense lesion",
+        "mass lesion",
+        "midline shift",
+        "ventricular enlargement",
+        "acute infarct",
+        "hemorrhage",
+        "sinus abnormality",
+        "calcification",
         "no significant abnormality",
     ],
     "chest X-ray": [

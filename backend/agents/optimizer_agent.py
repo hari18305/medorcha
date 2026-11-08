@@ -37,7 +37,7 @@ from backend.models.schemas import (
     LiveEvidence,
     RAGEvidence,
 )
-from backend.services.confidence import THRESHOLD, compute_confidence
+from backend.services.confidence import THRESHOLD, compute_confidence, compute_confidence_breakdown
 from backend.services.llm_client import get_llm_client, get_model_name
 
 logger = logging.getLogger(__name__)
@@ -220,6 +220,7 @@ async def optimize(
     imaging: ImagingFindings | None,
     initial_fusion: FusionResult,
     initial_confidence: float,
+    initial_breakdown: dict | None = None,
 ) -> dict:
     # Step 1: stop immediately if Phase 5's fusion already cleared the
     # bar -- this must hold regardless of what the caller already
@@ -228,6 +229,7 @@ async def optimize(
         return {
             "final_fusion": initial_fusion,
             "final_confidence": initial_confidence,
+            "final_breakdown": initial_breakdown,
             "iterations": 0,
             "review_required": False,
             "iteration_log": [],
@@ -236,6 +238,10 @@ async def optimize(
     iteration_log: list[dict] = []
     best_fusion = initial_fusion
     best_confidence = initial_confidence
+    # Phase 14 needs the full breakdown (s_rag/s_web/agreement), not
+    # just the final float, persisted alongside the report -- tracked
+    # here the same way best_fusion/best_confidence already are.
+    best_breakdown = initial_breakdown
 
     current_query = _build_base_query(clinical, imaging)
     current_fusion = initial_fusion
@@ -254,10 +260,20 @@ async def optimize(
             strategy = refinement["strategy"]
             refined_query = refinement["query"]
 
-            new_rag = await run_rag(clinical, imaging, query_override=refined_query)
+            new_rag = await run_rag(
+                clinical, imaging, query_override=refined_query, image_path=case.image_path
+            )
             new_live = await gather_live_evidence(refined_query)
-            new_fusion = await fuse(clinical, imaging, new_rag, new_live)
+            # image_path passed through unchanged across iterations -- the
+            # image itself doesn't change, only the text query does (see
+            # module docstring / Phase 7 spec).
+            new_fusion = await fuse(clinical, imaging, new_rag, new_live, image_path=case.image_path)
             new_confidence = compute_confidence(new_rag, new_live, new_fusion)
+            # Real, unmocked call even in tests that monkeypatch
+            # compute_confidence -- this is extra bookkeeping for Phase
+            # 14's persistence, not part of the threshold-check logic
+            # under test above, which stays exactly as before.
+            new_breakdown = compute_confidence_breakdown(new_rag, new_live, new_fusion)
 
             iteration_log.append(
                 {"iteration": i, "strategy": strategy, "query": refined_query, "confidence": new_confidence}
@@ -271,11 +287,13 @@ async def optimize(
             if new_confidence > best_confidence:
                 best_confidence = new_confidence
                 best_fusion = new_fusion
+                best_breakdown = new_breakdown
 
             if new_confidence >= THRESHOLD:
                 return {
                     "final_fusion": new_fusion,
                     "final_confidence": new_confidence,
+                    "final_breakdown": new_breakdown,
                     "iterations": i,
                     "review_required": False,
                     "iteration_log": iteration_log,
@@ -300,6 +318,7 @@ async def optimize(
     return {
         "final_fusion": best_fusion,
         "final_confidence": best_confidence,
+        "final_breakdown": best_breakdown,
         "iterations": iterations_run,
         "review_required": True,
         "iteration_log": iteration_log,

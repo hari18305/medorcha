@@ -163,6 +163,24 @@ def _install_optimizer_llm_mock(monkeypatch, response_texts):
     return client
 
 
+def _install_multimodal_fusion_mock(monkeypatch, response_texts):
+    """For an image case in a SUPPORTED modality with the (pytest.ini-pinned)
+    "anthropic" provider, fusion_agent.fuse() now takes the joint
+    image+text path (Phase 5 rework) -- call_multimodal(), not
+    _get_client(), is what actually gets called. Mocks call_multimodal
+    directly and returns the mock so a test can inspect the prompt it
+    was invoked with, same role _install_fusion_mock's client plays for
+    the text-only path.
+    """
+    mock = AsyncMock()
+    if isinstance(response_texts, list):
+        mock.side_effect = response_texts
+    else:
+        mock.return_value = response_texts
+    monkeypatch.setattr(fusion_agent, "call_multimodal", mock)
+    return mock
+
+
 def _forbid_optimizer(monkeypatch):
     """Canary: makes the test fail loudly (AssertionError) if the
     optimizer's strategy-selection Claude client is ever constructed --
@@ -406,7 +424,10 @@ def test_image_only_full_pipeline_produces_report(monkeypatch):
         monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP
     )
     _install_evidence_mocks(monkeypatch)
-    fuse_client = _install_fusion_mock(
+    # A supported-modality image + the (pytest.ini-pinned) "anthropic"
+    # provider means fuse() takes the joint image+text path (Phase 5
+    # rework) -- mock call_multimodal, not the text-only _get_client().
+    fuse_mock = _install_multimodal_fusion_mock(
         monkeypatch,
         _fusion_response(
             [{"name": "Chronic small vessel disease", "confidence": 0.6, "supporting_evidence": [], "rank": 1}], 0.6
@@ -419,11 +440,13 @@ def test_image_only_full_pipeline_produces_report(monkeypatch):
     assert report.case_id == "INTEG-IMAGE-ONLY"
     assert len(report.diagnoses) == 1
 
-    # confirm imaging genuinely ran and its findings reached fusion's prompt
-    _, kwargs = fuse_client.messages.create.call_args
-    sent_content = kwargs["messages"][0]["content"]
-    assert "MRI brain scan" in sent_content
-    assert "white matter hyperintensity" in sent_content
+    # confirm imaging genuinely ran, its findings reached fusion's
+    # prompt, AND the real image was attached (image_path positional arg)
+    fuse_mock.assert_awaited_once()
+    sent_prompt = fuse_mock.call_args.args[0]
+    assert fuse_mock.call_args.args[1] == DEMO_IMAGE_PATH
+    assert "MRI brain scan" in sent_prompt
+    assert "white matter hyperintensity" in sent_prompt
 
 
 def test_image_only_clinical_findings_are_empty_no_claude_call(monkeypatch):
@@ -454,10 +477,13 @@ def test_text_and_image_fused_report_reflects_both(monkeypatch):
     _install_imaging_mocks(monkeypatch, modality="MRI brain scan", finding="white matter hyperintensity")
     _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
     _install_evidence_mocks(monkeypatch)
-    fake_fusion_client = _fake_anthropic_client(
-        _fusion_response([{"name": "Hypertensive small vessel disease", "confidence": 0.65, "supporting_evidence": [], "rank": 1}], 0.65)
+    # A supported-modality image + the (pytest.ini-pinned) "anthropic"
+    # provider means fuse() takes the joint image+text path (Phase 5
+    # rework) -- mock call_multimodal, not the text-only _get_client().
+    fuse_mock = _install_multimodal_fusion_mock(
+        monkeypatch,
+        _fusion_response([{"name": "Hypertensive small vessel disease", "confidence": 0.65, "supporting_evidence": [], "rank": 1}], 0.65),
     )
-    monkeypatch.setattr(fusion_agent, "_get_client", lambda: fake_fusion_client)
 
     case = CaseInput(
         case_id="INTEG-TEXT-AND-IMAGE",
@@ -472,12 +498,14 @@ def test_text_and_image_fused_report_reflects_both(monkeypatch):
 
     # the fused prompt sent to Claude must contain BOTH the clinical
     # symptoms and the imaging findings -- proves fusion_agent's real
-    # _format_clinical()/_format_imaging() ran on real (non-None) inputs.
-    _, kwargs = fake_fusion_client.messages.create.call_args
-    sent_content = kwargs["messages"][0]["content"]
-    assert "headache" in sent_content
-    assert "MRI brain scan" in sent_content
-    assert "white matter hyperintensity" in sent_content
+    # _format_clinical()/_format_imaging() ran on real (non-None) inputs
+    # -- AND the real image was attached (image_path positional arg).
+    fuse_mock.assert_awaited_once()
+    sent_prompt = fuse_mock.call_args.args[0]
+    assert fuse_mock.call_args.args[1] == DEMO_IMAGE_PATH
+    assert "headache" in sent_prompt
+    assert "MRI brain scan" in sent_prompt
+    assert "white matter hyperintensity" in sent_prompt
 
 
 # --------------------------------------------------------------------------

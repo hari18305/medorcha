@@ -67,9 +67,31 @@ messages=...)` / `response.content[0].text`) stay completely unchanged
 regardless of which of the five providers is active.
 """
 
+import logging
 import os
 import threading
 import time
+
+from dotenv import load_dotenv
+
+# Loaded here, not left to whichever module happens to import
+# python-dotenv first: every agent module computes MODEL = get_model_name()
+# at ITS OWN import time (see e.g. clinical_agent.py), and
+# clinical_agent.py is typically the very first backend module imported
+# (backend.main -> backend.api.routes -> backend.agents.clinical_agent).
+# If .env hasn't been loaded yet at that point, LLM_PROVIDER reads as
+# unset, defaults to "anthropic", and that WRONG model id ("claude-
+# sonnet-5") gets baked into that module's MODEL constant permanently --
+# even though a later import (e.g. backend/rag/ingest.py, also calling
+# load_dotenv()) would have loaded the real value in time for anyone
+# imported after it. Confirmed live: a real /diagnose call with
+# LLM_PROVIDER=gemini in .env failed with "models/claude-sonnet-5 is
+# not found" from Gemini's own API, purely because clinical_agent.py's
+# MODEL was resolved before .env was loaded, while fusion_agent.py's
+# (imported later, after something else had already loaded .env)
+# resolved correctly. This call makes get_model_name()/get_llm_client()
+# correct regardless of what already-imported before this module.
+load_dotenv()
 
 _client = None  # cached at module level; provider doesn't change mid-process
 
@@ -343,3 +365,176 @@ async def _mistral_complete(*, model: str, max_tokens: int, system: str, message
     full_messages = [{"role": "system", "content": system}, *messages]
     response = await client.chat.complete_async(model=model, messages=full_messages, max_tokens=max_tokens)
     return response.choices[0].message.content
+
+
+# --------------------------------------------------------------------------
+# Vision capability table + multimodal call wrapper (Phase 0, NEW in v5).
+#
+# supports_vision() is a small, explicit, hand-maintained table -- NOT a
+# runtime probe -- because a wrong "yes" here silently breaks Phase 5's
+# joint image+text fusion call (it would try to attach an image to a
+# provider/model that rejects or ignores it), whereas a wrong "no" only
+# costs a graceful, logged text-only fallback. Default new/uncertain
+# providers to False for that reason.
+#
+# Confirmed as of 2026-08: Anthropic's Claude models (direct API,
+# Bedrock, and Vertex all serve the same underlying Claude models) and
+# Google's Gemini models both accept image content alongside text in a
+# single chat/completion call. Mistral's vision support is model- and
+# SDK-version-dependent and was NOT verified live in this project --
+# documented here as unconfirmed, defaulted to False accordingly.
+# --------------------------------------------------------------------------
+
+_VISION_CAPABLE_PROVIDERS = {"anthropic", "bedrock", "vertex", "gemini"}
+
+# MIME types this wrapper knows how to attach as an image content
+# block/part. Matches imaging_agent.py's ALLOWED_EXTENSIONS minus the
+# DICOM entries -- DICOM isn't a real image MIME type a vision-capable
+# chat API would understand, so it's deliberately not mapped here.
+_IMAGE_MIME_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
+
+DEFAULT_MULTIMODAL_SYSTEM_PROMPT = (
+    "You are a clinical multimodal reasoning assistant, given a medical "
+    "image alongside clinical context. This is decision support only, "
+    "presented to a clinician for review -- never an autonomous diagnosis."
+)
+
+
+def supports_vision(provider: str) -> bool:
+    """Whether `provider`'s "deep"-role model accepts image input
+    alongside text in one call. A hand-maintained capability table, not
+    a runtime probe -- see module comment above for why."""
+    return (provider or "").lower() in _VISION_CAPABLE_PROVIDERS
+
+
+def _read_image_as_base64(image_path: str) -> tuple[str, str]:
+    """Returns (media_type, base64_data) for an image file, raising a
+    clear error for an unrecognized extension rather than guessing."""
+    import base64
+    from pathlib import Path
+
+    suffix = Path(image_path).suffix.lower()
+    media_type = _IMAGE_MIME_TYPES.get(suffix)
+    if media_type is None:
+        raise ValueError(
+            f"call_multimodal cannot attach image_path with extension {suffix!r}; "
+            f"supported: {sorted(_IMAGE_MIME_TYPES)}"
+        )
+    data = base64.standard_b64encode(Path(image_path).read_bytes()).decode("ascii")
+    return media_type, data
+
+
+async def _call_text_only(prompt: str, model: str, system: str) -> str:
+    """Routes through the normal get_llm_client() adapter -- works
+    uniformly across all five providers since it's plain-string content."""
+    client = get_llm_client()
+    response = await client.messages.create(
+        model=model,
+        max_tokens=2048,
+        system=system,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text
+
+
+async def _call_anthropic_family_multimodal(prompt: str, image_path: str, model: str, system: str) -> str:
+    """Anthropic direct/Bedrock/Vertex all speak the same message shape:
+    a `content` list of blocks, one image block (base64) + one text
+    block. get_llm_client() already returns the right SDK client for
+    whichever of the three is active."""
+    media_type, data = _read_image_as_base64(image_path)
+    client = get_llm_client()
+    content = [
+        {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": data}},
+        {"type": "text", "text": prompt},
+    ]
+    response = await client.messages.create(
+        model=model,
+        max_tokens=2048,
+        system=system,
+        messages=[{"role": "user", "content": content}],
+    )
+    return response.content[0].text
+
+
+async def _call_gemini_multimodal(prompt: str, image_path: str, model: str, system: str) -> str:
+    """Bypasses the plain-string-only _AdapterClient shim (see module
+    docstring) -- Gemini attaches an image as an inline `Part`, which
+    that shim's messages.create() has no way to express."""
+    from google import genai
+    from google.genai import types
+
+    throttle_llm_call_sync()
+
+    media_type, _ = _read_image_as_base64(image_path)
+    import pathlib
+
+    image_bytes = pathlib.Path(image_path).read_bytes()
+
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    image_part = types.Part.from_bytes(data=image_bytes, mime_type=media_type)
+    text_part = types.Part.from_text(text=prompt)
+    contents = [{"role": "user", "parts": [image_part, text_part]}]
+    response = await client.aio.models.generate_content(
+        model=model,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system,
+            max_output_tokens=2048 + THINKING_TOKEN_PADDING,
+        ),
+    )
+    return response.text
+
+
+async def call_multimodal(
+    prompt: str,
+    image_path: str | None,
+    provider: str | None = None,
+    role: str = "deep",
+    system: str | None = None,
+) -> str:
+    """Attaches `image_path`'s raw bytes to a chat/completion call when
+    the active provider supports it; otherwise (or when image_path is
+    None) falls back to a text-only call using `prompt` alone.
+
+    NEVER raises for a missing-vision-support provider -- that's the
+    documented fallback, not an error. `role` selects which model this
+    call should use (get_model_name() is currently provider-aware only,
+    not yet role-aware -- kept as a parameter here so callers already
+    express intent, and so a future fast/deep model split is a one-line
+    change in get_model_name(), not a call-site rewrite).
+    """
+    resolved_provider = (provider or os.getenv("LLM_PROVIDER", "anthropic")).lower()
+    resolved_system = system or DEFAULT_MULTIMODAL_SYSTEM_PROMPT
+    model = get_model_name()
+
+    if image_path and not supports_vision(resolved_provider):
+        logging.getLogger(__name__).warning(
+            "call_multimodal: image_path=%s given but provider=%r has no confirmed "
+            "vision support -- falling back to a text-only call.",
+            image_path,
+            resolved_provider,
+        )
+        image_path = None
+
+    if not image_path:
+        return await _call_text_only(prompt, model, resolved_system)
+
+    if resolved_provider in ("anthropic", "bedrock", "vertex"):
+        return await _call_anthropic_family_multimodal(prompt, image_path, model, resolved_system)
+    if resolved_provider == "gemini":
+        return await _call_gemini_multimodal(prompt, image_path, model, resolved_system)
+
+    # Shouldn't be reachable (mistral isn't in _VISION_CAPABLE_PROVIDERS,
+    # so it's already been routed to the text-only fallback above), but
+    # never raise on an unexpected provider value either.
+    logging.getLogger(__name__).warning(
+        "call_multimodal: no multimodal call path implemented for provider=%r -- "
+        "falling back to a text-only call.",
+        resolved_provider,
+    )
+    return await _call_text_only(prompt, model, resolved_system)

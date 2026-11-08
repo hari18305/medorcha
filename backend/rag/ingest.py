@@ -709,16 +709,39 @@ def chunk_document(doc: dict, chunk_size_tokens: int = CHUNK_SIZE_TOKENS) -> lis
     return chunks
 
 
+_shared_client: QdrantClient | None = None
+
+
 def get_qdrant_client() -> QdrantClient:
     """Build a Qdrant client from QDRANT_URL / QDRANT_API_KEY, with a
-    local on-disk fallback when no URL is configured (see module docstring)."""
+    local on-disk fallback when no URL is configured (see module docstring).
+
+    Cached as a single shared instance at module level and reused by
+    EVERY caller across this process -- retriever.py
+    (medorchestrate_kb + medorchestrate_case_memory), case_memory.py,
+    visual_memory.py (medorchestrate_visual_memory), and this module's
+    own ingest(). This is required, not just an efficiency nicety: the
+    embedded local Qdrant fallback takes an exclusive file lock on
+    data/qdrant_local (see qdrant_client.local.qdrant_local), so opening
+    a SECOND client instance against that same path from within the
+    same process raises a hard RuntimeError ("already accessed by
+    another instance") -- confirmed live when retriever.py and
+    case_memory.py each cached their own independent client instead of
+    sharing this one. A real Qdrant server (QDRANT_URL set) has no such
+    constraint, but sharing one client is still simply more efficient.
+    """
+    global _shared_client
+    if _shared_client is not None:
+        return _shared_client
+
     qdrant_url = os.getenv("QDRANT_URL") or None
     qdrant_api_key = os.getenv("QDRANT_API_KEY") or None
 
     if qdrant_url:
-        return QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
-
-    return QdrantClient(path=DEFAULT_LOCAL_QDRANT_PATH)
+        _shared_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+    else:
+        _shared_client = QdrantClient(path=DEFAULT_LOCAL_QDRANT_PATH)
+    return _shared_client
 
 
 def ensure_collection(client: QdrantClient) -> None:

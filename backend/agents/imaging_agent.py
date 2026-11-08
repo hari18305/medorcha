@@ -95,6 +95,70 @@ def _get_model_bundle():
     return _model, _preprocess, _tokenizer
 
 
+def get_biomedclip_bundle():
+    """Public accessor for the (model, preprocess, tokenizer) tuple this
+    module already loads and caches -- Phase 13's visual case memory
+    (backend/rag/visual_memory.py) reuses THIS loaded model to compute
+    image embeddings rather than loading a second copy of the same
+    ~400MB model in a different file."""
+    return _get_model_bundle()
+
+
+def _embed_image_sync(path: Path) -> list[float]:
+    """Synchronous, CPU/GPU-bound BiomedCLIP image embedding. Run via an
+    executor by embed_image() -- same pattern as
+    _run_zero_shot_classification()."""
+    try:
+        image = Image.open(path).convert("RGB")
+    except UnidentifiedImageError as exc:
+        raise UnsupportedImageFormatError(f"Could not decode image content at {path}: {exc}") from exc
+
+    model, preprocess, _ = _get_model_bundle()
+    image_input = preprocess(image).unsqueeze(0)
+
+    with torch.no_grad():
+        image_features = model.encode_image(image_input)
+        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+
+    return image_features.squeeze(0).tolist()
+
+
+async def embed_image(image_path: str) -> list[float]:
+    """Computes a BiomedCLIP image embedding for `image_path`, using the
+    SAME cached model/preprocessing as analyze_image() -- for Phase 13's
+    visual case memory (backend/rag/visual_memory.py). This is a
+    DIFFERENT embedding space from BioBERT's 768-dim text embeddings
+    (backend/rag/embeddings.py) -- see get_image_embedding_dim() for the
+    actual dimension of this space, never assumed.
+    """
+    path = _validate_image_path(image_path)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _embed_image_sync, path)
+
+
+_image_embedding_dim: int | None = None
+
+
+def get_image_embedding_dim() -> int:
+    """The actual output dimension of BiomedCLIP's image encoder,
+    determined by running one real embedding call against a throwaway
+    blank image -- NEVER assumed to match BioBERT's 768-dim text space
+    (a completely different embedding space). Phase 13's visual case
+    memory Qdrant collection must be created with this size. Cached
+    after the first call since it can't change at runtime for a given
+    loaded model.
+    """
+    global _image_embedding_dim
+    if _image_embedding_dim is None:
+        model, preprocess, _ = _get_model_bundle()
+        blank = Image.new("RGB", (224, 224))
+        image_input = preprocess(blank).unsqueeze(0)
+        with torch.no_grad():
+            features = model.encode_image(image_input)
+        _image_embedding_dim = int(features.shape[-1])
+    return _image_embedding_dim
+
+
 def _validate_image_path(image_path: str) -> Path:
     if not image_path:
         raise ValueError(

@@ -19,9 +19,20 @@ placeholder starting points, not derived from any validation study.
 They are tuning targets for the Phase 15 evaluation pass, not a
 finished calibration -- do not treat the resulting confidence values as
 clinically meaningful until that tuning happens.
+
+Weight recalibration (Phase 14, NEW in v5): get_current_weights() reads
+the most recent row from storage.py's confidence_weight_history table,
+if backend/services/weight_tuner.py has ever run a recalibration,
+falling back to DEFAULT_WEIGHTS (the module-level constants above)
+otherwise. Both compute_confidence() and compute_confidence_breakdown()
+call get_current_weights() -- neither ever references
+W1_RAG/W2_WEB/W3_AGREEMENT directly -- so a recalibration takes effect
+on the very next call, with no restart needed. THRESHOLD stays a true
+fixed constant, never subject to automatic recalibration.
 """
 
 from backend.models.schemas import FusionResult, LiveEvidence, RAGEvidence
+from backend.services import storage
 
 # --------------------------------------------------------------------------
 # PROTOTYPE WEIGHTS -- NOT CLINICALLY VALIDATED.
@@ -31,6 +42,12 @@ from backend.models.schemas import FusionResult, LiveEvidence, RAGEvidence
 W1_RAG = 0.4
 W2_WEB = 0.3
 W3_AGREEMENT = 0.3
+
+# Same three defaults, keyed for get_current_weights()/weight_tuner.py's
+# consumption -- kept in sync with W1_RAG/W2_WEB/W3_AGREEMENT above (which
+# stay as the original, individually-named constants for readability
+# elsewhere in this module).
+DEFAULT_WEIGHTS = {"w1": W1_RAG, "w2": W2_WEB, "w3": W3_AGREEMENT}  # PROTOTYPE DEFAULTS -- NOT CLINICALLY VALIDATED
 
 # Confidence threshold: below this, the pipeline should route the case
 # for mandatory human review rather than presenting the result as
@@ -97,13 +114,44 @@ def _compute_agreement(fusion: FusionResult) -> float:
     return max(0.0, 1.0 - CONFLICT_PENALTY * len(fusion.conflicts))
 
 
-def compute_confidence(rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult) -> float:
+def get_current_weights() -> dict:
+    """Reads the most recent confidence_weight_history row (see
+    backend/services/weight_tuner.py's recalibrate_weights()), or falls
+    back to DEFAULT_WEIGHTS if no recalibration has ever happened. This
+    is the ONLY place either confidence function reads weights from --
+    never reference W1_RAG/W2_WEB/W3_AGREEMENT directly outside this
+    function, so a recalibration is picked up immediately.
+    """
+    row = storage.get_current_weight_row()
+    if row is None:
+        return dict(DEFAULT_WEIGHTS)
+    return {"w1": row["w1"], "w2": row["w2"], "w3": row["w3"]}
+
+
+def compute_confidence_breakdown(rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult) -> dict:
+    """Exposes all three intermediate signals alongside the final score
+    -- Phase 14 persists this dict (via storage.save_report's
+    confidence_breakdown param) so weight_tuner.py can later recalibrate
+    w1/w2/w3 from real accept/override outcomes joined against exactly
+    these numbers.
+    """
+    weights = get_current_weights()
     s_rag = _compute_s_rag(rag)
     s_web = _compute_s_web(live)
     agreement = _compute_agreement(fusion)
 
-    confidence = W1_RAG * s_rag + W2_WEB * s_web + W3_AGREEMENT * agreement
+    confidence = weights["w1"] * s_rag + weights["w2"] * s_web + weights["w3"] * agreement
     # Safety clamp: mathematically redundant while w1+w2+w3 == 1.0 and
-    # each signal is already in [0, 1], but kept so a future weight
-    # retune (Phase 15) can't silently push C outside [0, 1].
-    return max(0.0, min(1.0, confidence))
+    # each signal is already in [0, 1], but kept so a recalibrated set
+    # of weights (or a future formula change) can't silently push C
+    # outside [0, 1].
+    confidence = max(0.0, min(1.0, confidence))
+
+    return {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence}
+
+
+def compute_confidence(rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult) -> float:
+    """Thin wrapper around compute_confidence_breakdown() for callers
+    that only need the final float (most of the pipeline) -- see that
+    function's docstring for the full breakdown."""
+    return compute_confidence_breakdown(rag, live, fusion)["confidence"]
