@@ -161,7 +161,7 @@ def test_build_fallback_query_uses_top_symptoms_only():
 
 
 async def test_run_rag_happy_path_returns_ragevidence(fake_qdrant, monkeypatch):
-    # raw logit 4.0 -> sigmoid ~0.982, comfortably above LOW_SCORE_THRESHOLD
+    # raw logit 4.0 -> calibrated score ~0.996, comfortably above LOW_SCORE_THRESHOLD
     fake_model = _patch_cross_encoder(monkeypatch, [[4.0, 3.0, 2.0]])
 
     result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING)
@@ -197,11 +197,11 @@ async def test_run_rag_empty_findings_short_circuits_without_calling_pipeline(mo
 
 
 async def test_run_rag_retries_with_fallback_query_when_all_scores_low(fake_qdrant, monkeypatch):
-    # First call: all raw logits very negative -> sigmoid scores near 0,
+    # First call: all raw logits very negative (-14 -> calibrated score ~0.03),
     # all below LOW_SCORE_THRESHOLD. Second call (fallback): high scores.
     fake_model = _patch_cross_encoder(
         monkeypatch,
-        [[-6.0, -6.0, -6.0], [4.0, 3.0, 2.0]],
+        [[-14.0, -14.0, -14.0], [4.0, 3.0, 2.0]],
     )
 
     result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING)
@@ -221,7 +221,7 @@ async def test_run_rag_gives_up_after_one_retry_if_still_low(fake_qdrant, monkey
     # Both attempts score low -- should NOT retry a third time.
     fake_model = _patch_cross_encoder(
         monkeypatch,
-        [[-6.0, -6.0, -6.0], [-5.0, -5.0, -5.0]],
+        [[-14.0, -14.0, -14.0], [-13.0, -13.0, -13.0]],
     )
 
     result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING)
@@ -280,6 +280,9 @@ async def test_run_rag_merges_visual_precedent_when_image_present_and_supported(
     result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING, image_path="data/images/synthetic_demo_brain_mri_001.png")
 
     fake_retrieve_visual.assert_awaited_once()
+    # the current image's modality is passed so only same-modality
+    # precedents can come back
+    assert fake_retrieve_visual.await_args.kwargs["modality"] == CASE001_IMAGING.modality
     tagged = [e for e in result.evidence if e.source.startswith("visual_precedent:")]
     assert len(tagged) == 1
     assert tagged[0].text == "visually similar prior scan"

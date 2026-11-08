@@ -47,32 +47,46 @@ def collect_review_outcomes() -> list[dict]:
     (negative, 0.0); "annotate" is neutral and skipped (an annotation
     doesn't tell us whether the confidence score itself was right).
 
-    A case reviewed more than once contributes one row per review
-    (storage.get_reports_with_reviews() already does this join) -- each
-    row still shares the same predicted_confidence/breakdown, since
-    that's fixed at diagnosis time, not at review time.
+    One row per CASE: when a case was reviewed more than once, only its
+    most recent accept/override counts (a later "annotate" doesn't erase
+    an earlier decision). Counting every review would let a single
+    case reviewed ten times satisfy the min_reviews gate -- which exists
+    precisely to stop the weights being fitted to a handful of cases --
+    and would weight that case ten times in the fit. The breakdown is
+    fixed at diagnosis time, so it is the same for every review anyway.
     """
-    rows = storage.get_reports_with_reviews()
-    outcomes = []
+    rows = storage.get_reports_with_reviews()  # ordered oldest review first
+    latest_by_case: dict[str, dict] = {}
     for row in rows:
-        if row["decision"] == "accept":
-            outcome = 1.0
-        elif row["decision"] == "override":
-            outcome = 0.0
-        else:  # "annotate" -- neutral, no accept/override signal
-            continue
+        if row["decision"] not in ("accept", "override"):
+            continue  # "annotate" -- neutral, no accept/override signal
         if row["s_rag"] is None or row["s_web"] is None or row["agreement"] is None:
             continue  # incomplete breakdown -- skip rather than guess
-        outcomes.append(
-            {
-                "s_rag": row["s_rag"],
-                "s_web": row["s_web"],
-                "agreement": row["agreement"],
-                "predicted_confidence": row["predicted_confidence"],
-                "outcome": outcome,
-            }
-        )
-    return outcomes
+        latest_by_case[row["case_id"]] = row  # a later review replaces an earlier one
+
+    return [
+        {
+            "case_id": case_id,
+            "s_rag": row["s_rag"],
+            "s_web": row["s_web"],
+            "agreement": row["agreement"],
+            "predicted_confidence": row["predicted_confidence"],
+            "outcome": 1.0 if row["decision"] == "accept" else 0.0,
+        }
+        for case_id, row in latest_by_case.items()
+    ]
+
+
+def outcome_status(min_reviews: int = DEFAULT_MIN_REVIEWS) -> dict:
+    """How far the real review history is from being able to recalibrate:
+    {"qualifying", "needed", "remaining", "ready"}."""
+    qualifying = len(collect_review_outcomes())
+    return {
+        "qualifying": qualifying,
+        "needed": min_reviews,
+        "remaining": max(0, min_reviews - qualifying),
+        "ready": qualifying >= min_reviews,
+    }
 
 
 def _objective(weights: list[float], outcomes: list[dict]) -> float:
@@ -162,9 +176,25 @@ def main() -> None:
     from backend.services.confidence import get_current_weights
 
     before = get_current_weights()
+    status = outcome_status()
+    history = storage.get_weight_history()
+    print(
+        f"Current weights: w1={before['w1']:.3f} w2={before['w2']:.3f} w3={before['w3']:.3f} "
+        f"({len(history)} previous recalibration(s) on record)"
+    )
+    print(
+        f"Qualifying review outcomes (one per case, accept/override only): "
+        f"{status['qualifying']} of {status['needed']} needed."
+    )
     result = recalibrate_weights()
     if result is None:
-        print("No recalibration performed (see log above for why).")
+        if status["ready"]:
+            print("No recalibration performed (the optimizer did not converge -- see the log above).")
+        else:
+            print(
+                f"No recalibration performed: {status['remaining']} more reviewed case(s) with a "
+                "stored confidence breakdown are needed. Weights are unchanged."
+            )
         return
 
     print(f"Before: w1={before['w1']:.3f} w2={before['w2']:.3f} w3={before['w3']:.3f}")

@@ -130,7 +130,9 @@ async def run_rag(
     # is no meaningful visual query to run otherwise.
     if image_path and imaging is not None and not imaging.unsupported_modality:
         try:
-            visual_hits = await retrieve_visual_memory(image_path, top_k=VISUAL_MEMORY_TOP_K)
+            visual_hits = await retrieve_visual_memory(
+                image_path, top_k=VISUAL_MEMORY_TOP_K, modality=imaging.modality
+            )
         except Exception as exc:  # Qdrant down, BiomedCLIP failure, etc.
             logger.warning("run_rag(): visual-memory retrieval failed, skipping: %s", exc)
             visual_hits = []

@@ -187,6 +187,25 @@ def test_run_medqa_pubmedqa_benchmark_end_to_end_with_fakes(fake_datasets_module
     assert result["pubmedqa_accuracy"] == 1.0
     assert result["medqa_errors"] == 0
     assert "before_weights" in result and "after_weights" in result
+    # every faked answer is correct, so the always-trust baseline is 100%
+    assert result["held_out_always_trust_baseline"] == 1.0
+
+
+def test_print_mode2_result_warns_when_recalibration_only_matches_the_always_trust_baseline(capsys):
+    base = {
+        "available": True, "medqa_accuracy": 0.9, "medqa_n_scored": 50, "medqa_errors": 0,
+        "pubmedqa_accuracy": 0.86, "pubmedqa_n_scored": 50, "pubmedqa_errors": 0,
+        "before_weights": {"w1": 0.4, "w2": 0.3, "w3": 0.3}, "after_weights": {"w1": 0.1, "w2": 0.1, "w3": 0.8},
+        "recalibration_performed": True, "held_out_slice_size": 30,
+        "before_held_out_calibration_accuracy": 0.133,
+    }
+
+    ev.print_mode2_result({**base, "after_held_out_calibration_accuracy": 0.867, "held_out_always_trust_baseline": 0.867})
+    assert "does NOT beat that trivial baseline" in capsys.readouterr().out
+
+    ev.print_mode2_result({**base, "after_held_out_calibration_accuracy": 0.95, "held_out_always_trust_baseline": 0.867})
+    out = capsys.readouterr().out
+    assert "Baseline (always predict" in out and "CAVEAT" not in out
 
 
 # --------------------------------------------------------------------------
@@ -348,10 +367,17 @@ class _FakeQdrantClient:
         for p in points:
             col["points"][p.id] = _FakePoint(p.id, p.vector, p.payload)
 
-    def query_points(self, collection_name, query, limit):
+    def query_points(self, collection_name, query, limit, query_filter=None, score_threshold=None):
         col = self.collections.get(collection_name, {"points": {}})
-        hits = [_FakeHit(score=0.9, payload=p.payload) for p in list(col["points"].values())[:limit]]
-        return _FakeQueryResult(hits)
+        hits = [_FakeHit(score=0.9, payload=p.payload) for p in list(col["points"].values())]
+        if score_threshold is not None:
+            hits = [h for h in hits if h.score >= score_threshold]
+        return _FakeQueryResult(hits[:limit])
+
+    def delete(self, collection_name, points_selector):
+        col = self.collections.get(collection_name, {"points": {}})
+        for point_id in points_selector.points:
+            col["points"].pop(point_id, None)
 
 
 def test_run_case_memory_ablation_shows_a_confidence_delta(monkeypatch):
@@ -387,9 +413,17 @@ def test_run_case_memory_ablation_shows_a_confidence_delta(monkeypatch):
         clinical_text="recurrent headache and dizziness", history=["hypertension"],
     )
 
+    real_db_before = storage.DB_PATH
+
     result = ev.run_case_memory_ablation(case)
 
     assert result["case_memory_entries_present"] >= 1
     assert "confidence_with_case_memory" in result
     assert "confidence_without_case_memory" in result
     assert isinstance(result["delta"], float)
+    # The made-up seed precedent must not be left behind: neither in the
+    # case-memory collection (the app would later show it to the model as a
+    # genuine clinician precedent) nor in the real database's memory log.
+    assert fake_qdrant.collections[case_memory.COLLECTION_NAME]["points"] == {}
+    assert storage.DB_PATH == real_db_before
+    assert storage.get_case_memory_log("EVAL001_seed_precedent") == []

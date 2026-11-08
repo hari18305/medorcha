@@ -18,6 +18,7 @@ add staleness/expiry or periodic re-review; not implemented here.
 """
 
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -53,6 +54,26 @@ def ensure_collection(client: QdrantClient | None = None) -> None:
             collection_name=COLLECTION_NAME,
             vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
         )
+
+
+# The review UI sends a replacement diagnosis as "Override diagnosis: <name>"
+# in ReviewRequest.annotation (there is no separate field for it -- see
+# backend/api/schemas.py). That prefix is transport framing, not part of
+# the diagnosis, so it is stripped before the diagnosis is shown to a model.
+_OVERRIDE_PREFIX_RE = re.compile(r"^\s*override diagnosis\s*:\s*", re.IGNORECASE)
+
+
+def clean_diagnosis(diagnosis_text: str) -> str:
+    return _OVERRIDE_PREFIX_RE.sub("", diagnosis_text or "").strip()
+
+
+def format_text_precedent(case_text: str, diagnosis_text: str) -> str:
+    """The evidence text a text-memory hit is shown as. It MUST carry the
+    clinician's diagnosis, not just the past case's symptoms: a precedent
+    that says only "a similar case existed" tells the fusion model nothing
+    about what the clinician actually concluded, which is the entire point
+    of the feedback loop."""
+    return f"Similar past case: {case_text}. Clinician-verified diagnosis: {clean_diagnosis(diagnosis_text)}."
 
 
 def build_case_text(clinical: ClinicalFindings, imaging: ImagingFindings | None) -> str:

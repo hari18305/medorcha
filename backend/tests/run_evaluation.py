@@ -775,6 +775,13 @@ def run_medqa_pubmedqa_benchmark(n_per_benchmark: int = 50, calibration_fraction
         "before_held_out_calibration_accuracy": round(before_held_out_accuracy, 4),
         "after_held_out_calibration_accuracy": round(after_held_out_accuracy, 4),
         "held_out_slice_size": len(held_out_slice),
+        # Accuracy of the trivial rule "always predict trustworthy" on the
+        # held-out slice == the share of its answers that were correct. A
+        # recalibration "improvement" that only reaches this number shows
+        # no real calibration signal (see print_mode2_result).
+        "held_out_always_trust_baseline": round(
+            (sum(1 for item in held_out_slice if item["correct"]) / len(held_out_slice)) if held_out_slice else 0.0, 4
+        ),
     }
 
 
@@ -807,6 +814,18 @@ def print_mode2_result(result: dict) -> None:
         f"answer), n={result['held_out_slice_size']}: "
         f"before={result['before_held_out_calibration_accuracy']:.1%} -> after={result['after_held_out_calibration_accuracy']:.1%}"
     )
+    baseline = result.get("held_out_always_trust_baseline")
+    if baseline is not None:
+        print(f"  Baseline (always predict 'trustworthy' = share of held-out answers that were correct): {baseline:.1%}")
+        if result["after_held_out_calibration_accuracy"] <= baseline + 0.005:
+            print(
+                "  CAVEAT: the 'after' figure does NOT beat that trivial baseline, so it is not evidence of\n"
+                "  real calibration. In this benchmark fusion is a placeholder with no conflicts, so the\n"
+                "  agreement signal is a constant 1.0 and recalibration can only shift ALL confidences up\n"
+                "  or down together (here: up, until everything clears the threshold). The held-out slice\n"
+                "  is also the tail of the combined item list (a single benchmark), not a mixed sample.\n"
+                "  Do not use these weights, or this number, as a basis for the production weights."
+            )
 
 
 def write_mode2_items_csv(result: dict, path: Path) -> None:
@@ -1002,7 +1021,13 @@ def run_case_memory_ablation(case: CaseInput) -> dict:
     without text case-memory retrieval, on a subset of cases where at
     least one prior override exists."
     """
+    import tempfile
+
+    from qdrant_client.models import PointIdsList
+
+    from backend.rag import case_memory as case_memory_module
     from backend.rag.case_memory import add_clinician_verified_case
+    from backend.services import storage
 
     # Mocked at the client boundary, same as the rest of this harness's
     # Claude calls (_install_mocks_for_case) -- this ablation is about
@@ -1011,23 +1036,49 @@ def run_case_memory_ablation(case: CaseInput) -> dict:
     # happens to be configured in this environment's .env.
     clinical_agent._get_client = lambda: _fake_client(_clinical_mock_response(case))
     clinical = asyncio.run(extract_clinical_findings(case.clinical_text, case.medical_report))
-    add_clinician_verified_case(
-        case_id=f"{case.case_id}_seed_precedent", clinical=clinical, imaging=None,
-        diagnosis_text="Vestibular migraine (clinician-confirmed precedent)", reviewer="mode17-eval",
-    )
 
-    rag_with_memory = asyncio.run(run_rag(clinical, None))
-    rag_without_memory = RAGEvidence(
-        evidence=[e for e in rag_with_memory.evidence if not e.source.startswith("clinician_verified:")]
-    )
-    live = LiveEvidence(sources=[])
+    # The seed is a MADE-UP "clinician-verified" diagnosis. It must never be
+    # left behind in the real case-memory collection (where the app would
+    # later retrieve it and show it to the model as a genuine clinician
+    # precedent) nor in the real case_memory_log. So: log into a throwaway
+    # database, and delete the seeded Qdrant point(s) again in `finally`.
+    seed_case_id = f"{case.case_id}_seed_precedent"
+    original_db_path = storage.DB_PATH
+    tmp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    tmp_db.close()
+    seeded_point_ids: list[str] = []
+    try:
+        storage.DB_PATH = tmp_db.name
+        storage._init_tables()
+        add_clinician_verified_case(
+            case_id=seed_case_id, clinical=clinical, imaging=None,
+            diagnosis_text="Vestibular migraine (clinician-confirmed precedent)", reviewer="mode17-eval",
+        )
+        seeded_point_ids = [row["qdrant_point_id"] for row in storage.get_case_memory_log(seed_case_id)]
 
-    fusion_agent._get_client = lambda: _fake_client(_fusion_mock_response("case-memory-ablation"))
-    with_memory_fusion = asyncio.run(fuse(clinical, None, rag_with_memory, live))
-    without_memory_fusion = asyncio.run(fuse(clinical, None, rag_without_memory, live))
+        rag_with_memory = asyncio.run(run_rag(clinical, None))
+        rag_without_memory = RAGEvidence(
+            evidence=[e for e in rag_with_memory.evidence if not e.source.startswith("clinician_verified:")]
+        )
+        live = LiveEvidence(sources=[])
 
-    with_confidence = compute_confidence(rag_with_memory, live, with_memory_fusion)
-    without_confidence = compute_confidence(rag_without_memory, live, without_memory_fusion)
+        fusion_agent._get_client = lambda: _fake_client(_fusion_mock_response("case-memory-ablation"))
+        with_memory_fusion = asyncio.run(fuse(clinical, None, rag_with_memory, live))
+        without_memory_fusion = asyncio.run(fuse(clinical, None, rag_without_memory, live))
+
+        with_confidence = compute_confidence(rag_with_memory, live, with_memory_fusion)
+        without_confidence = compute_confidence(rag_without_memory, live, without_memory_fusion)
+    finally:
+        if seeded_point_ids:
+            try:
+                case_memory_module._get_client().delete(
+                    collection_name=case_memory_module.COLLECTION_NAME,
+                    points_selector=PointIdsList(points=seeded_point_ids),
+                )
+            except Exception as exc:  # cleanup must not mask the real result/error
+                print(f"  WARNING: could not remove the ablation's seeded case-memory point(s): {exc}")
+        storage.DB_PATH = original_db_path
+        Path(tmp_db.name).unlink(missing_ok=True)
 
     return {
         "case_id": case.case_id,

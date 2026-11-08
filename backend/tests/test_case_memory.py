@@ -69,14 +69,21 @@ class _FakeQdrantClient:
         for p in points:
             col["points"][p.id] = _FakePoint(p.id, p.vector, p.payload)
 
-    def query_points(self, collection_name, query, limit):
+    def query_points(self, collection_name, query, limit, query_filter=None, score_threshold=None):
+        """Honours the two real-Qdrant options retrieval now relies on:
+        `query_filter` (exact-match payload conditions, applied BEFORE the
+        top-k cut like the real server) and `score_threshold` (drop hits
+        scoring below it)."""
         col = self.collections.get(collection_name, {"points": {}})
-        ranked = sorted(
-            col["points"].values(), key=lambda p: _cosine(p.vector, query), reverse=True
-        )
-        return _FakeQueryResult(
-            [_FakeHit(score=_cosine(p.vector, query), payload=p.payload) for p in ranked[:limit]]
-        )
+        candidates = list(col["points"].values())
+        if query_filter is not None:
+            for condition in query_filter.must:
+                candidates = [p for p in candidates if p.payload.get(condition.key) == condition.match.value]
+        ranked = sorted(candidates, key=lambda p: _cosine(p.vector, query), reverse=True)
+        hits = [_FakeHit(score=_cosine(p.vector, query), payload=p.payload) for p in ranked]
+        if score_threshold is not None:
+            hits = [h for h in hits if h.score >= score_threshold]
+        return _FakeQueryResult(hits[:limit])
 
 
 CLINICAL = ClinicalFindings(
@@ -150,7 +157,71 @@ def test_retrieve_case_memory_finds_similar_symptom_entry(fake_text_client, monk
 
     assert len(hits) == 1
     assert hits[0]["source"] == "clinician_verified:dr_lee"
-    assert hits[0]["text"] == case_memory.build_case_text(CLINICAL, IMAGING)
+    # The precedent shows the past case AND the clinician's diagnosis --
+    # the diagnosis is the whole point of the feedback loop.
+    assert hits[0]["text"] == (
+        f"Similar past case: {case_memory.build_case_text(CLINICAL, IMAGING)}. "
+        "Clinician-verified diagnosis: Vestibular migraine."
+    )
+    assert hits[0]["diagnosis"] == "Vestibular migraine"
+
+
+def test_text_precedent_strips_the_override_diagnosis_transport_prefix(fake_text_client, monkeypatch):
+    # The review UI sends the replacement as "Override diagnosis: <name>".
+    import backend.rag.retriever as retriever
+
+    monkeypatch.setattr(retriever, "_get_client", lambda: fake_text_client)
+    monkeypatch.setattr(case_memory, "embed_text", lambda text: [1.0, 0.0])
+    monkeypatch.setattr(retriever, "embed_text", lambda text: [1.0, 0.0])
+
+    case_memory.add_clinician_verified_case(
+        case_id="CASE001", clinical=CLINICAL, imaging=None,
+        diagnosis_text="Override diagnosis: Chronic subdural hematoma", reviewer="dr_lee",
+    )
+
+    text = retriever.retrieve_case_memory("headache dizziness", top_k=3)[0]["text"]
+
+    assert text.endswith("Clinician-verified diagnosis: Chronic subdural hematoma.")
+    assert "Override diagnosis" not in text
+
+
+def test_clean_diagnosis_handles_prefix_case_and_plain_text():
+    assert case_memory.clean_diagnosis("Override diagnosis: Migraine") == "Migraine"
+    assert case_memory.clean_diagnosis("  override DIAGNOSIS :   Migraine  ") == "Migraine"
+    assert case_memory.clean_diagnosis("Migraine") == "Migraine"
+    assert case_memory.clean_diagnosis("") == ""
+
+
+def test_retrieve_case_memory_drops_unrelated_past_cases_below_the_min_score(fake_text_client, monkeypatch):
+    """Without a cutoff every query got its 3 nearest past cases however
+    unrelated. A chest-pain query must not surface a headache precedent."""
+    import backend.rag.retriever as retriever
+
+    monkeypatch.setattr(retriever, "_get_client", lambda: fake_text_client)
+    monkeypatch.setattr(case_memory, "embed_text", lambda text: [1.0, 0.0])
+    case_memory.add_clinician_verified_case(
+        case_id="CASE001", clinical=CLINICAL, imaging=None, diagnosis_text="Tension headache", reviewer="dr_lee"
+    )
+
+    monkeypatch.setattr(retriever, "embed_text", lambda text: [0.0, 1.0])  # orthogonal: cosine 0.0
+    assert retriever.retrieve_case_memory("chest pain, shortness of breath", top_k=3) == []
+
+    monkeypatch.setattr(retriever, "embed_text", lambda text: [0.9, 0.3])  # cosine ~0.95
+    assert len(retriever.retrieve_case_memory("headache and dizziness", top_k=3)) == 1
+
+
+def test_case_memory_min_score_is_overridable_per_call(fake_text_client, monkeypatch):
+    import backend.rag.retriever as retriever
+
+    monkeypatch.setattr(retriever, "_get_client", lambda: fake_text_client)
+    monkeypatch.setattr(case_memory, "embed_text", lambda text: [1.0, 0.0])
+    case_memory.add_clinician_verified_case(
+        case_id="CASE001", clinical=CLINICAL, imaging=None, diagnosis_text="Tension headache", reviewer="dr_lee"
+    )
+    monkeypatch.setattr(retriever, "embed_text", lambda text: [0.5, 0.866])  # cosine 0.5
+
+    assert retriever.retrieve_case_memory("q", min_score=0.6) == []
+    assert len(retriever.retrieve_case_memory("q", min_score=0.4)) == 1
 
 
 def test_retrieve_case_memory_returns_empty_when_collection_never_created(fake_text_client, monkeypatch):
@@ -213,8 +284,62 @@ async def test_retrieve_visual_memory_finds_visually_similar_entry(fake_visual_c
 
     assert len(hits) == 1
     assert hits[0]["source"] == "visual_precedent:dr_patel"
-    assert hits[0]["text"] == "Chronic small vessel disease"
+    assert hits[0]["text"] == (
+        "Past case with a visually similar MRI brain scan image. "
+        "Clinician-verified diagnosis: Chronic small vessel disease."
+    )
     assert hits[0]["modality"] == "MRI brain scan"
+
+
+async def _seed_visual(monkeypatch, vectors, entries):
+    """entries: [(path, modality, diagnosis)] written via the real writer."""
+
+    async def fake_embed_image(path):
+        return vectors[path]
+
+    monkeypatch.setattr(visual_memory, "embed_image", fake_embed_image)
+    for i, (path, modality, diagnosis) in enumerate(entries):
+        await visual_memory.add_visual_case_memory(
+            case_id=f"CASE{i}", image_path=path, modality=modality, diagnosis_text=diagnosis, reviewer="dr_x"
+        )
+
+
+async def test_visual_memory_never_returns_a_precedent_from_a_different_modality(fake_visual_client, monkeypatch):
+    """A brain MRI override must not come back as a 'visually similar'
+    precedent for a chest X-ray, even if the embeddings land close."""
+    vectors = {"mri.png": [1.0, 0.0], "cxr_query.png": [0.99, 0.05], "mri_query.png": [0.99, 0.05]}
+    await _seed_visual(monkeypatch, vectors, [("mri.png", "MRI brain scan", "Chronic infarct")])
+
+    cxr_hits = await visual_memory.retrieve_visual_memory("cxr_query.png", modality="chest X-ray")
+    mri_hits = await visual_memory.retrieve_visual_memory("mri_query.png", modality="MRI brain scan")
+
+    assert cxr_hits == []
+    assert len(mri_hits) == 1
+
+
+async def test_visual_memory_modality_filter_applies_before_the_top_k_cut(fake_visual_client, monkeypatch):
+    """Two closer wrong-modality images must not push the right-modality
+    one out of the top_k -- the filter has to be applied first."""
+    vectors = {
+        "ct1.png": [1.0, 0.0], "ct2.png": [0.99, 0.1], "mri.png": [0.9, 0.2], "q.png": [1.0, 0.0],
+    }
+    await _seed_visual(
+        monkeypatch, vectors,
+        [("ct1.png", "CT scan", "A"), ("ct2.png", "CT scan", "B"), ("mri.png", "MRI brain scan", "Right one")],
+    )
+
+    hits = await visual_memory.retrieve_visual_memory("q.png", top_k=1, modality="MRI brain scan", min_score=0.5)
+
+    assert [h["modality"] for h in hits] == ["MRI brain scan"]
+    assert "Right one" in hits[0]["text"]
+
+
+async def test_visual_memory_drops_dissimilar_images_below_the_min_score(fake_visual_client, monkeypatch):
+    vectors = {"prior.png": [1.0, 0.0], "different.png": [0.6, 0.8], "same.png": [0.99, 0.05]}
+    await _seed_visual(monkeypatch, vectors, [("prior.png", "MRI brain scan", "Chronic infarct")])
+
+    assert await visual_memory.retrieve_visual_memory("different.png", modality="MRI brain scan") == []  # cosine 0.6
+    assert len(await visual_memory.retrieve_visual_memory("same.png", modality="MRI brain scan")) == 1
 
 
 async def test_retrieve_visual_memory_returns_empty_when_collection_never_created(fake_visual_client, monkeypatch):

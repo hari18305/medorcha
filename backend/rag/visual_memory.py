@@ -26,18 +26,38 @@ add staleness/expiry or periodic re-review, not implemented here.
 """
 
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
 
 from backend.agents.imaging_agent import embed_image, get_image_embedding_dim
+from backend.rag.case_memory import clean_diagnosis
 from backend.rag.ingest import get_qdrant_client
 
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "medorchestrate_visual_memory"
+
+
+def _min_score_from_env(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except ValueError:
+        return default
+
+
+# Minimum BiomedCLIP image-embedding cosine similarity for a past image to
+# count as "visually similar". PROTOTYPE DEFAULT, NOT VALIDATED: the only
+# images available here are synthetic placeholders, whose similarities are
+# not representative of real scans (measured: a synthetic brain MRI vs a
+# synthetic chest X-ray scores ~0.73, two near-identical images ~0.99), so
+# this number could not be calibrated -- it only rules out clearly
+# dissimilar images. Pair it with the modality filter below, which is the
+# principled guard. Override with VISUAL_MEMORY_MIN_SCORE.
+VISUAL_MEMORY_MIN_SCORE = _min_score_from_env("VISUAL_MEMORY_MIN_SCORE", 0.85)
 
 _client: QdrantClient | None = None
 
@@ -95,24 +115,45 @@ async def add_visual_case_memory(
     )
 
 
-async def retrieve_visual_memory(image_path: str, top_k: int = 3) -> list[dict]:
+async def retrieve_visual_memory(
+    image_path: str, top_k: int = 3, modality: str | None = None, min_score: float | None = None
+) -> list[dict]:
     """Embeds the query image and searches "medorchestrate_visual_memory".
     Only call this when the CURRENT case has an image in a supported
     modality -- callers (rag_agent.py) are responsible for that check;
     there is no meaningful visual query to run otherwise. Returns []
     (never raises) if the collection doesn't exist yet -- e.g. no
     clinician has overridden an image case yet in this deployment.
+
+    `modality`: only past images of the SAME modality are candidates. A
+    brain MRI is never a meaningful "visually similar" precedent for a
+    chest X-ray, however close the embeddings happen to land. Hits must
+    also score at least `min_score` (default VISUAL_MEMORY_MIN_SCORE).
     """
     client = _get_client()
     if not client.collection_exists(COLLECTION_NAME):
         return []
 
     vector = await embed_image(image_path)
-    hits = client.query_points(collection_name=COLLECTION_NAME, query=vector, limit=top_k).points
+    query_filter = (
+        Filter(must=[FieldCondition(key="modality", match=MatchValue(value=modality))]) if modality else None
+    )
+    hits = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=vector,
+        limit=top_k,
+        query_filter=query_filter,
+        score_threshold=VISUAL_MEMORY_MIN_SCORE if min_score is None else min_score,
+    ).points
 
     return [
         {
-            "text": hit.payload.get("diagnosis"),
+            # The past image's modality + the clinician's verified diagnosis
+            # (the diagnosis is what makes it a usable precedent).
+            "text": (
+                f"Past case with a visually similar {hit.payload.get('modality') or 'medical'} image. "
+                f"Clinician-verified diagnosis: {clean_diagnosis(hit.payload.get('diagnosis') or '')}."
+            ),
             # Kept visibly distinct from text case_memory's
             # "clinician_verified:<reviewer>" tag -- this is a visually
             # similar past IMAGE, not a similar-sounding past case.

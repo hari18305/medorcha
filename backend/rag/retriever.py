@@ -12,12 +12,32 @@ retrieve_case_memory() below share the one cached client, and Phase
 different embedding space) client for "medorchestrate_visual_memory".
 """
 
+import os
+
 from qdrant_client import QdrantClient
 
+from backend.rag.case_memory import format_text_precedent
 from backend.rag.embeddings import embed_text
 from backend.rag.ingest import COLLECTION_NAME, get_qdrant_client
 
 CASE_MEMORY_COLLECTION_NAME = "medorchestrate_case_memory"
+
+
+def _min_score_from_env(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except ValueError:
+        return default
+
+
+# Minimum BioBERT cosine similarity for a past case to count as a
+# "similar case". Measured with the real embedding model: similar
+# presentations score ~0.75-0.81 against a stored case, a different
+# diagnosis in the same symptom area ~0.26-0.47, unrelated complaints
+# ~0.19-0.28 -- so 0.6 separates "similar" from "merely nearest". Without
+# a cutoff every query got its 3 nearest past cases however unrelated.
+# Override with CASE_MEMORY_MIN_SCORE.
+CASE_MEMORY_MIN_SCORE = _min_score_from_env("CASE_MEMORY_MIN_SCORE", 0.6)
 
 _client: QdrantClient | None = None
 
@@ -67,9 +87,10 @@ def retrieve(query: str, top_k: int = 10) -> list[dict]:
     ]
 
 
-def retrieve_case_memory(query: str, top_k: int = 3) -> list[dict]:
-    """Embed `query` and return the top_k nearest clinician-verified text
-    precedents from "medorchestrate_case_memory" -- a SEPARATE collection
+def retrieve_case_memory(query: str, top_k: int = 3, min_score: float | None = None) -> list[dict]:
+    """Embed `query` and return up to top_k nearest clinician-verified text
+    precedents scoring at least `min_score` (default CASE_MEMORY_MIN_SCORE)
+    from "medorchestrate_case_memory" -- a SEPARATE collection
     from the curated KB (same BioBERT/768-dim embedding space, different
     collection, since these are clinician corrections, not curated
     reference material).
@@ -89,13 +110,17 @@ def retrieve_case_memory(query: str, top_k: int = 3) -> list[dict]:
         collection_name=CASE_MEMORY_COLLECTION_NAME,
         query=query_vector,
         limit=top_k,
+        score_threshold=CASE_MEMORY_MIN_SCORE if min_score is None else min_score,
     ).points
 
     return [
         {
-            "text": hit.payload.get("text"),
+            # The past case PLUS the clinician's verified diagnosis -- see
+            # case_memory.format_text_precedent().
+            "text": format_text_precedent(hit.payload.get("text") or "", hit.payload.get("diagnosis") or ""),
             "source": f"clinician_verified:{hit.payload.get('reviewer', '')}",
             "score": hit.score,
+            "diagnosis": hit.payload.get("diagnosis"),
         }
         for hit in hits
     ]

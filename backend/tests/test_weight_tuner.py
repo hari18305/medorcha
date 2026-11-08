@@ -51,6 +51,64 @@ def test_collect_review_outcomes_maps_accept_and_override_correctly():
     assert by_case[0.2]["outcome"] == 0.0
 
 
+def _review(case_id: str, decision: str, reviewer: str = "Dr. Test") -> None:
+    storage.save_review(case_id, {"decision": decision, "annotation": "n" if decision == "annotate" else None, "reviewer": reviewer})
+
+
+def test_a_case_reviewed_several_times_counts_once_with_its_latest_decision():
+    breakdown = {"s_rag": 0.8, "s_web": 0.5, "agreement": 1.0, "confidence": 0.7}
+    _seed_case("C1", breakdown, "accept")
+    _review("C1", "accept", "Dr. Second")
+    _review("C1", "override", "Dr. Third")  # the latest decisive review wins
+
+    outcomes = collect_review_outcomes()
+
+    assert len(outcomes) == 1
+    assert outcomes[0]["case_id"] == "C1"
+    assert outcomes[0]["outcome"] == 0.0  # override
+
+
+def test_a_later_annotation_does_not_erase_an_earlier_accept_or_override():
+    _seed_case("C1", {"s_rag": 0.8, "s_web": 0.5, "agreement": 1.0, "confidence": 0.7}, "override")
+    _review("C1", "annotate")
+
+    outcomes = collect_review_outcomes()
+
+    assert [o["outcome"] for o in outcomes] == [0.0]
+
+
+def test_the_min_reviews_gate_counts_distinct_cases_not_reviews():
+    """One case reviewed 12 times must NOT satisfy a min_reviews=10 gate
+    -- the gate exists to stop the weights being fitted to a few cases."""
+    _seed_case("C1", {"s_rag": 0.9, "s_web": 0.1, "agreement": 1.0, "confidence": 0.7}, "accept")
+    for _ in range(11):
+        _review("C1", "accept")
+
+    assert recalibrate_weights(min_reviews=10) is None
+    assert storage.get_weight_history() == []
+
+
+def test_outcome_status_reports_progress_toward_the_gate():
+    for i in range(3):
+        _seed_case(f"C{i}", {"s_rag": 0.8, "s_web": 0.5, "agreement": 1.0, "confidence": 0.7}, "accept")
+
+    assert weight_tuner.outcome_status(min_reviews=10) == {"qualifying": 3, "needed": 10, "remaining": 7, "ready": False}
+    assert weight_tuner.outcome_status(min_reviews=3)["ready"] is True
+
+
+def test_cli_explains_how_far_it_is_from_recalibrating_and_leaves_weights_unchanged(capsys):
+    for i in range(3):
+        _seed_case(f"C{i}", {"s_rag": 0.8, "s_web": 0.5, "agreement": 1.0, "confidence": 0.7}, "accept")
+
+    weight_tuner.main()
+
+    out = capsys.readouterr().out
+    assert "3 of 10 needed" in out
+    assert "7 more reviewed case(s)" in out
+    assert "Weights are unchanged" in out
+    assert storage.get_weight_history() == []
+
+
 def test_collect_review_outcomes_skips_annotate_decisions():
     _seed_case("C1", {"s_rag": 0.8, "s_web": 0.5, "agreement": 1.0, "confidence": 0.7}, "annotate")
 
