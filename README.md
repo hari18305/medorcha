@@ -245,8 +245,15 @@ python -m backend.rag.ingest
 ```
 
 This downloads the BioBERT embedding model (first run only, a few
-minutes) and embeds ~18 reference passages into the local Qdrant store.
-You only need to do this once (the local store persists on disk).
+minutes) and embeds the 30 knowledge-base passages from
+`data/knowledge_base/` into the local Qdrant store. The corpus is
+**100% real, citable content** — verbatim MedlinePlus text (U.S. NLM,
+public domain) and short PubMed abstract excerpts, each with its real
+citation and URL (see `data/knowledge_base/README.md`). Ingest rebuilds
+the `medorchestrate_kb` collection from scratch each time (case memory
+is separate and untouched), so re-run it any time the corpus changes.
+You only need to do this once otherwise (the local store persists on
+disk).
 
 ### 7. Run the backend
 
@@ -375,7 +382,7 @@ MedOrchestrate/
 │       ├── components/        # ConfidenceBar, ReportSummary
 │       └── services/api.js    # fetch wrapper for the backend
 ├── data/
-│   ├── knowledge_base/        # (reference only; actual corpus lives in backend/rag/ingest.py)
+│   ├── knowledge_base/        # real, cited corpus (guidelines/, symptom_disease/ JSON) read by backend/rag/ingest.py
 │   ├── images/                # synthetic demo images + user uploads
 │   ├── test_cases/            # CASE001.json etc.
 │   └── qdrant_local/          # local embedded Qdrant store (git-ignored, created by ingest.py)

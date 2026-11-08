@@ -1,0 +1,228 @@
+"""Developer tool: (re)builds data/knowledge_base/**/*.json from real,
+citable public sources. NOT run at ingest time or by the app -- ingest.py
+reads the checked-in JSON files; this script exists so every passage's
+provenance can be re-verified or refreshed:
+
+    python -m backend.rag.build_knowledge_base
+
+Sources (all free/keyless, same families the live Evidence Agent uses):
+
+* MedlinePlus health topics + Medical Encyclopedia -- U.S. National
+  Library of Medicine, a U.S. Government work (public domain). Text is
+  copied VERBATIM from the page; only whole sections / whole sentences
+  are kept, truncated at a sentence boundary to fit the ~200-400 token
+  chunk band. Nothing is paraphrased or rewritten.
+* PubMed abstracts (NCBI E-utilities) -- short VERBATIM abstract
+  excerpts, each cited by PMID/journal/year. Abstracts remain the
+  property of their publishers; they are excerpted here for prototype
+  retrieval with attribution, per the build spec's "verifiable short
+  PubMed abstract excerpts".
+
+Every record keeps: doc_id, source (the human-readable citation shown in
+reports), url, title, retrieved (ISO date), and the verbatim text.
+Nothing here is synthetic.
+"""
+
+import html
+import json
+import re
+import time
+import xml.etree.ElementTree as ET
+from datetime import date
+from pathlib import Path
+
+import httpx
+
+KB_ROOT = Path("data/knowledge_base")
+MAX_WORDS = 300  # ~one 200-400 token chunk; see ingest.chunk_document
+HTTP_TIMEOUT_SECONDS = 30
+EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
+
+# (doc_id, folder, MedlinePlus Medical Encyclopedia article id, section priority)
+ENCY_DOCS = [
+    ("headache_tension_type", "symptom_disease", "000797", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("migraine_overview", "symptom_disease", "000709", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("bppv", "symptom_disease", "001420", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("menieres_disease", "symptom_disease", "000702", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("hypertension_overview", "symptom_disease", "000468", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("orthostatic_hypotension_low_blood_pressure", "symptom_disease", "007278", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("anemia_overview", "symptom_disease", "000560", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("tia_overview", "symptom_disease", "000730", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("chronic_subdural_hematoma", "symptom_disease", "000713", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("copd_chest_xray_context", "symptom_disease", "000091", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("pleural_effusion_chest_xray", "symptom_disease", "000086", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("brain_mri_overview", "symptom_disease", "003791", ["Why the Test is Performed", "What Abnormal Results Mean"]),
+    ("head_ct_overview", "symptom_disease", "003786", ["Why the Test is Performed", "What Abnormal Results Mean"]),
+    ("chest_xray_overview", "symptom_disease", "003804", ["Why the Test is Performed", "What Abnormal Results Mean"]),
+]
+
+# (doc_id, folder, MedlinePlus health-topic search term, expected title)
+TOPIC_DOCS = [
+    ("headache_overview", "symptom_disease", "headaches", "Headache"),
+    ("dizziness_vertigo_overview", "symptom_disease", "dizziness and vertigo", "Dizziness and Vertigo"),
+    ("ischemic_stroke_overview", "symptom_disease", "ischemic stroke", "Ischemic Stroke"),
+    ("sinusitis_headache", "symptom_disease", "sinusitis", "Sinusitis"),
+    ("pneumonia_chest_xray", "symptom_disease", "pneumonia", "Pneumonia"),
+    ("pneumothorax_collapsed_lung", "symptom_disease", "collapsed lung", "Collapsed Lung"),
+]
+
+# (doc_id, folder, PMID, expected title fragment) -- PMIDs were looked up
+# via PubMed esearch and are re-verified against esummary at build time.
+PUBMED_DOCS = [
+    ("secondary_headache_red_flags_snnoop10", "guidelines", "30587518", "SNNOOP10"),
+    ("bppv_aao_hnsf_guideline_2017", "guidelines", "28248609", "Benign Paroxysmal Positional Vertigo"),
+    # The ACC/AHA 2017 and ISH 2020 primary guideline records carry no
+    # abstract on PubMed, so this is the ISH 2020 guideline's key-messages
+    # summary paper (it has one) -- cited as exactly that, not as the
+    # guideline itself.
+    ("hypertension_ish_2020_guideline_key_messages", "guidelines", "32972800", "key messages"),
+    ("orthostatic_hypotension_in_hypertension_aha_2024", "guidelines", "38205630", "Orthostatic Hypotension"),
+    ("hypertensive_emergency_review", "guidelines", "28372707", "Hypertensive Emergency"),
+    ("vestibular_migraine_diagnostic_criteria", "guidelines", "23142830", "Vestibular migraine"),
+    ("vestibular_neuritis_review", "symptom_disease", "30947184", "Vestibular Neuritis"),
+    ("white_matter_hyperintensities_small_vessel", "symptom_disease", "28685621", "White matter hyperintensities"),
+    ("pulmonary_nodule_fleischner_2017", "guidelines", "28240562", "Pulmonary Nodules"),
+    ("cardiomegaly_chest_radiograph", "symptom_disease", "29073657", "cardiomegaly"),
+]
+
+
+def _clean(fragment: str) -> str:
+    """HTML -> plain text. Wording is never changed; only markup is
+    removed, and two purely mechanical artifacts are repaired: (1) list
+    items (which have no sentence punctuation of their own) are joined
+    with "; " and the final item ends with "." so a list reads as one
+    sentence, and (2) the space that stripping an inline tag (e.g. a link)
+    leaves before punctuation / inside parentheses is removed."""
+    fragment = re.sub(r"<(script|style).*?</\1>", "", fragment, flags=re.S)
+    fragment = re.sub(r"</li>\s*(?=</[uo]l>)", ". ", fragment)
+    fragment = re.sub(r"</li>", "; ", fragment)
+    fragment = re.sub(r"</(p|h2|h3|div)>", " ", fragment)
+    text = html.unescape(re.sub(r"<[^>]+>", " ", fragment))
+    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\s+([.,;:?!)])", r"\1", text)  # "syndrome ." -> "syndrome."
+    text = re.sub(r"\(\s+", "(", text)             # "( tinnitus" -> "(tinnitus"
+    text = re.sub(r"\.\s*\.", ".", text)           # ". ." left by a list end before a period
+    text = re.sub(r"([.!?]);", r"\1", text)        # ".;" when a bullet already ended in a period
+    return text.strip()
+
+
+def _truncate_at_sentence(text: str, max_words: int = MAX_WORDS) -> str:
+    """Keep whole sentences only, up to ~max_words. Never cuts mid-sentence
+    and never alters a kept sentence."""
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    window = " ".join(words[:max_words])
+    cut = max(window.rfind(". "), window.rfind("? "), window.rfind("! "))
+    if cut < len(window) // 2:  # no usable boundary in the second half
+        cut = window.rfind(".")
+    return window[: cut + 1].strip() if cut > 0 else window
+
+
+def _get(client: httpx.Client, url: str, **params) -> httpx.Response:
+    last_exc = None
+    for _ in range(3):
+        try:
+            response = client.get(url, params=params or None)
+            response.raise_for_status()
+            return response
+        except httpx.HTTPError as exc:
+            last_exc = exc
+            time.sleep(1.0)
+    raise RuntimeError(f"GET {url} failed after retries: {last_exc}")
+
+
+def fetch_ency(client: httpx.Client, article_id: str, priority: list[str]) -> dict:
+    url = f"https://medlineplus.gov/ency/article/{article_id}.htm"
+    page = _get(client, url).text
+    title = _clean(re.search(r"<title>(.*?)</title>", page, re.S).group(1)).replace(
+        ": MedlinePlus Medical Encyclopedia", ""
+    )
+    summary_match = re.search(r'<div id="ency_summary">(.*?)</div>', page, re.S)
+    parts = [_clean(summary_match.group(1))] if summary_match else []
+    sections: dict[str, str] = {}
+    for section in page.split("<section>")[1:]:
+        heading = re.search(r"<h2>(.*?)</h2>", section, re.S)
+        body = re.search(r'class="section-body"[^>]*>(.*?)</div>\s*</div>\s*</section>|class="section-body"[^>]*>(.*)', section, re.S)
+        if heading and body:
+            sections[_clean(heading.group(1))] = _clean(body.group(1) or body.group(2))
+    for name in priority:
+        if name in sections and sections[name]:
+            parts.append(sections[name])
+    text = _truncate_at_sentence(" ".join(p for p in parts if p))
+    return {
+        "title": title,
+        "url": url,
+        "source": f"MedlinePlus Medical Encyclopedia: {title} ({url})",
+        "text": text,
+    }
+
+
+def fetch_topic(client: httpx.Client, term: str, expected_title: str) -> dict:
+    response = _get(client, "https://wsearch.nlm.nih.gov/ws/query", db="healthTopics", term=term, retmax=5)
+    for doc in ET.fromstring(response.text).iter("document"):
+        fields = {c.get("name"): c.text or "" for c in doc.findall("content")}
+        title = _clean(fields.get("title", ""))
+        if title.lower() == expected_title.lower():
+            url = doc.get("url")
+            return {
+                "title": title,
+                "url": url,
+                "source": f"MedlinePlus: {title} ({url})",
+                "text": _truncate_at_sentence(_clean(fields["FullSummary"])),
+            }
+    raise RuntimeError(f"MedlinePlus topic '{expected_title}' not found for term '{term}'")
+
+
+def fetch_pubmed(client: httpx.Client, pmid: str, expected_fragment: str) -> dict:
+    summary = _get(client, EUTILS + "esummary.fcgi", db="pubmed", id=pmid, retmode="json").json()["result"][pmid]
+    title = summary["title"].rstrip(".")
+    if expected_fragment.lower() not in title.lower():
+        raise RuntimeError(f"PMID {pmid} title mismatch: expected '{expected_fragment}' in '{title}'")
+    time.sleep(0.4)
+    root = ET.fromstring(_get(client, EUTILS + "efetch.fcgi", db="pubmed", id=pmid, rettype="abstract", retmode="xml").text)
+    abstract = " ".join(
+        "".join(node.itertext()).strip() for node in root.iter("AbstractText")
+    )
+    abstract = re.sub(r"\s+", " ", abstract).strip()
+    if not abstract:
+        raise RuntimeError(f"PMID {pmid} has no abstract text")
+    author = summary["authors"][0]["name"] if summary.get("authors") else "Anon"
+    year = summary["pubdate"][:4]
+    journal = summary["source"]
+    url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+    return {
+        "title": title,
+        "url": url,
+        "source": f'PubMed PMID {pmid}: {author} et al. "{title}." {journal}. {year} (abstract excerpt; {url})',
+        "text": _truncate_at_sentence(abstract),
+    }
+
+
+def build() -> dict[str, list[dict]]:
+    retrieved = date.today().isoformat()
+    folders: dict[str, list[dict]] = {"guidelines": [], "symptom_disease": []}
+    with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, follow_redirects=True) as client:
+        for doc_id, folder, article_id, priority in ENCY_DOCS:
+            folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_ency(client, article_id, priority)})
+            time.sleep(0.3)
+        for doc_id, folder, term, title in TOPIC_DOCS:
+            folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_topic(client, term, title)})
+            time.sleep(0.3)
+        for doc_id, folder, pmid, fragment in PUBMED_DOCS:
+            folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_pubmed(client, pmid, fragment)})
+            time.sleep(0.4)
+    return folders
+
+
+def main() -> None:
+    folders = build()
+    for folder, records in folders.items():
+        path = KB_ROOT / folder / f"{folder}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(records, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"wrote {len(records)} real passages -> {path}")
+
+
+if __name__ == "__main__":
+    main()

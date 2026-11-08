@@ -13,7 +13,7 @@ assumed — see "Evidence" for how.
 | 3 | Text + image case works | ✅ | Real eval run, CASE004, CASE016 |
 | 4 | Clinical Agent returns validated JSON | ✅ | 7 tests, `test_clinical_agent.py` |
 | 5 | Imaging Agent returns validated JSON | ✅ | 10 tests; BiomedCLIP loaded and ran for real during the eval run (see Known Gaps for one real failure mode observed) |
-| 6 | Qdrant contains biomedical vectors + metadata | ✅ | Verified via the real Qdrant HTTP API: `medorchestrate_kb`, 18 points, 768-dim, both in the local embedded store and in the dockerized `qdrant` service |
+| 6 | Qdrant contains biomedical vectors + metadata | ✅ (local store) / ⚠️ Docker needs re-ingest | `medorchestrate_kb` is now **30 points, 768-dim, 100% real citable content** (20 MedlinePlus + 10 PubMed excerpts, 0 synthetic) — verified directly against the local embedded store on 2026-11-08 and via `backend/tests/test_ingest.py`. This replaced the earlier 18–23 all-`synthetic` passages (the build spec requires ≥80% real). The dockerized `qdrant` volume still holds the OLD corpus until you run `docker compose exec backend python -m backend.rag.ingest` (ingest now rebuilds the collection cleanly). The case-memory collection is unchanged. |
 | 7 | RAG returns cited source passages | ✅ | Real eval run: RAG relevance true for 14/17 cases (keyword-overlap heuristic) |
 | 8 | Evidence Agent: live when available, degrades gracefully when not | ✅ | Real PubMed/MedlinePlus calls made during the eval run; retry+timeout confirmed in `evidence_agent.py` |
 | 9 | Fusion detects conflicts | ✅ | `test_fusion_agent.py`; conflict-detection path exercised in `test_integration.py` |
