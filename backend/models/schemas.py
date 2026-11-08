@@ -90,3 +90,8 @@ class FinalReport(BaseModel):
     conflicts: list[str] = []
     iteration_count: int = 0
     live_evidence_available: bool = True
+    # The BiomedCLIP imaging findings for this case, echoed so the clinician
+    # report can show them (and render an unsupported modality honestly as
+    # "not assessed"). None when the case had no image or imaging analysis
+    # failed -- and for reports stored before this field existed.
+    imaging: ImagingFindings | None = None

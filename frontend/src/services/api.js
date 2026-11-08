@@ -1,10 +1,16 @@
 /**
  * Small fetch wrapper for the MedOrchestrate FastAPI backend (Phase 9).
  *
- * Every function throws a plain Error with a clinician-readable message
- * on failure -- network failure, 422 validation errors, and 500s are
- * all normalized to `error.message`, with `error.status` set when the
- * server actually responded (absent for a pure network failure).
+ * Every function throws an ApiError on failure. `error.message` is always
+ * a clinician-readable message; `error.kind` says WHAT failed so the UI
+ * can show a distinct message per failure type (see ErrorBanner.jsx):
+ *
+ *   "network"    -- fetch itself rejected (server unreachable/offline/CORS);
+ *                   `status` is undefined
+ *   "validation" -- HTTP 422, the server rejected the request as invalid
+ *   "not_found"  -- HTTP 404
+ *   "server"     -- HTTP 5xx
+ *   "other"      -- any other non-2xx status
  */
 
 // Build-time override (Vite convention: only VITE_-prefixed vars are
@@ -15,7 +21,23 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const NETWORK_ERROR_MESSAGE =
-  "Could not reach the MedOrchestrate server. Check your connection and try again.";
+  "Could not reach the MedOrchestrate server. Check your connection and that the backend is running.";
+
+export class ApiError extends Error {
+  constructor(message, { kind, status } = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.kind = kind ?? "other";
+    this.status = status;
+  }
+}
+
+export function kindForStatus(status) {
+  if (status === 422) return "validation";
+  if (status === 404) return "not_found";
+  if (status >= 500) return "server";
+  return "other";
+}
 
 function formatDetail(detail) {
   if (typeof detail === "string") return detail;
@@ -43,9 +65,7 @@ async function handleResponse(response) {
       // Response body wasn't JSON (or was empty) -- fall back to the
       // generic status-based message above.
     }
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
+    throw new ApiError(message, { kind: kindForStatus(response.status), status: response.status });
   }
   return response.json();
 }
@@ -55,7 +75,7 @@ async function safeFetch(url, options) {
   try {
     response = await fetch(url, options);
   } catch {
-    throw new Error(NETWORK_ERROR_MESSAGE);
+    throw new ApiError(NETWORK_ERROR_MESSAGE, { kind: "network" });
   }
   return handleResponse(response);
 }

@@ -1,47 +1,112 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CaseSubmission from "./pages/CaseSubmission.jsx";
 import Processing from "./pages/Processing.jsx";
 import Report from "./pages/Report.jsx";
 import Review from "./pages/Review.jsx";
 import { diagnoseCase } from "./services/api.js";
 
-// Simple state-based routing between the screens -- avoids adding
-// react-router-dom for an app this small. All state lives in React
-// state only, nothing in localStorage/sessionStorage.
-const SCREENS = {
-  SUBMISSION: "submission",
-  PROCESSING: "processing",
-  REPORT: "report",
-  REVIEW: "review",
+// Client-side routing (Phase 10) without a router dependency: each screen
+// has a hash URL (#/, #/processing, #/report, #/review), so the browser's
+// Back/Forward buttons work and a screen can be linked to. Hash routes
+// need no server-side fallback, so this works on any static host
+// (`serve`, nginx, a CDN) unchanged.
+//
+// All CASE data still lives in React state only -- never localStorage or
+// sessionStorage (Phase 10 requirement). So a page refresh drops the
+// in-memory report, and the guards below send the user back to the
+// submission screen instead of rendering a report that no longer exists.
+const ROUTES = {
+  SUBMISSION: "/",
+  PROCESSING: "/processing",
+  REPORT: "/report",
+  REVIEW: "/review",
 };
+const KNOWN_PATHS = Object.values(ROUTES);
+
+function currentPath() {
+  const path = window.location.hash.replace(/^#/, "");
+  return KNOWN_PATHS.includes(path) ? path : ROUTES.SUBMISSION;
+}
+
+function useHashRoute() {
+  const [path, setPath] = useState(currentPath);
+
+  useEffect(() => {
+    const onHashChange = () => setPath(currentPath());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const navigate = useCallback((to, { replace = false } = {}) => {
+    if (replace) {
+      // replaceState doesn't fire hashchange, so update state directly.
+      window.history.replaceState(null, "", `#${to}`);
+      setPath(to);
+    } else {
+      window.location.hash = to; // pushes a history entry and fires hashchange
+    }
+  }, []);
+
+  return [path, navigate];
+}
 
 export default function App() {
-  const [screen, setScreen] = useState(SCREENS.SUBMISSION);
+  const [path, navigate] = useHashRoute();
+  const [submitting, setSubmitting] = useState(false);
   const [report, setReport] = useState(null);
   const [submittedSummary, setSubmittedSummary] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // an ApiError (or Error) from the last submission
+  const lastSubmission = useRef(null);
 
-  async function handleSubmit(formData, summary) {
-    setError(null);
-    setSubmittedSummary(summary);
-    setScreen(SCREENS.PROCESSING);
-    try {
-      const result = await diagnoseCase(formData);
-      setReport(result);
-      // Reachable automatically when review is required, not just via
-      // the manual "Review Case" button on the Report screen.
-      setScreen(result.review_required ? SCREENS.REVIEW : SCREENS.REPORT);
-    } catch (err) {
-      setError(err.message || "Something went wrong while analyzing this case.");
-      setScreen(SCREENS.SUBMISSION);
-    }
+  // Guards: /processing only makes sense mid-request; /report and /review
+  // need a report in memory. Anything else falls back to the form.
+  const invalid =
+    (path === ROUTES.PROCESSING && !submitting) ||
+    ((path === ROUTES.REPORT || path === ROUTES.REVIEW) && !report);
+  const screen = invalid ? ROUTES.SUBMISSION : path;
+
+  useEffect(() => {
+    if (invalid) navigate(ROUTES.SUBMISSION, { replace: true });
+  }, [invalid, navigate]);
+
+  const runSubmission = useCallback(
+    async (submission) => {
+      lastSubmission.current = submission;
+      setError(null);
+      setSubmittedSummary(submission.summary);
+      setSubmitting(true);
+      navigate(ROUTES.PROCESSING);
+      try {
+        const result = await diagnoseCase(submission.formData);
+        setReport(result);
+        setSubmitting(false);
+        // Reachable automatically when review is required, not just via
+        // the manual "Review Case" button on the Report screen. `replace`
+        // so Back doesn't land on the (now meaningless) processing screen.
+        navigate(result.review_required ? ROUTES.REVIEW : ROUTES.REPORT, { replace: true });
+      } catch (err) {
+        setError(err);
+        setSubmitting(false);
+        navigate(ROUTES.SUBMISSION, { replace: true });
+      }
+    },
+    [navigate]
+  );
+
+  function handleSubmit(formData, summary) {
+    runSubmission({ formData, summary });
+  }
+
+  function handleRetry() {
+    if (lastSubmission.current) runSubmission(lastSubmission.current);
   }
 
   function handleNewCase() {
+    lastSubmission.current = null;
     setReport(null);
     setSubmittedSummary(null);
     setError(null);
-    setScreen(SCREENS.SUBMISSION);
+    navigate(ROUTES.SUBMISSION);
   }
 
   return (
@@ -54,21 +119,35 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-8">
-        {screen === SCREENS.SUBMISSION && <CaseSubmission onSubmit={handleSubmit} error={error} />}
+        {screen === ROUTES.SUBMISSION && (
+          <CaseSubmission
+            onSubmit={handleSubmit}
+            error={error}
+            onRetry={lastSubmission.current ? handleRetry : undefined}
+            // keep what was typed if a submission failed, so a 422 can be
+            // fixed (or a network blip retried) without re-entering the case
+            initialValues={submittedSummary}
+          />
+        )}
 
-        {screen === SCREENS.PROCESSING && <Processing />}
+        {screen === ROUTES.PROCESSING && <Processing />}
 
-        {screen === SCREENS.REPORT && report && (
+        {screen === ROUTES.REPORT && report && (
           <Report
             report={report}
             submittedSummary={submittedSummary}
             onNewCase={handleNewCase}
-            onReviewCase={() => setScreen(SCREENS.REVIEW)}
+            onReviewCase={() => navigate(ROUTES.REVIEW)}
           />
         )}
 
-        {screen === SCREENS.REVIEW && report && (
-          <Review report={report} onBack={() => setScreen(SCREENS.REPORT)} onReviewed={() => setScreen(SCREENS.REPORT)} />
+        {screen === ROUTES.REVIEW && report && (
+          <Review
+            report={report}
+            submittedSummary={submittedSummary}
+            onBack={() => navigate(ROUTES.REPORT)}
+            onReviewed={() => navigate(ROUTES.REPORT)}
+          />
         )}
       </main>
     </div>

@@ -24,7 +24,7 @@ WORKDIR /app
 
 # `serve` is a small static file server -- avoids maintaining a separate
 # nginx.conf for an app this size. No SPA fallback routing is needed:
-# App.jsx does state-based screen switching, not URL-based routing.
+# App.jsx uses hash routes (#/report etc.), which never reach the server.
 RUN npm install -g serve@14
 
 COPY --from=build /app/dist ./dist

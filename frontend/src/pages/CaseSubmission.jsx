@@ -1,23 +1,32 @@
 import { useRef, useState } from "react";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 
 const SEX_OPTIONS = ["male", "female", "other"];
 
 /**
  * onSubmit(formData, submittedSummary) -- formData is ready to POST to
  * /diagnose as multipart/form-data; submittedSummary is a plain object
- * ({age, sex, clinicalText, hadImage}) the parent keeps in React state
- * so the Report screen can show a patient summary / note that an image
- * was included -- FinalReport itself doesn't echo back patient details
- * or imaging findings, so the app remembers what was submitted instead
- * of inventing data that isn't in the API response.
+ * ({age, sex, clinicalText, medicalReport, hadImage, imageFile}) the
+ * parent keeps in React state so the Report screen can show a patient
+ * summary, and so this form can be re-populated after a failed
+ * submission. FinalReport itself doesn't echo back patient details, so
+ * the app remembers what was submitted instead of inventing data that
+ * isn't in the API response.
+ *
+ * error: whatever the last submission threw (an ApiError) -- rendered by
+ * ErrorBanner with a distinct message per failure type. onRetry re-sends
+ * the same submission (offered for network/server failures only).
+ * initialValues: the previously submitted summary, if any.
  */
-export default function CaseSubmission({ onSubmit, error }) {
-  const [age, setAge] = useState("");
-  const [sex, setSex] = useState("");
-  const [clinicalText, setClinicalText] = useState("");
-  const [medicalReport, setMedicalReport] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+export default function CaseSubmission({ onSubmit, error, onRetry, initialValues }) {
+  const [age, setAge] = useState(initialValues?.age ?? "");
+  const [sex, setSex] = useState(initialValues?.sex ?? "");
+  const [clinicalText, setClinicalText] = useState(initialValues?.clinicalText ?? "");
+  const [medicalReport, setMedicalReport] = useState(initialValues?.medicalReport ?? "");
+  const [imageFile, setImageFile] = useState(initialValues?.imageFile ?? null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(() =>
+    initialValues?.imageFile ? URL.createObjectURL(initialValues.imageFile) : null
+  );
   const [formError, setFormError] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -59,10 +68,14 @@ export default function CaseSubmission({ onSubmit, error }) {
       age,
       sex,
       clinicalText: clinicalText.trim(),
+      medicalReport: medicalReport.trim(),
       hadImage: Boolean(imageFile),
+      imageFile,
     });
   }
 
+  // A client-side form message (string) takes precedence over the last
+  // server error until the user submits again.
   const displayedError = formError || error;
 
   return (
@@ -74,11 +87,8 @@ export default function CaseSubmission({ onSubmit, error }) {
       </p>
 
       {displayedError && (
-        <div
-          role="alert"
-          className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {displayedError}
+        <div className="mt-4">
+          <ErrorBanner error={displayedError} onRetry={formError ? undefined : onRetry} />
         </div>
       )}
 

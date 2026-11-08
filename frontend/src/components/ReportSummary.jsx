@@ -1,8 +1,10 @@
 import ConfidenceBar from "./ConfidenceBar.jsx";
+import ImagingSection from "./ImagingSection.jsx";
+import SourceBadge from "./SourceBadge.jsx";
 
 /**
- * The data-display half of a FinalReport -- confidence, conflicts,
- * differential diagnoses, and supporting evidence. Shared between
+ * The data-display half of a FinalReport -- confidence, conflicts, imaging
+ * findings, differential diagnoses, and supporting evidence. Shared between
  * pages/Report.jsx and pages/Review.jsx so the review screen shows
  * exactly the same underlying data the clinician already saw on the
  * report, not a re-derived summary.
@@ -11,17 +13,38 @@ import ConfidenceBar from "./ConfidenceBar.jsx";
  * (always visible, on any report -- reviewing isn't restricted to
  * low-confidence cases); this component just surfaces an urgent notice
  * when report.review_required is true, without its own separate button.
+ *
+ * `imageSubmitted`: whether an image was attached on the submission
+ * screen (only known client-side) -- see ImagingSection.
  */
-export default function ReportSummary({ report }) {
+
+// A fusion conflict that describes the model's own direct read of the
+// image disagreeing with BiomedCLIP's pre-filter label is a distinct,
+// newer conflict type than a disagreement between text evidence sources
+// (Phase 5), so it is tagged separately. The fusion prompt asks for a
+// "short, human-readable description" with no fixed wording, hence the
+// keyword match rather than an exact string.
+const IMAGE_CONFLICT_RE = /biomedclip|pre-?filter|visual read|direct(ly)? (read|visual)|from the image|in the image/i;
+
+export function isImageConflict(text) {
+  return IMAGE_CONFLICT_RE.test(text);
+}
+
+export default function ReportSummary({ report, imageSubmitted = false }) {
   const diagnoses = [...(report.diagnoses ?? [])].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
-  const ragEvidence = (report.evidence ?? []).filter((item) => item.type === "rag");
-  const liveEvidence = (report.evidence ?? []).filter((item) => item.type === "live");
+  const evidence = report.evidence ?? [];
   const conflicts = report.conflicts ?? [];
+  const iterations = report.iteration_count ?? 0;
 
   return (
     <>
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <ConfidenceBar confidence={report.confidence} label="Overall confidence" />
+        {iterations > 0 && (
+          <p className="mt-2 text-xs text-slate-400">
+            The adaptive optimizer refined this result over {iterations} iteration{iterations === 1 ? "" : "s"}.
+          </p>
+        )}
         {report.review_required && (
           <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm text-amber-800">
@@ -37,13 +60,27 @@ export default function ReportSummary({ report }) {
           <h3 className="flex items-center gap-2 text-sm font-semibold text-red-800">
             <WarningIcon /> Conflicting evidence
           </h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700">
+          <ul className="mt-2 space-y-2 text-sm text-red-700">
             {conflicts.map((conflict, index) => (
-              <li key={index}>{conflict}</li>
+              <li key={index} className="flex items-start gap-2">
+                {isImageConflict(conflict) ? (
+                  <span
+                    data-conflict-kind="image"
+                    className="mt-0.5 flex-none rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-800 ring-1 ring-inset ring-fuchsia-600/20"
+                  >
+                    Image vs. BiomedCLIP
+                  </span>
+                ) : (
+                  <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-red-400" />
+                )}
+                <span>{conflict}</span>
+              </li>
             ))}
           </ul>
         </section>
       )}
+
+      <ImagingSection imaging={report.imaging} imageSubmitted={imageSubmitted} />
 
       <section className="mt-6">
         <h3 className="text-sm font-semibold text-slate-700">Differential diagnoses</h3>
@@ -81,30 +118,19 @@ export default function ReportSummary({ report }) {
       <section className="mt-6">
         <h3 className="text-sm font-semibold text-slate-700">Supporting evidence</h3>
 
-        {ragEvidence.length > 0 && (
-          <div className="mt-3">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Offline knowledge base
-            </h4>
-            <ul className="mt-2 space-y-2">
-              {ragEvidence.map((item, index) => (
-                <li key={index} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
-                  <p className="text-slate-700">{item.text}</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    source: {item.source} · relevance: {Math.round((item.score ?? 0) * 100)}%
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {report.live_evidence_available === false && (
+          <p role="status" className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Live literature evidence was unavailable for this case — every live source failed to
+            respond. Only the offline knowledge base (and any clinician precedents) are shown, so this
+            differential has not been checked against current literature.
+          </p>
         )}
 
-        {liveEvidence.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-xs font-medium uppercase tracking-wide text-slate-400">Live evidence</h4>
-            <ul className="mt-2 space-y-2">
-              {liveEvidence.map((item, index) => (
-                <li key={index} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
+        <ul className="mt-3 space-y-2">
+          {evidence.map((item, index) => (
+            <li key={index} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                {item.type === "live" ? (
                   <a
                     href={item.url}
                     target="_blank"
@@ -113,21 +139,31 @@ export default function ReportSummary({ report }) {
                   >
                     {item.title}
                   </a>
-                  <p className="mt-1 text-slate-600">{item.summary}</p>
-                  <p className="mt-1 text-xs text-slate-400">
+                ) : (
+                  <p className="text-slate-700">{item.text}</p>
+                )}
+                <SourceBadge item={item} />
+              </div>
+              {item.type === "live" && <p className="mt-1 text-slate-600">{item.summary}</p>}
+              <p className="mt-1 text-xs text-slate-400">
+                {item.type === "live" ? (
+                  <>
                     {item.source}
                     {item.publication_date ? ` · ${item.publication_date}` : ""} · evidence level:{" "}
                     {item.evidence_level}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {ragEvidence.length === 0 && liveEvidence.length === 0 && (
-          <p className="mt-3 text-sm text-slate-500">No supporting evidence was retrieved for this case.</p>
-        )}
+                  </>
+                ) : (
+                  <>
+                    source: {item.source} · relevance: {Math.round((item.score ?? 0) * 100)}%
+                  </>
+                )}
+              </p>
+            </li>
+          ))}
+          {evidence.length === 0 && (
+            <li className="text-sm text-slate-500">No supporting evidence was retrieved for this case.</li>
+          )}
+        </ul>
       </section>
     </>
   );

@@ -379,7 +379,7 @@ MedOrchestrate/
 │   ├── Dockerfile              # multi-stage: npm build -> static `serve`
 │   └── src/
 │       ├── pages/             # CaseSubmission, Processing, Report, Review
-│       ├── components/        # ConfidenceBar, ReportSummary
+│       ├── components/        # ConfidenceBar, ReportSummary, ImagingSection, SourceBadge, ErrorBanner
 │       └── services/api.js    # fetch wrapper for the backend
 ├── data/
 │   ├── knowledge_base/        # real, cited corpus (guidelines/, symptom_disease/ JSON) read by backend/rag/ingest.py

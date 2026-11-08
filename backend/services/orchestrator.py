@@ -572,6 +572,7 @@ def run_case(case: CaseInput) -> FinalReport:
         review_required=context.review_required,
         conflicts=fusion.conflicts,
         iteration_count=context.iterations,
+        imaging=context.imaging,
         # False only when live evidence was genuinely unavailable: no live
         # search was attempted at all (sources_queried == 0), or EVERY
         # source failed (Phase 4: "signal unavailable only if ALL sources

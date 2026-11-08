@@ -146,6 +146,7 @@ def test_text_only_full_run(mock_agents):
     assert report.review_required is False
     assert report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses
     assert {e["type"] for e in report.evidence} == {"rag", "live"}
+    assert report.imaging is None  # no image -> nothing to echo into the report
 
     mock_agents["extract_clinical_findings"].assert_awaited_once()
     mock_agents["analyze_image"].assert_not_called()  # no image_path
@@ -160,6 +161,10 @@ def test_text_and_image_full_run(mock_agents):
 
     assert report.case_id == "CASE001"
     assert report.confidence == 0.8
+    # the imaging findings are echoed into the report for the clinician UI
+    assert report.imaging is not None
+    assert report.imaging.modality == "MRI brain scan"
+    assert report.imaging.findings == ["white matter hyperintensity"]
     mock_agents["analyze_image"].assert_awaited_once()
     call_args = mock_agents["analyze_image"].call_args
     assert call_args.args[0] == CASE_TEXT_AND_IMAGE.image_path
@@ -269,6 +274,7 @@ def test_imaging_failure_degrades_gracefully(mock_agents):
 
     fuse_call_args = mock_agents["fuse"].call_args.args
     assert fuse_call_args[1] is None  # degraded to no imaging findings
+    assert report.imaging is None
 
 
 def test_fusion_failure_degrades_to_low_confidence_and_review_required(mock_agents):

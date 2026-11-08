@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 import backend.api.routes as routes
 from backend.main import app
-from backend.models.schemas import FinalReport
+from backend.models.schemas import FinalReport, ImagingFindings
 from backend.services import storage
 
 client = TestClient(app)
@@ -159,6 +159,36 @@ def test_get_diagnosis_found_after_diagnose(mock_run_case):
 
     assert response.status_code == 200
     assert response.json()["case_id"] == "CASE001"
+
+
+def test_imaging_findings_round_trip_through_diagnose_and_get(monkeypatch):
+    """The clinician report needs the imaging findings (incl. an
+    unsupported modality, rendered as "not assessed"), so they must survive
+    POST /diagnose -> storage -> GET /diagnose/{id}."""
+    report = SAMPLE_REPORT.model_copy(
+        update={
+            "imaging": ImagingFindings(
+                modality="unspecified medical image",
+                findings=["no findings model available for this modality (supported: MRI brain scan)"],
+                confidence=0.0,
+                unsupported_modality=True,
+            )
+        }
+    )
+    monkeypatch.setattr(routes, "run_case", MagicMock(return_value=report))
+
+    posted = client.post("/diagnose", data={"case_id": "CASE001", "age": 45, "sex": "male"}).json()
+    fetched = client.get("/diagnose/CASE001").json()
+
+    assert posted["imaging"]["unsupported_modality"] is True
+    assert posted["imaging"]["modality"] == "unspecified medical image"
+    assert fetched["imaging"] == posted["imaging"]
+
+
+def test_report_without_imaging_serializes_imaging_as_null(mock_run_case):
+    response = client.post("/diagnose", data={"case_id": "CASE001", "age": 45, "sex": "male"})
+
+    assert response.json()["imaging"] is None  # old/no-image reports stay valid
 
 
 # --------------------------------------------------------------------------

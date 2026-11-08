@@ -1,12 +1,12 @@
 import ReportSummary from "../components/ReportSummary.jsx";
 
 /**
- * report: the FinalReport JSON from POST/GET /diagnose.
- * submittedSummary: { age, sex, clinicalText, hadImage } echoed from
- * what was submitted on the Case Submission screen -- FinalReport
- * itself doesn't include patient details or a separate ImagingFindings
- * object, so this app remembers what was submitted rather than
- * inventing data that isn't in the API response.
+ * report: the FinalReport JSON from POST/GET /diagnose (includes the
+ * imaging findings, if any, as report.imaging).
+ * submittedSummary: { age, sex, clinicalText, medicalReport, hadImage }
+ * echoed from what was submitted on the Case Submission screen --
+ * FinalReport doesn't include patient details, so this app remembers what
+ * was submitted rather than inventing data that isn't in the API response.
  * onNewCase / onReviewCase: navigation callbacks from App.jsx.
  */
 export default function Report({ report, submittedSummary, onNewCase, onReviewCase }) {
@@ -45,19 +45,19 @@ export default function Report({ report, submittedSummary, onNewCase, onReviewCa
             <dd className="text-slate-800">{submittedSummary.sex || "—"}</dd>
           </dl>
           {submittedSummary.clinicalText && (
-            <p className="mt-2 text-sm text-slate-600">{submittedSummary.clinicalText}</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{submittedSummary.clinicalText}</p>
           )}
-          {submittedSummary.hadImage && (
-            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              A medical image was included with this case and analyzed as part of the evidence
-              fusion below.
+          {submittedSummary.medicalReport && (
+            <div className="mt-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Reported medical text</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{submittedSummary.medicalReport}</p>
             </div>
           )}
         </section>
       )}
 
       <div className="mt-6">
-        <ReportSummary report={report} />
+        <ReportSummary report={report} imageSubmitted={Boolean(submittedSummary?.hadImage)} />
       </div>
     </div>
   );

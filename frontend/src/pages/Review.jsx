@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 import ReportSummary from "../components/ReportSummary.jsx";
 import { submitReview } from "../services/api.js";
 
@@ -21,7 +22,7 @@ const DECISIONS = [
  * "Override diagnosis: <name>", matching the convention documented in
  * backend/api/schemas.py.
  */
-export default function Review({ report, onBack, onReviewed }) {
+export default function Review({ report, submittedSummary, onBack, onReviewed }) {
   const [decision, setDecision] = useState("accept");
   const [overrideDiagnosis, setOverrideDiagnosis] = useState("");
   const [annotationNote, setAnnotationNote] = useState("");
@@ -69,7 +70,7 @@ export default function Review({ report, onBack, onReviewed }) {
       });
       setConfirmation(result);
     } catch (err) {
-      setError(err.message || "Failed to submit the review.");
+      setError(err); // an ApiError -- ErrorBanner words network / 422 / server failures differently
     } finally {
       setSubmitting(false);
     }
@@ -79,9 +80,10 @@ export default function Review({ report, onBack, onReviewed }) {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
-          <h2 className="text-lg font-semibold text-emerald-800">Review recorded</h2>
+          <h2 className="text-lg font-semibold text-emerald-800">Case closed</h2>
           <p className="mt-2 text-sm text-emerald-700">
-            {confirmation.reviewer} recorded "{confirmation.decision}" for case {confirmation.case_id}.
+            {confirmation.reviewer} recorded "{confirmation.decision}" for case {confirmation.case_id}, and
+            the case is now closed.
           </p>
           {confirmation.annotation && (
             <p className="mt-2 rounded-md bg-white px-3 py-2 text-sm text-slate-600">{confirmation.annotation}</p>
@@ -118,15 +120,15 @@ export default function Review({ report, onBack, onReviewed }) {
       </div>
 
       <div className="mt-6">
-        <ReportSummary report={report} />
+        <ReportSummary report={report} imageSubmitted={Boolean(submittedSummary?.hadImage)} />
       </div>
 
       <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-slate-700">Clinician decision</h3>
 
         {error && (
-          <div role="alert" className="mt-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+          <div className="mt-3">
+            <ErrorBanner error={error} />
           </div>
         )}
 
@@ -158,6 +160,12 @@ export default function Review({ report, onBack, onReviewed }) {
           {decision === "override" && (
             <div>
               <span className="block text-sm font-medium text-slate-700">Replacement diagnosis</span>
+              <p className="mt-1 text-xs text-slate-500">
+                Your replacement diagnosis will be recorded and made available as evidence for similar
+                future cases — including, when this case had an image in a supported modality, for future
+                cases with a visually similar image. It is shown to the model as a precedent to weigh,
+                not as a guaranteed-correct answer.
+              </p>
               {diagnoses.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {diagnoses.map((d, index) => (
