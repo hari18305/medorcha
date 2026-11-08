@@ -7,7 +7,7 @@ decision-support prototype.
 - **Agent orchestration**: CrewAI (Claude as the CrewAI LLM)
 - **RAG**: BioBERT sentence embeddings + Qdrant (local embedded fallback if no Qdrant server configured)
 - **Imaging**: BiomedCLIP zero-shot classification
-- **Live evidence**: PubMed + MedlinePlus (no API key required)
+- **Live evidence**: PubMed + MedlinePlus + Europe PMC + ClinicalTrials.gov, fetched concurrently (no API key required). One source being down never blocks the others; the report is flagged "live evidence unavailable" only if **all four** fail.
 - **Frontend**: React + Vite + Tailwind
 - **DB**: SQLite
 - **LLM provider**: Anthropic Claude API
@@ -186,7 +186,7 @@ Open `.env` and fill in:
 |---|---|---|
 | `ANTHROPIC_API_KEY` | **Yes**, for real runs | Get one from console.anthropic.com. Without it, Claude-dependent steps fail gracefully but the pipeline won't produce real output. |
 | `QDRANT_URL` / `QDRANT_API_KEY` | No | Leave blank to use an embedded local Qdrant store at `data/qdrant_local/` — no server needed. Set these only if you have a real Qdrant Cloud/self-hosted instance. |
-| `PUBMED_API_KEY` | No | PubMed/MedlinePlus work without a key at this call volume. |
+| `PUBMED_API_KEY` | No | PubMed, MedlinePlus, Europe PMC and ClinicalTrials.gov all work without a key at this call volume. |
 | `DATABASE_URL` | No | Defaults to `sqlite:///./medorchestrate.db`; created automatically on first run. |
 | `LANGFUSE_ENABLED` | No | Defaults to `false`. Leave off unless you have Langfuse credentials. |
 

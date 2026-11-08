@@ -317,10 +317,53 @@ MEDLINEPLUS_EMPTY_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <nlmSearchResult><list num="0" start="0" per="0"></list></nlmSearchResult>"""
 
 
-def _install_evidence_mocks(monkeypatch, pubmed_has_results=True, medlineplus_has_results=True, raise_error=None):
+EUROPEPMC_JSON = {
+    "hitCount": 1,
+    "resultList": {
+        "result": [
+            {
+                "id": "32000001", "source": "MED", "title": "A Europe PMC-only relevant paper.",
+                "abstractText": "A short abstract.", "pubYear": "2023",
+                "pubTypeList": {"pubType": ["Review"]},
+            }
+        ]
+    },
+}
+EUROPEPMC_EMPTY_JSON = {"hitCount": 0, "resultList": {"result": []}}
+
+CLINICALTRIALS_JSON = {
+    "studies": [
+        {
+            "protocolSection": {
+                "identificationModule": {"nctId": "NCT00000009", "briefTitle": "A relevant registered trial"},
+                "statusModule": {"overallStatus": "COMPLETED", "startDateStruct": {"date": "2021-05"}},
+                "designModule": {"phases": ["PHASE3"]},
+                "descriptionModule": {"briefSummary": "A short brief summary."},
+            }
+        }
+    ]
+}
+CLINICALTRIALS_EMPTY_JSON = {"studies": []}
+
+
+def _install_evidence_mocks(
+    monkeypatch,
+    pubmed_has_results=True,
+    medlineplus_has_results=True,
+    europepmc_has_results=True,
+    clinicaltrials_has_results=True,
+    raise_error=None,
+    down=(),
+):
+    """Mocks all four live-evidence HTTP endpoints. `raise_error` makes
+    EVERY request fail; `down` is a collection of endpoint URLs (e.g.
+    evidence_agent.EUROPEPMC_SEARCH_URL) that fail while the rest answer."""
+
     def handler(url, params):
         if raise_error is not None:
             raise raise_error
+        if url in down:
+            raise httpx.TimeoutException(f"simulated outage: {url}")
         if url == evidence_agent.PUBMED_ESEARCH_URL:
             return _json_response(url, PUBMED_ESEARCH_JSON if pubmed_has_results else PUBMED_ESEARCH_EMPTY_JSON)
         if url == evidence_agent.PUBMED_ESUMMARY_URL:
@@ -329,6 +372,10 @@ def _install_evidence_mocks(monkeypatch, pubmed_has_results=True, medlineplus_ha
             return _text_response(url, PUBMED_EFETCH_XML)
         if url == evidence_agent.MEDLINEPLUS_SEARCH_URL:
             return _text_response(url, MEDLINEPLUS_XML if medlineplus_has_results else MEDLINEPLUS_EMPTY_XML)
+        if url == evidence_agent.EUROPEPMC_SEARCH_URL:
+            return _json_response(url, EUROPEPMC_JSON if europepmc_has_results else EUROPEPMC_EMPTY_JSON)
+        if url == evidence_agent.CLINICALTRIALS_SEARCH_URL:
+            return _json_response(url, CLINICALTRIALS_JSON if clinicaltrials_has_results else CLINICALTRIALS_EMPTY_JSON)
         raise AssertionError(f"unexpected URL {url}")
 
     fake_client = _FakeAsyncHttpClient(handler)
@@ -683,6 +730,61 @@ def test_web_failure_continues_with_offline_evidence_only(monkeypatch):
     # evidence was unavailable (not just an empty list a caller has to
     # infer meaning from).
     assert report.live_evidence_available is False
+
+
+def test_one_live_source_down_others_still_contribute_and_report_stays_available(monkeypatch):
+    """Phase 16 matrix: "One live-evidence source down -> others still
+    contribute". Europe PMC and ClinicalTrials.gov are down; PubMed and
+    MedlinePlus answer, so live evidence is still available and present."""
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache"], history=["hypertension"]))
+    _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
+    _install_evidence_mocks(
+        monkeypatch, down=(evidence_agent.EUROPEPMC_SEARCH_URL, evidence_agent.CLINICALTRIALS_SEARCH_URL)
+    )
+    _install_fusion_mock(monkeypatch, _fusion_response([{"name": "Hypertension-related headache", "confidence": 0.6, "supporting_evidence": [], "rank": 1}], 0.6))
+
+    report = run_case(CaseInput(case_id="INTEG-ONE-DOWN", patient=Patient(age=45, sex="male"), clinical_text="headache"))
+
+    live_sources = {item["source"] for item in report.evidence if item["type"] == "live"}
+    assert live_sources == {"PubMed", "MedlinePlus"}
+    assert report.live_evidence_available is True
+
+
+def test_all_four_live_sources_down_is_offline_only_and_flagged(monkeypatch):
+    """Phase 16 matrix: "all four down -> offline-only, flagged"."""
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache"], history=["hypertension"]))
+    _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
+    _install_evidence_mocks(
+        monkeypatch,
+        down=(
+            evidence_agent.PUBMED_ESEARCH_URL, evidence_agent.MEDLINEPLUS_SEARCH_URL,
+            evidence_agent.EUROPEPMC_SEARCH_URL, evidence_agent.CLINICALTRIALS_SEARCH_URL,
+        ),
+    )
+    _install_fusion_mock(monkeypatch, _fusion_response([{"name": "Hypertension-related headache", "confidence": 0.6, "supporting_evidence": [], "rank": 1}], 0.6))
+
+    report = run_case(CaseInput(case_id="INTEG-ALL-DOWN", patient=Patient(age=45, sex="male"), clinical_text="headache"))
+
+    assert any(item["type"] == "rag" for item in report.evidence)       # offline evidence still there
+    assert not any(item["type"] == "live" for item in report.evidence)  # nothing fabricated
+    assert report.live_evidence_available is False                      # flagged
+
+
+def test_live_sources_answering_with_nothing_is_not_reported_as_unavailable(monkeypatch):
+    """The sources all responded, there just was nothing to find: that is
+    NOT an outage, so the report must not claim live evidence was unavailable."""
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache"], history=["hypertension"]))
+    _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
+    _install_evidence_mocks(
+        monkeypatch, pubmed_has_results=False, medlineplus_has_results=False,
+        europepmc_has_results=False, clinicaltrials_has_results=False,
+    )
+    _install_fusion_mock(monkeypatch, _fusion_response([{"name": "Hypertension-related headache", "confidence": 0.6, "supporting_evidence": [], "rank": 1}], 0.6))
+
+    report = run_case(CaseInput(case_id="INTEG-EMPTY", patient=Patient(age=45, sex="male"), clinical_text="headache"))
+
+    assert not any(item["type"] == "live" for item in report.evidence)
+    assert report.live_evidence_available is True
 
 
 def test_web_success_sets_live_evidence_available_true(monkeypatch):

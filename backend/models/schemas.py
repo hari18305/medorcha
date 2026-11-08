@@ -63,6 +63,16 @@ class LiveEvidenceSource(BaseModel):
 
 class LiveEvidence(BaseModel):
     sources: list[LiveEvidenceSource]
+    # Additive, defaulted bookkeeping so "every source failed" can be told
+    # apart from "sources answered but found nothing" (an empty `sources`
+    # list alone can't). sources_queried == 0 means no live search was
+    # attempted at all (e.g. an empty query).
+    sources_queried: int = 0
+    failed_sources: list[str] = []
+
+    @property
+    def all_sources_failed(self) -> bool:
+        return self.sources_queried > 0 and len(self.failed_sources) >= self.sources_queried
 
 
 class FusionResult(BaseModel):

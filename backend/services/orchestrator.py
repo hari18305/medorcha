@@ -572,10 +572,16 @@ def run_case(case: CaseInput) -> FinalReport:
         review_required=context.review_required,
         conflicts=fusion.conflicts,
         iteration_count=context.iterations,
-        # False whenever live evidence gathering ran but came back empty
-        # (PubMed/MedlinePlus unreachable, or a genuinely empty result) --
-        # lets a report consumer tell "no live evidence was found" apart
-        # from "we never even tried", without silently presenting an
-        # offline-only differential as if live evidence had corroborated it.
-        live_evidence_available=bool(context.live and context.live.sources),
+        # False only when live evidence was genuinely unavailable: no live
+        # search was attempted at all (sources_queried == 0), or EVERY
+        # source failed (Phase 4: "signal unavailable only if ALL sources
+        # failed"). One source being down, or the sources answering but
+        # finding nothing for a rare query, is NOT "unavailable" -- the
+        # flag lets a report consumer tell those apart from an outage,
+        # without presenting an offline-only differential as if live
+        # evidence had corroborated it.
+        live_evidence_available=bool(
+            context.live
+            and (context.live.sources or (context.live.sources_queried > 0 and not context.live.all_sources_failed))
+        ),
     )
