@@ -94,18 +94,36 @@ retrievable evidence for future similar cases:
 Both get folded into `RAGEvidence` on later similar cases (`run_rag()`)
 and reach the fusion prompt with an explicit "this is a past-case
 precedent, weigh it accordingly, don't treat it as infallible" framing.
+Each precedent's text states **the clinician's verified diagnosis**, not
+just the past case ("Similar past case: … Clinician-verified diagnosis: …").
+
+A precedent is only retrieved if it is genuinely similar:
+
+- **Text:** BioBERT cosine ≥ `CASE_MEMORY_MIN_SCORE` (default 0.6 —
+  measured: similar cases ≈ 0.75–0.81, unrelated ≈ 0.2–0.3).
+- **Visual:** only past images of the **same imaging modality**, and
+  BiomedCLIP cosine ≥ `VISUAL_MEMORY_MIN_SCORE` (default 0.85 —
+  an *unvalidated* prototype default; the synthetic demo images can't
+  calibrate it).
 
 ### Confidence weight recalibration
 
 `backend/services/weight_tuner.py` periodically refits the confidence
 formula's `w1`/`w2`/`w3` (never the fixed `THRESHOLD=0.65`) from real
 clinician accept/override outcomes — gated against small samples
-(`min_reviews`, default 10), fully audited
+(`min_reviews`, default 10, counted as **distinct reviewed cases** — a
+case's latest accept/override counts once), fully audited
 (`confidence_weight_history`), and never run automatically:
 
 ```bash
 python -m backend.services.weight_tuner
 ```
+
+The command first prints how many qualifying outcomes exist (e.g. "3 of
+10 needed") and leaves the weights unchanged until there are enough real
+reviews. Don't recalibrate from the Mode 2 benchmark: its fusion step is a
+placeholder, so the agreement signal is constant and the "after" score only
+matches an always-trust baseline (the harness now prints that caveat).
 
 ### Evaluation (`backend/tests/run_evaluation.py`)
 
@@ -187,6 +205,8 @@ Open `.env` and fill in:
 | `ANTHROPIC_API_KEY` | **Yes**, for real runs | Get one from console.anthropic.com. Without it, Claude-dependent steps fail gracefully but the pipeline won't produce real output. |
 | `QDRANT_URL` / `QDRANT_API_KEY` | No | Leave blank to use an embedded local Qdrant store at `data/qdrant_local/` — no server needed. Set these only if you have a real Qdrant Cloud/self-hosted instance. |
 | `PUBMED_API_KEY` | No | PubMed, MedlinePlus, Europe PMC and ClinicalTrials.gov all work without a key at this call volume. |
+| `CASE_MEMORY_MIN_SCORE` / `VISUAL_MEMORY_MIN_SCORE` | No | Minimum similarity for a past clinician override to be shown as a precedent (defaults 0.6 text / 0.85 visual — see "Case memory"). |
+| `RERANK_SCORE_CENTER` / `RERANK_SCORE_SCALE` | No | Calibration of the reranker's 0–1 relevance score (the S_rag confidence signal): `sigmoid((logit − center) / scale)`, defaults −7 / 2. Hand-calibrated for the current knowledge base; re-check with `python -m backend.rag.calibrate_reranker` if the corpus or reranker model changes. |
 | `DATABASE_URL` | No | Defaults to `sqlite:///./medorchestrate.db`; created automatically on first run. |
 | `LANGFUSE_ENABLED` | No | Defaults to `false`. Leave off unless you have Langfuse credentials. |
 

@@ -124,6 +124,71 @@ if the build stalls again at the `pip install` step specifically with
 no progress for several minutes, that's a fresh issue, not a repeat of
 either bug already fixed here.
 
+## Update 2026-11-09: case memory (Phase 13), weight recalibration (Phase 14), and an open confidence regression
+
+**Phase 13 — exercised for real, three bugs fixed.** A full round trip with the
+real models (real FastAPI `POST /review`, BioBERT, BiomedCLIP, cross-encoder, a
+temporary local Qdrant store; only the clinical-extraction LLM call stubbed)
+showed: an override on an image case wrote one `text` and one `visual`
+`case_memory_log` row; a new case with a similar complaint and a similar image
+then received **both** a `clinician_verified:` and a `visual_precedent:` item
+in its `RAGEvidence`; an unrelated chest-pain case received neither; a
+text-only override wrote only a `text` row. Bugs found and fixed:
+
+1. **Text case memory discarded the clinician's diagnosis** — retrieval
+   returned only the past case's symptoms, so the model was told "a similar
+   case existed" but never what the clinician concluded (a test even asserted
+   it). Precedent text now carries "Clinician-verified diagnosis: …".
+2. **No relevance cutoff** — every query got its 3 nearest past cases however
+   unrelated. Now: text ≥ 0.6 BioBERT cosine (measured: similar ≈ 0.75–0.81,
+   unrelated ≈ 0.2–0.3); visual ≥ 0.85, an *unvalidated* default (synthetic
+   images can't calibrate it).
+3. **Visual precedents ignored modality** — a brain-MRI override could come
+   back as "visually similar" to a chest X-ray. Now filtered to the same
+   modality (before the top-k cut).
+
+Also: the Mode 17 ablation harness seeded a made-up "clinician-confirmed"
+diagnosis into the real case-memory store and never removed it; it now cleans
+up after itself. **Existing leftovers in the real store** (4 points with
+case_id `CASE001_seed_precedent`, reviewer `mode17-eval`) are still there and
+should be deleted — they would now be shown to the model as real precedents.
+Caveat from the round trip: BiomedCLIP's zero-shot modality guess on the
+synthetic MRI placeholder was "CT scan", so those placeholder images aren't a
+reliable test of modality handling.
+
+**Phase 14 — not runnable on real data yet.** The real database has **3
+qualifying outcomes of the 10 required**, so `python -m backend.services.weight_tuner`
+correctly does nothing (it now says so and how many more are needed). Fixed:
+the gate counted *reviews*, so one case reviewed ten times could satisfy it; it
+now counts distinct cases (latest accept/override each). The earlier Mode 2
+"held-out calibration 13.3% → 86.7%" was **misleading**: 86.7% is exactly the
+share of held-out answers that were correct, i.e. the trivial rule "always
+trust" (fusion is a placeholder there, so agreement is constant and
+recalibration just raised every confidence). The harness now prints that
+baseline and a caveat; do not treat those weights as production weights.
+"Weight recalibration run at least once on real outcomes" is therefore **not
+met** and can only be met by collecting ≥10 genuine clinician reviews.
+
+**Confidence regression from the real knowledge base (Phase 2) — fixed in the
+score scale; Mode 1 still needs re-running.** With the new real
+MedlinePlus/PubMed corpus the cross-encoder's raw logits for symptom-list
+queries sit around −4 to −10, which a plain sigmoid flattened to ≈ 0.00: mean
+S_rag across the test cases was **0.039**, capping confidence at 0.6 — below the
+0.65 threshold — for nearly every case. Measured alternatives: BioBERT
+similarity as S_rag separates on-/off-topic queries poorly (0.29–0.58 vs
+0.21–0.33) and still can't reach the threshold, so it was rejected; the raw
+cross-encoder ordering *is* informative (on-topic mean logit −6.5 vs off-topic
+−9.7). The reranker now reports `sigmoid((logit + 7) / 2)` — a monotonic
+rescale (ranking unchanged) — giving mean S_rag **0.54** (strong specific cases
+0.64–0.72; thin or poorly covered ones 0.16–0.39 so they still route to
+review; off-topic queries 0.15–0.29). **Caveats:** the two constants were set by
+hand from 19 queries on the current 30-passage corpus — a prototype
+calibration, not a validated one; re-check with
+`python -m backend.rag.calibrate_reranker` whenever the corpus or model
+changes. The earlier Mode 1 numbers (average confidence 0.74, optimizer 53%,
+HITL 24%) came from the old synthetic corpus and do not describe the current
+system; **re-run Mode 1** (real Gemini calls) before quoting any figures.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

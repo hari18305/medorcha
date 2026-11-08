@@ -4,8 +4,10 @@ single confidence score per the spec formula:
     C = w1 * S_rag + w2 * S_web + w3 * A
 
   S_rag -- offline RAG retrieval signal: the mean of the top-K
-           rag.evidence[].score values (already 0-1 cross-encoder
-           relevance scores from reranker.py). 0.0 if no RAG evidence.
+           rag.evidence[].score values (0-1 cross-encoder relevance
+           scores from reranker.py, rescaled by reranker.relevance_score()
+           -- a hand-calibrated prototype scale, see that module). 0.0 if
+           no RAG evidence.
   S_web -- live evidence signal: each live.sources[] item is weighted
            by its evidence_level, then averaged. 0.0 if no live
            evidence.

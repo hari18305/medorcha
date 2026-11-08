@@ -245,8 +245,8 @@ def _install_rag_mocks(monkeypatch, scored_payloads=None, raise_error=None, cros
     return fake_client
 
 
-# High-relevance-scoring RAG payload (cross-encoder logit 6.0 -> sigmoid
-# ~0.9975), used by "high confidence" scenarios.
+# High-relevance-scoring RAG payload (cross-encoder logit 6.0 -> calibrated score
+# ~0.9985), used by "high confidence" scenarios.
 HIGH_SCORE_RAG_PAYLOAD = [
     (0.9, {"text": "Chronic hypertension is a major risk factor for cerebral small vessel disease.", "source": "synthetic", "doc_id": "d1", "page": 1, "chunk_length": 100}),
 ]
@@ -254,13 +254,13 @@ HIGH_SCORE_CROSS_ENCODER_MAP = {
     "Chronic hypertension is a major risk factor for cerebral small vessel disease.": 6.0,
 }
 
-# Low-relevance-scoring RAG payload (cross-encoder logit -6.0 -> sigmoid
-# ~0.0025), used by "low confidence" scenarios.
+# Low-relevance-scoring RAG payload (cross-encoder logit -14.0 -> calibrated score
+# ~0.03), used by "low confidence" scenarios.
 LOW_SCORE_RAG_PAYLOAD = [
     (0.3, {"text": "Some tangentially related reference passage.", "source": "synthetic", "doc_id": "d2", "page": 1, "chunk_length": 50}),
 ]
 LOW_SCORE_CROSS_ENCODER_MAP = {
-    "Some tangentially related reference passage.": -6.0,
+    "Some tangentially related reference passage.": -14.0,
 }
 
 
