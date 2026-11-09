@@ -26,7 +26,7 @@ assumed — see "Evidence" for how.
 | 16 | No secrets committed | ✅ | `git log --all -p` grepped for key patterns — only hit is a fake placeholder (`sk-ant-super-secret-value`) in `test_logging.py`, used to test the log-redaction function itself |
 | 17 | Basic retries/timeouts on Qdrant/PubMed/Claude | ✅ | Confirmed in code (`evidence_agent.py`: `MAX_ATTEMPTS=2`, `HTTP_TIMEOUT_SECONDS`); exercised for real during the eval run |
 | 18 | `docker compose up` starts the full demo cleanly | ✅ | Built and started for real: all three services `healthy`/`Up`, verified after a full teardown+restart too (Qdrant data persisted via the named volume) |
-| 19 | At least 10-20 test cases in `data/test_cases/` | ✅ | 17 present |
+| 19 | At least 10-20 test cases in `data/test_cases/` | ✅ | **24** present (17 original + 7 CT / chest X-ray / unsupported-modality cases added 2026-11; guarded by `test_fixture_cases.py`). The eval figures quoted elsewhere in this file are from the original 17. |
 | 20 | 3-5 minute demo script rehearsed end-to-end, once, out loud | ✅ Steps 1-5 driven live 2026-08-31 against the real running app (not just read) — header framing, real strong-case submission (confidence 0.656, matches the original proven run), full report rendering with ranked differentials/evidence, and the low-confidence optimizer+HITL path (confidence 0.40, 3 iterations, correct review-required routing) all confirmed working. Two real script bugs found and fixed in the process (see step 4 below). **Still worth it**: read the narration aloud once yourself so the timing/wording feels natural — the mechanics are proven, the delivery is still yours to practice. |
 
 ## The one real gap — CLOSED 2026-08-29
@@ -188,6 +188,33 @@ calibration, not a validated one; re-check with
 changes. The earlier Mode 1 numbers (average confidence 0.74, optimizer 53%,
 HITL 24%) came from the old synthetic corpus and do not describe the current
 system; **re-run Mode 1** (real Gemini calls) before quoting any figures.
+
+## Update 2026-11-09: Phase 16 — modality coverage
+
+- **The placeholder demo images were being misclassified.** With the real
+  BiomedCLIP the old flat-shape placeholders were labelled essentially at
+  random: the brain-MRI image came back as "CT scan", two chest X-rays as
+  "unspecified"/CT, one CT as "unspecified". Any earlier real run on those
+  images therefore did not exercise the modality its filename claimed. They
+  are replaced by structured synthetic images (same filenames) that the real
+  classifier maps to the intended modality, plus an unsupported-modality image;
+  `python scripts/generate_demo_images.py --check` re-verifies this.
+  **Limit:** that shows the *fixtures* take the intended code path; BiomedCLIP's
+  accuracy on real scans is still unmeasured.
+- **Test cases:** 24 (was 17) — at least 3 per supported modality plus the
+  unsupported-modality case. The spec suggests 15-20; the surplus is the missing
+  coverage. Mode 1 now runs 24 cases, so its figures are not comparable with
+  the earlier 17-case runs.
+- **Integration tests added** for every previously missing matrix row: each
+  modality (MRI / CT / chest X-ray) with and without text, with the image
+  attached to fusion's LLM call; vision forced off (text-only fallback, logged
+  with the reason); an unsupported-modality image end to end (no findings
+  classification, placeholder kept out of the RAG query and the fusion prompt,
+  no image attached); override -> text + visual case memory -> a later similar
+  case retrieves both (and a different-modality / unrelated image gets none);
+  weight recalibration through the real pipeline (no-op below 10 reviewed
+  cases, then a refit that changes the next run's confidence); and a rating
+  never changing the accept/override label.
 
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 

@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE018_ct_text_and_image",
+  "patient": { "age": 71, "sex": "male" },
+  "clinical_text": "sudden severe headache and vomiting after a fall two days ago, now drowsy and confused",
+  "medical_report": null,
+  "image_path": "data/images/synthetic_demo_ct_scan_002.png",
+  "labs": {},
+  "history": ["atrial fibrillation", "on warfarin"]
+}

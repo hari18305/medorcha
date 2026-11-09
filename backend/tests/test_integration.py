@@ -27,25 +27,31 @@ for standalone fixture files covering the same matrix for manual/demo
 use.
 """
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 import torch
+from fastapi.testclient import TestClient
 
 import backend.agents.clinical_agent as clinical_agent
 import backend.agents.evidence_agent as evidence_agent
 import backend.agents.fusion_agent as fusion_agent
 import backend.agents.imaging_agent as imaging_agent
 import backend.agents.optimizer_agent as optimizer_agent
+import backend.api.routes as routes
+import backend.rag.case_memory as case_memory
 import backend.rag.reranker as reranker
 import backend.rag.retriever as retriever
+import backend.rag.visual_memory as visual_memory
 import backend.services.orchestrator as orchestrator
 from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS
-from backend.models.schemas import CaseInput, Patient
+from backend.main import app
+from backend.models.schemas import CaseInput, ClinicalFindings, FinalReport, ImagingFindings, Patient
 from backend.services import storage
-from backend.services.confidence import THRESHOLD
+from backend.services.confidence import THRESHOLD, get_current_weights
 from backend.services.orchestrator import run_case
 
 # --------------------------------------------------------------------------
@@ -396,11 +402,15 @@ class _FakeImagingModel:
     def __init__(self, image_embedding, text_embeddings):
         self.image_embedding = image_embedding
         self.text_embeddings = text_embeddings
+        # every label list the classifier was asked to score, in order --
+        # lets a test prove WHICH label sets were (or were not) used
+        self.encode_text_calls: list[list[str]] = []
 
     def encode_image(self, image_input):
         return self.image_embedding
 
     def encode_text(self, labels):
+        self.encode_text_calls.append(list(labels))
         return torch.stack([self.text_embeddings[label] for label in labels])
 
 
@@ -418,6 +428,7 @@ def _install_imaging_mocks(monkeypatch, modality="MRI brain scan", finding="whit
         "_get_model_bundle",
         lambda: (fake_model, lambda img: torch.zeros(3, 224, 224), _FakeImagingTokenizer()),
     )
+    return fake_model
 
 
 DEMO_IMAGE_PATH = "data/images/synthetic_demo_brain_mri_001.png"
@@ -860,3 +871,321 @@ def test_valid_image_extension_but_corrupted_content_degrades_gracefully_not_500
 
     assert response.status_code == 200
     assert response.status_code != 500
+
+
+# ==========================================================================
+# Phase 16 matrix additions: every imaging modality, the vision on/off and
+# unsupported-modality paths, clinician override -> case memory -> retrieval,
+# and weight recalibration -- all through the REAL pipeline / API.
+# ==========================================================================
+
+DEMO_IMAGES = {
+    "MRI brain scan": "data/images/synthetic_demo_brain_mri_001.png",
+    "CT scan": "data/images/synthetic_demo_ct_scan_001.png",
+    "chest X-ray": "data/images/synthetic_demo_chest_xray_001.png",
+}
+# (modality, one finding from THAT modality's own label list)
+MODALITY_CASES = [
+    ("MRI brain scan", "white matter hyperintensity"),
+    ("CT scan", "hypodense lesion"),
+    ("chest X-ray", "pleural effusion"),
+]
+HIGH_CONFIDENCE_FUSION_TEXT = _fusion_response(
+    [{"name": "Hypertension-related headache", "confidence": 0.7, "supporting_evidence": [], "rank": 1}], 0.7
+)
+UNSUPPORTED_PLACEHOLDER = "no findings model available"
+
+
+def _record_rag_queries(monkeypatch) -> list[str]:
+    """Wraps the (already-mocked) query embedder so a test can see every
+    query string retrieval was actually run with."""
+    queries: list[str] = []
+    original = retriever.embed_text
+
+    def _recording(text):
+        queries.append(text)
+        return original(text)
+
+    monkeypatch.setattr(retriever, "embed_text", _recording)
+    return queries
+
+
+def _mock_case_memory_writes(monkeypatch):
+    """Keeps POST /review overrides from calling a real LLM / BiomedCLIP or
+    writing to the real on-disk Qdrant store (same boundary as
+    test_review_flow.py). Tests that WANT to exercise the real writers
+    install their own fakes instead."""
+    monkeypatch.setattr(
+        routes,
+        "extract_clinical_findings",
+        AsyncMock(return_value=ClinicalFindings(demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[])),
+    )
+    monkeypatch.setattr(routes, "analyze_image", AsyncMock(return_value=None))
+    monkeypatch.setattr(routes.case_memory, "add_clinician_verified_case", MagicMock())
+    monkeypatch.setattr(routes.visual_memory, "add_visual_case_memory", AsyncMock())
+
+
+# --- every supported modality, with and without clinical text ---------------
+
+
+@pytest.mark.parametrize("with_text", [True, False], ids=["text+image", "image-only"])
+@pytest.mark.parametrize("modality,finding", MODALITY_CASES, ids=[m for m, _ in MODALITY_CASES])
+def test_every_supported_modality_flows_through_the_whole_pipeline_with_the_image(
+    monkeypatch, modality, finding, with_text
+):
+    image_path = DEMO_IMAGES[modality]
+    if with_text:
+        _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache"], history=["hypertension"]))
+    model = _install_imaging_mocks(monkeypatch, modality=modality, finding=finding)
+    _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
+    queries = _record_rag_queries(monkeypatch)
+    _install_evidence_mocks(monkeypatch)
+    fuse_mock = _install_multimodal_fusion_mock(monkeypatch, HIGH_CONFIDENCE_FUSION_TEXT)
+
+    case = CaseInput(
+        case_id=f"INTEG-{modality.replace(' ', '-')}-{'TXT' if with_text else 'IMG'}",
+        patient=Patient(age=55, sex="female"),
+        clinical_text="headache, history of hypertension" if with_text else None,
+        image_path=image_path,
+    )
+    report = run_case(case)
+
+    # the report carries this modality's findings (and is not flagged unsupported)
+    assert report.imaging is not None
+    assert report.imaging.modality == modality
+    assert report.imaging.unsupported_modality is False
+    assert report.imaging.findings == [finding]
+    # findings were scored against THIS modality's own label list, never another's
+    assert model.encode_text_calls == [MODALITY_LABELS, FINDING_LABELS_BY_MODALITY[modality]]
+    # the imaging finding reached the retrieval query
+    assert any(finding in q for q in queries)
+    # fusion's LLM call actually received the real image (assert on the call, not just the output)
+    fuse_mock.assert_awaited_once()
+    assert fuse_mock.call_args.args[1] == image_path
+    prompt = fuse_mock.call_args.args[0]
+    assert modality in prompt and finding in prompt
+
+
+# --- vision forced off: graceful text-only fallback, logged --------------------
+
+
+def test_vision_unsupported_provider_falls_back_to_text_only_and_logs_why(monkeypatch, caplog):
+    import logging
+
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache"], history=["hypertension"]))
+    _install_imaging_mocks(monkeypatch, modality="MRI brain scan", finding="white matter hyperintensity")
+    _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
+    _install_evidence_mocks(monkeypatch)
+    monkeypatch.setattr(fusion_agent, "supports_vision", lambda provider: False)
+    attach_canary = AsyncMock(side_effect=AssertionError("the image must not be attached when vision is unsupported"))
+    monkeypatch.setattr(fusion_agent, "call_multimodal", attach_canary)
+    fusion_client = _install_fusion_mock(monkeypatch, HIGH_CONFIDENCE_FUSION_TEXT)
+    caplog.set_level(logging.INFO, logger="backend.agents.fusion_agent")
+
+    case = CaseInput(
+        case_id="INTEG-VISION-OFF", patient=Patient(age=45, sex="male"),
+        clinical_text="headache, history of hypertension", image_path=DEMO_IMAGE_PATH,
+    )
+    report = run_case(case)  # must not raise
+
+    assert len(report.diagnoses) == 1
+    attach_canary.assert_not_called()
+    # the text-only path ran, and BiomedCLIP's findings still reached the model as text
+    fusion_client.messages.create.assert_awaited_once()
+    prompt = fusion_client.messages.create.call_args.kwargs["messages"][0]["content"]
+    assert "MRI brain scan" in prompt and "white matter hyperintensity" in prompt
+    # and a reviewer can tell WHY the image was not attached
+    messages = [record.getMessage() for record in caplog.records if record.name == "backend.agents.fusion_agent"]
+    assert any("text-only path" in m and "no confirmed vision support" in m for m in messages)
+
+
+# --- unsupported modality, end to end ------------------------------------------
+
+
+def test_unsupported_modality_image_is_not_assessed_end_to_end(monkeypatch):
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache", "dizziness"], history=["hypertension"]))
+    model = _install_imaging_mocks(monkeypatch, modality="unspecified medical image", finding="white matter hyperintensity")
+    _install_rag_mocks(monkeypatch, scored_payloads=HIGH_SCORE_RAG_PAYLOAD, cross_encoder_score_map=HIGH_SCORE_CROSS_ENCODER_MAP)
+    queries = _record_rag_queries(monkeypatch)
+    _install_evidence_mocks(monkeypatch)
+    attach_canary = AsyncMock(side_effect=AssertionError("no image may be attached for an unsupported modality"))
+    monkeypatch.setattr(fusion_agent, "call_multimodal", attach_canary)
+    fusion_client = _install_fusion_mock(monkeypatch, HIGH_CONFIDENCE_FUSION_TEXT)
+
+    case = CaseInput(
+        case_id="INTEG-UNSUPPORTED", patient=Patient(age=47, sex="female"),
+        clinical_text="headache and dizziness, history of hypertension", image_path=DEMO_IMAGE_PATH,
+    )
+    report = run_case(case)
+
+    # flagged on the report, so the UI can render it as "not assessed"
+    assert report.imaging is not None and report.imaging.unsupported_modality is True
+    # no findings classification happened at all -- only the modality guess was scored
+    assert model.encode_text_calls == [MODALITY_LABELS]
+    # the placeholder never leaked into retrieval...
+    assert queries and not any(UNSUPPORTED_PLACEHOLDER in q for q in queries)
+    # ...nor into the fusion prompt, which says "NOT ASSESSED" instead
+    prompt = fusion_client.messages.create.call_args.kwargs["messages"][0]["content"]
+    assert "NOT ASSESSED" in prompt and UNSUPPORTED_PLACEHOLDER not in prompt
+    # and no image was attached to the LLM call
+    attach_canary.assert_not_called()
+
+
+# --- clinician override -> case memory -> a later similar case retrieves it ----
+
+
+def test_override_writes_text_and_visual_memory_and_a_later_similar_case_retrieves_both(monkeypatch):
+    from backend.agents.rag_agent import run_rag
+    from backend.tests.test_case_memory import _FakeQdrantClient as _MemoryQdrant
+
+    fake_qdrant = _MemoryQdrant()  # real cosine ranking, honours query_filter + score_threshold
+    for module in (case_memory, visual_memory, retriever):
+        monkeypatch.setattr(module, "_get_client", lambda: fake_qdrant)
+    embed_text = lambda text: [1.0, 0.0] if "headache" in text else [0.0, 1.0]
+    monkeypatch.setattr(case_memory, "embed_text", embed_text)
+    monkeypatch.setattr(retriever, "embed_text", embed_text)
+    image_vectors = {"original.png": [1.0, 0.0], "similar_new_scan.png": [0.97, 0.05], "unrelated.png": [0.0, 1.0]}
+
+    async def embed_image(path):
+        return image_vectors[path]
+
+    monkeypatch.setattr(visual_memory, "embed_image", embed_image)
+    original_findings = ClinicalFindings(
+        demographics={}, symptoms=["headache", "dizziness"], history=["hypertension"], labs={}, imaging_text_findings=[]
+    )
+    monkeypatch.setattr(routes, "extract_clinical_findings", AsyncMock(return_value=original_findings))
+    monkeypatch.setattr(
+        routes, "analyze_image",
+        AsyncMock(return_value=ImagingFindings(modality="MRI brain scan", findings=["white matter hyperintensity"], confidence=0.9)),
+    )
+
+    def seed_case(case_id, image_path):
+        storage.save_case(
+            CaseInput(case_id=case_id, patient=Patient(age=60, sex="female"), clinical_text="headache", image_path=image_path),
+            status="completed",
+        )
+        storage.save_report(case_id, FinalReport(case_id=case_id, diagnoses=[], confidence=0.5, evidence=[], review_required=True))
+
+    client = TestClient(app)
+    seed_case("CASE-IMG", "original.png")
+    seed_case("CASE-TXT", None)
+
+    img = client.post("/review/CASE-IMG", json={"decision": "override", "annotation": "Override diagnosis: Chronic small vessel disease", "reviewer": "Dr. B"})
+    txt = client.post("/review/CASE-TXT", json={"decision": "override", "annotation": "Override diagnosis: Tension headache", "reviewer": "Dr. C"})
+
+    assert img.status_code == 200 and txt.status_code == 200
+    # an override on an image case writes BOTH kinds; on a text-only case only a text entry
+    assert sorted(r["memory_type"] for r in storage.get_case_memory_log("CASE-IMG")) == ["text", "visual"]
+    assert [r["memory_type"] for r in storage.get_case_memory_log("CASE-TXT")] == ["text"]
+
+    # a NEW similar case (similar complaint + visually similar image) retrieves both, tagged apart
+    mri = ImagingFindings(modality="MRI brain scan", findings=["white matter hyperintensity"], confidence=0.8)
+    similar_new = ClinicalFindings(demographics={}, symptoms=["recurrent headache"], history=["hypertension"], labs={}, imaging_text_findings=[])
+    evidence = asyncio.run(run_rag(similar_new, mri, image_path="similar_new_scan.png")).evidence
+
+    text_precedents = [e for e in evidence if e.source.startswith("clinician_verified:")]
+    visual_precedents = [e for e in evidence if e.source.startswith("visual_precedent:")]
+    assert {e.source for e in text_precedents} == {"clinician_verified:Dr. B", "clinician_verified:Dr. C"}
+    assert any("Chronic small vessel disease" in e.text for e in text_precedents)  # the diagnosis is carried
+    assert [e.source for e in visual_precedents] == ["visual_precedent:Dr. B"]
+    assert "Chronic small vessel disease" in visual_precedents[0].text
+
+    # controls: a different modality, or an unrelated image, gets NO visual precedent
+    ct = ImagingFindings(modality="CT scan", findings=["hypodense lesion"], confidence=0.8)
+    for imaging, path in ((ct, "similar_new_scan.png"), (mri, "unrelated.png")):
+        later = asyncio.run(run_rag(similar_new, imaging, image_path=path)).evidence
+        assert not [e for e in later if e.source.startswith("visual_precedent:")]
+
+
+# --- weight recalibration through the real pipeline ----------------------------
+
+
+def _diagnose_then_review(client, monkeypatch, case_id, rag_logit, decision):
+    """POST /diagnose through the real pipeline with the reranker producing
+    `rag_logit`, then POST /review. Returns the report's confidence."""
+    text = "Chronic hypertension is a major risk factor for cerebral small vessel disease."
+    _install_rag_mocks(
+        monkeypatch,
+        scored_payloads=HIGH_SCORE_RAG_PAYLOAD,
+        cross_encoder_score_map={text: rag_logit},
+    )
+    response = client.post(
+        "/diagnose", data={"case_id": case_id, "age": 50, "sex": "female", "clinical_text": "headache and dizziness"}
+    )
+    assert response.status_code == 200
+    review = client.post(f"/review/{case_id}", json={"decision": decision, "annotation": "Override diagnosis: Other" if decision == "override" else None, "reviewer": "Dr. Test"})
+    assert review.status_code == 200
+    return response.json()["confidence"]
+
+
+def test_weight_recalibration_noop_then_real_refit_changes_the_pipelines_confidence(monkeypatch):
+    from backend.services.confidence import DEFAULT_WEIGHTS
+    from backend.services.weight_tuner import recalibrate_weights
+
+    _mock_case_memory_writes(monkeypatch)
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["headache", "dizziness"], history=["hypertension"]))
+    _install_evidence_mocks(monkeypatch)
+    _install_fusion_mock(monkeypatch, HIGH_CONFIDENCE_FUSION_TEXT)
+    _install_optimizer_llm_mock(monkeypatch, _optimizer_refinement_response("expand", "headache dizziness hypertension"))
+    client = TestClient(app)
+
+    # a clear pattern: strong retrieval -> clinician accepts; weak retrieval -> clinician overrides
+    confidence_before = _diagnose_then_review(client, monkeypatch, "WR-HIGH-0", rag_logit=6.0, decision="accept")
+    for i in range(1, 3):
+        _diagnose_then_review(client, monkeypatch, f"WR-HIGH-{i}", rag_logit=6.0, decision="accept")
+    for i in range(3):
+        _diagnose_then_review(client, monkeypatch, f"WR-LOW-{i}", rag_logit=-14.0, decision="override")
+
+    # 6 reviewed cases < 10 -> a no-op: nothing changes, nothing is logged as a recalibration
+    assert recalibrate_weights(min_reviews=10) is None
+    assert get_current_weights() == DEFAULT_WEIGHTS
+    assert storage.get_weight_history() == []
+
+    for i in range(3, 6):
+        _diagnose_then_review(client, monkeypatch, f"WR-HIGH-{i}", rag_logit=6.0, decision="accept")
+    for i in range(3, 6):
+        _diagnose_then_review(client, monkeypatch, f"WR-LOW-{i}", rag_logit=-14.0, decision="override")
+
+    result = recalibrate_weights(min_reviews=10)
+
+    assert result is not None and result["num_reviews_used"] == 12
+    assert result["w1"] > DEFAULT_WEIGHTS["w1"]  # retrieval strength is what predicted acceptance
+    assert result["w1"] + result["w2"] + result["w3"] == pytest.approx(1.0)
+    assert min(result["w1"], result["w2"], result["w3"]) >= 0.1 - 1e-9
+    history = storage.get_weight_history()
+    assert len(history) == 1 and history[0]["num_reviews_used"] == 12
+    assert get_current_weights()["w1"] == pytest.approx(result["w1"])
+
+    # and the very next run through the pipeline uses the new weights
+    confidence_after = _diagnose_then_review(client, monkeypatch, "WR-HIGH-AFTER", rag_logit=6.0, decision="accept")
+    assert confidence_after != pytest.approx(confidence_before)
+    assert confidence_after > confidence_before
+    assert THRESHOLD == 0.65  # the threshold itself is never recalibrated
+
+
+# --- a rating never changes how an outcome is labelled -------------------------
+
+
+def test_review_rating_round_trips_and_does_not_change_phase_14_outcome_labels(monkeypatch):
+    from backend.services.weight_tuner import collect_review_outcomes
+
+    _mock_case_memory_writes(monkeypatch)
+    breakdown = {"s_rag": 0.8, "s_web": 0.5, "agreement": 1.0, "confidence": 0.7}
+    client = TestClient(app)
+    plan = [("R-ACCEPT-LOW", "accept", 1), ("R-ACCEPT-HIGH", "accept", 5), ("R-ACCEPT-NONE", "accept", None), ("R-OVERRIDE-HIGH", "override", 5)]
+    for case_id, decision, rating in plan:
+        storage.save_case(CaseInput(case_id=case_id, patient=Patient(age=40, sex="female")), status="completed")
+        storage.save_report(
+            case_id, FinalReport(case_id=case_id, diagnoses=[], confidence=0.7, evidence=[], review_required=False),
+            confidence_breakdown=breakdown,
+        )
+        body = {"decision": decision, "reviewer": "Dr. Test", "rating": rating}
+        if decision == "override":
+            body["annotation"] = "Override diagnosis: Something else"
+        assert client.post(f"/review/{case_id}", json=body).status_code == 200
+        assert client.get(f"/review/{case_id}").json()["rating"] == rating  # persisted and read back
+
+    outcomes = {o["case_id"]: o["outcome"] for o in collect_review_outcomes()}
+
+    # labelled purely by accept/override -- 1-star and 5-star accepts are both positive
+    assert outcomes == {"R-ACCEPT-LOW": 1.0, "R-ACCEPT-HIGH": 1.0, "R-ACCEPT-NONE": 1.0, "R-OVERRIDE-HIGH": 0.0}

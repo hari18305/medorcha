@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE019_ct_text_report_and_image",
+  "patient": { "age": 58, "sex": "female" },
+  "clinical_text": "headache and dizziness for three weeks, history of hypertension",
+  "medical_report": "CT head without contrast: no acute hemorrhage or mass effect. Mild periventricular low attenuation, most in keeping with chronic small vessel change. Ventricles are normal in size.",
+  "image_path": "data/images/synthetic_demo_ct_scan_003.jpg",
+  "labs": {},
+  "history": ["hypertension"]
+}

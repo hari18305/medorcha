@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE020_chest_xray_text_and_image",
+  "patient": { "age": 61, "sex": "male" },
+  "clinical_text": "persistent cough for three weeks with low-grade fever and breathlessness on exertion, long-time smoker",
+  "medical_report": null,
+  "image_path": "data/images/synthetic_demo_chest_xray_001.png",
+  "labs": {},
+  "history": ["long-time smoker"]
+}

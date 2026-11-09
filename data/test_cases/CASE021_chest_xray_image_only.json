@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE021_chest_xray_image_only",
+  "patient": { "age": 28, "sex": "male" },
+  "clinical_text": null,
+  "medical_report": null,
+  "image_path": "data/images/synthetic_demo_chest_xray_002.png",
+  "labs": {},
+  "history": []
+}

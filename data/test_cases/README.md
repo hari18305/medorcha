@@ -46,6 +46,30 @@ precisely to force each scenario.
 | `CASE014_headache_focused.json` | Headache-predominant presentation (migraine) |
 | `CASE015_dizziness_focused.json` | Dizziness-predominant presentation (BPPV) |
 | `CASE016_multiple_symptoms_with_image.json` | Multiple symptoms + image + extensive history combined |
+| `CASE017_ct_image_only.json` | CT scan image only, no text/report |
+| `CASE018_ct_text_and_image.json` | Text + CT image (head injury on anticoagulation) |
+| `CASE019_ct_text_report_and_image.json` | Text + CT report text + CT image, all three inputs |
+| `CASE020_chest_xray_text_and_image.json` | Text + chest X-ray image (smoker, cough) |
+| `CASE021_chest_xray_image_only.json` | Chest X-ray image only, no text/report |
+| `CASE022_chest_xray_text_report_and_image.json` | Text + chest X-ray report text + chest X-ray image |
+| `CASE023_unsupported_modality_image.json` | Text + an image of an **unsupported modality** (imaging should be reported as "not assessed", not used for retrieval or fusion) |
+
+## Imaging-modality coverage
+
+There are now 24 cases (the spec suggests 15-20; the extra seven are the
+CT / chest X-ray / unsupported-modality cases that were missing), covering
+every input combination (text only, report only, text + report, image only,
+text/report + image) for **each** supported modality: MRI brain scan (4
+cases), CT scan (3), chest X-ray (3), plus the unsupported-modality case.
+`backend/tests/test_fixture_cases.py` guards this so it cannot silently erode.
+
+The image in each case is chosen by its filename's modality (see
+`data/images/README.md`). `python scripts/generate_demo_images.py --check`
+confirms the **real** BiomedCLIP classifies each demo image as its intended
+modality; the older flat placeholders did not (the MRI image came back as a CT
+scan), so before that fix these cases would not have exercised the modality
+they claimed. Deterministic, mocked-classifier coverage of every modality is
+in `backend/tests/test_integration.py`.
 
 ## Failure-mode and iteration-cap scenarios
 

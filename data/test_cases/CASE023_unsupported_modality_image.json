@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE023_unsupported_modality_image",
+  "patient": { "age": 47, "sex": "female" },
+  "clinical_text": "recurrent headache and dizziness over the past month, history of hypertension",
+  "medical_report": null,
+  "image_path": "data/images/synthetic_demo_unspecified_001.png",
+  "labs": {},
+  "history": ["hypertension"]
+}

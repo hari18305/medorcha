@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE017_ct_image_only",
+  "patient": { "age": 63, "sex": "male" },
+  "clinical_text": null,
+  "medical_report": null,
+  "image_path": "data/images/synthetic_demo_ct_scan_001.png",
+  "labs": {},
+  "history": []
+}

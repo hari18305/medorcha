@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE022_chest_xray_text_report_and_image",
+  "patient": { "age": 54, "sex": "female" },
+  "clinical_text": "sudden pleuritic chest pain and shortness of breath that started this morning",
+  "medical_report": "Chest radiograph report: reduced lung markings in the right upper zone with a visible pleural line; no mediastinal shift. Left lung clear. Heart size is normal.",
+  "image_path": "data/images/synthetic_demo_chest_xray_003.jpg",
+  "labs": {},
+  "history": []
+}
