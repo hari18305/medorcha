@@ -37,3 +37,23 @@ images is a side-effect of that equalisation.
 right retrieval filters). It says nothing about BiomedCLIP's accuracy on real
 scans, which is unmeasured here. Real public-dataset images would be needed
 for that.
+
+## Real images (`real/`)
+
+`data/images/real/` holds **six real, openly licensed medical images** (3 head
+CT slices, 1 brain MRI, 2 chest X-rays) retrieved from Wikimedia Commons —
+public domain, CC0, or CC BY 4.0 — with per-file sources, authors, licences
+and a disclosure of the one change made (a crop) in
+[`real/ATTRIBUTION.md`](real/ATTRIBUTION.md). Unlike the synthetic images
+above, these are real scans; they are the better inputs for a demo.
+
+With the real BiomedCLIP all six are classified as their intended modality
+(`python scripts/check_real_images.py`), and the readings are plausible
+("normal head CT", "normal chest X-ray", "pneumothorax" on the pneumothorax
+film). That is a plausibility check on six hand-picked, well-known images — not
+an accuracy measurement, and the pneumothorax figure comes from a PubMed
+Central article that BiomedCLIP's training data may include.
+
+Cases that use them are in `data/test_cases/real/` (see that folder's README
+section). The synthetic images stay: the automated tests and the default
+Mode 1 case set depend on them.

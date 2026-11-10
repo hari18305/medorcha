@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL003_ct_head_text_report_and_image",
+  "patient": { "age": 49, "sex": "male" },
+  "clinical_text": "persistent headache and occasional blurred vision for two weeks",
+  "medical_report": "CT head with contrast: no acute hemorrhage, mass lesion or midline shift. Ventricles and sulci are normal for age.",
+  "image_path": "data/images/real/real_ct_scan_06.png",
+  "labs": {},
+  "history": []
+}

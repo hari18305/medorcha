@@ -79,3 +79,23 @@ scenarios (they depend on simulating an outage or malformed input, not
 on case content) -- these are covered by dedicated tests in
 `backend/tests/test_integration.py` rather than static fixture files
 here, since a JSON file can't itself represent "Qdrant is down."
+
+## Real-image cases (`real/`)
+
+Seven additional cases, `REAL001`–`REAL007`, pair **real, openly licensed
+images** (`data/images/real/`, see its `ATTRIBUTION.md`) with short
+**synthetic** clinical vignettes — the images are real, the patient stories
+are invented. They cover CT (3 cases), brain MRI (1) and chest X-ray (3:
+normal, and pneumothorax with and without text), with text + image and
+image-only variants.
+
+They live in their own folder so the default Mode 1 run stays at the 24
+synthetic cases. Run them on their own with:
+
+```bash
+python -m backend.tests.run_evaluation --cases-dir data/test_cases/real
+```
+
+Like everything here they only *design* a scenario — outcomes depend on the
+live pipeline. `backend/tests/test_fixture_cases.py` guards that every real
+image is credited, decodes, and is used by a case.

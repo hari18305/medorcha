@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL007_chest_xray_pneumothorax_image_only",
+  "patient": { "age": 24, "sex": "male" },
+  "clinical_text": null,
+  "medical_report": null,
+  "image_path": "data/images/real/real_chest_xray_pneumothorax.png",
+  "labs": {},
+  "history": []
+}

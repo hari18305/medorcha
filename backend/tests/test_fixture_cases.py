@@ -96,3 +96,74 @@ def test_the_input_combinations_the_matrix_requires_are_all_present():
     assert any(c.image_path and not c.clinical_text and not c.medical_report for c in cases), "image only"
     assert any(c.image_path and (c.clinical_text or c.medical_report) for c in cases), "text/report + image"
     assert any(c.labs for c in cases), "populated labs"
+
+
+# --------------------------------------------------------------------------
+# Real (openly licensed) images and their cases: data/images/real/,
+# data/test_cases/real/. Kept apart from the synthetic set so the default
+# Mode 1 run is unchanged; run them with
+#   python -m backend.tests.run_evaluation --cases-dir data/test_cases/real
+# --------------------------------------------------------------------------
+
+REAL_IMAGES_DIR = Path("data/images/real")
+REAL_CASES_DIR = CASES_DIR / "real"
+REAL_CASE_FILES = sorted(REAL_CASES_DIR.glob("REAL*.json"))
+REAL_IMAGE_FILES = sorted(p for p in REAL_IMAGES_DIR.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg"})
+
+
+def test_every_real_image_is_credited_with_a_licence_and_changes_are_disclosed():
+    attribution = (REAL_IMAGES_DIR / "ATTRIBUTION.md").read_text(encoding="utf-8")
+
+    assert REAL_IMAGE_FILES
+    for image in REAL_IMAGE_FILES:
+        assert image.name in attribution, f"{image.name} is not credited in ATTRIBUTION.md"
+    for licence in ("CC0 1.0", "CC BY 4.0", "Public domain"):
+        assert licence in attribution
+    # the CC BY 4.0 file is a cropped derivative: CC BY requires the change to be indicated
+    assert "cropped" in attribution.lower()
+    assert "commons.wikimedia.org/wiki/File:" in attribution  # primary source pages, not mirrors
+
+
+@pytest.mark.parametrize("path", REAL_IMAGE_FILES, ids=[p.name for p in REAL_IMAGE_FILES])
+def test_real_images_decode_and_are_full_resolution_not_thumbnails(path):
+    with Image.open(path) as image:
+        image.verify()
+    with Image.open(path) as image:
+        assert min(image.size) >= 400
+
+
+@pytest.mark.parametrize("path", REAL_CASE_FILES, ids=[p.stem for p in REAL_CASE_FILES])
+def test_each_real_case_is_valid_and_points_at_an_existing_real_image(path):
+    case = _load(path)
+
+    assert case.image_path and case.image_path.startswith("data/images/real/")
+    assert Path(case.image_path).exists()
+
+
+def test_every_real_image_is_used_by_at_least_one_real_case():
+    used = {Path(_load(p).image_path).name for p in REAL_CASE_FILES}
+
+    assert {p.name for p in REAL_IMAGE_FILES} <= used
+
+
+def test_real_cases_cover_ct_mri_and_chest_with_text_and_image_only_variants():
+    cases = [_load(p) for p in REAL_CASE_FILES]
+    has_text = lambda c: bool((c.clinical_text or "").strip() or (c.medical_report or "").strip())
+    by_modality = {}
+    for case in cases:
+        by_modality.setdefault(_intended_modality(case), []).append(case)
+
+    assert any(has_text(c) for c in by_modality["MRI brain scan"])
+    for modality in ("CT scan", "chest X-ray"):
+        assert any(has_text(c) for c in by_modality[modality]), f"no text+image real case for {modality}"
+        assert any(not has_text(c) for c in by_modality[modality]), f"no image-only real case for {modality}"
+
+
+def test_real_cases_are_separate_from_the_default_run_but_loadable_on_their_own():
+    import backend.tests.run_evaluation as ev
+
+    default_ids = {case_id for case_id, _ in ev.load_cases()}
+    real_ids = {case_id for case_id, _ in ev.load_cases(REAL_CASES_DIR)}
+
+    assert real_ids and not any(i.startswith("REAL") for i in default_ids)
+    assert len(real_ids) == len(REAL_CASE_FILES)

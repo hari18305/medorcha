@@ -265,6 +265,22 @@ Confidence landed only just above the threshold, after three optimizer passes.
 on the free tier. Mode 1 over 24 cases needs a paid tier or several days of
 quota.
 
+## Update 2026-11-10: real scan images
+
+Six real, openly licensed images (3 head CT slices, 1 brain MRI, 2 chest
+X-rays: CC0 / public domain / CC BY 4.0, from Wikimedia Commons, each licence
+read from its primary file page) are now in `data/images/real/`, with per-file
+credits in `ATTRIBUTION.md`, seven `REAL00x` cases in `data/test_cases/real/`,
+and `scripts/check_real_images.py`. **The real BiomedCLIP classifies all six as
+the intended modality** (the old flat placeholders: 3 of 8), with plausible
+readings (normal head CT, normal chest X-ray, pneumothorax on the pneumothorax
+film). Limits: six hand-picked, well-known images are a plausibility check, not
+an accuracy measurement; the pneumothorax figure comes from a PubMed Central
+article BiomedCLIP may have seen in training; and there is no single-image
+abnormal CT or MRI (all CT/MRI slices are normal-looking anatomy). For a demo,
+prefer these over the synthetic images; the synthetic ones remain for the
+automated tests.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

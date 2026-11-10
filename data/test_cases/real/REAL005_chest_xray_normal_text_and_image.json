@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL005_chest_xray_normal_text_and_image",
+  "patient": { "age": 21, "sex": "female" },
+  "clinical_text": "left-sided chest pain after a collision during sport, no breathlessness",
+  "medical_report": null,
+  "image_path": "data/images/real/real_chest_xray_normal_pa.jpg",
+  "labs": {},
+  "history": []
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL002_ct_head_image_only",
+  "patient": { "age": 63, "sex": "male" },
+  "clinical_text": null,
+  "medical_report": null,
+  "image_path": "data/images/real/real_ct_scan_14.png",
+  "labs": {},
+  "history": []
+}

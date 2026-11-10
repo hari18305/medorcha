@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL006_chest_xray_pneumothorax_text_and_image",
+  "patient": { "age": 24, "sex": "male" },
+  "clinical_text": "sudden sharp chest pain and shortness of breath that started this morning",
+  "medical_report": null,
+  "image_path": "data/images/real/real_chest_xray_pneumothorax.png",
+  "labs": {},
+  "history": []
+}

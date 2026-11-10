@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL001_ct_head_text_and_image",
+  "patient": { "age": 58, "sex": "female" },
+  "clinical_text": "headache and dizziness for three weeks, history of hypertension",
+  "medical_report": null,
+  "image_path": "data/images/real/real_ct_scan_10.png",
+  "labs": {},
+  "history": ["hypertension"]
+}

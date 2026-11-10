@@ -1,0 +1,9 @@
+{
+  "case_id": "REAL004_brain_mri_text_and_image",
+  "patient": { "age": 72, "sex": "female" },
+  "clinical_text": "gradual memory difficulty and unsteady walking over several months",
+  "medical_report": null,
+  "image_path": "data/images/real/real_brain_mri_t1.png",
+  "labs": {},
+  "history": ["hypertension"]
+}
