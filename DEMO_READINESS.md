@@ -281,6 +281,63 @@ abnormal CT or MRI (all CT/MRI slices are normal-looking anatomy). For a demo,
 prefer these over the synthetic images; the synthetic ones remain for the
 automated tests.
 
+## Update 2026-11-10 (later): a real image through the full live pipeline
+
+Case `REAL006` — the real CC BY pneumothorax chest X-ray (panel A) plus the
+vignette "sudden sharp chest pain and shortness of breath that started this
+morning" (24M) — through the real UI, backend, Gemini (`gemini-3.5-flash-lite`),
+BiomedCLIP, Qdrant and all four evidence sources: HTTP 200 in about 2.3 minutes,
+12 Gemini calls, every agent step `success`, `fuse(): multimodal path` on every
+fusion pass.
+
+**Result.** BiomedCLIP: chest X-ray, findings `pneumothorax` and `rib fracture`
+(conf 0.68). Fusion ranked **Pneumothorax 0.95** first — correct for this film.
+Overall confidence 0.627 on the first pass; three optimizer passes reached
+0.588 / 0.600 / 0.618, best 0.627 < 0.65, so `review_required=True` and the UI
+routed straight to the review screen, as designed. The reranker's relevance
+spread was again sensible (0.92 / 0.87 / 0.74 / 0.25 / 0.17).
+
+**What went wrong (fixed below).** Fusion also ranked **Rib
+Fracture at 0.85**. There is no rib fracture on this film and the vignette has
+no trauma; the label came from BiomedCLIP's *secondary* finding (anything above
+the 0.15 softmax threshold is passed on). The "supporting evidence" for it is a
+generic knowledge-base passage and an unrelated PubMed item about aortic injury,
+and the optimizer's refined queries then drifted to "traumatic pneumothorax
+associated with acute rib fracture". The fusion prompt tells the model to treat
+BiomedCLIP's labels as a secondary sanity check and to flag disagreement, but
+here it adopted a spurious low-confidence label with high stated confidence and
+raised no conflict. The deterministic confidence formula correctly ignored the
+LLM's 0.85/0.95 self-reported numbers, which is why overall confidence stayed
+below threshold and the case was flagged for review — but a clinician would see
+a wrong differential entry at 85%. Candidate fixes (not done): pass only the top
+finding (or findings above a much higher threshold) downstream; tell the model
+explicitly that secondary labels are frequently spurious; and require a
+differential entry to be supported by evidence that actually mentions it.
+
+**Fix (2026-11-10) and live verification.** Measured on the real images, the
+spurious `rib fracture` scored 0.15 (0.1514 over the 0.15 floor) against 0.68 for
+the real finding (22% as strong); a second real pneumothorax film's secondary
+scored 0.14 and was dropped, so the old rule was a coin flip at the floor.
+Because the scores are a softmax (they sum to 1), a decisive top label leaves
+little for the rest. `analyze_image` now reports a secondary label only if it
+clears the 0.15 floor AND is at least 60% as strong as the top one
+(`FINDING_RELATIVE_THRESHOLD`, default 0.6; a prototype value from a handful of
+images, not validated): genuine two-way ambiguity (0.83–0.86 of the top) is kept,
+noise (0.0–0.53) is dropped. The fusion prompts now state that imaging labels are
+hypotheses, forbid ranking a diagnosis on an imaging label alone, forbid
+inventing a mechanism such as trauma, and tell the image-attached model not to
+rank a pre-filter label it cannot see. **Re-running the identical case live:**
+findings `['pneumothorax']` only; differential Pneumothorax 0.95 (cited to a
+collapsed-lung passage and a pneumothorax protocol paper), then Pleural Effusion
+0.20; no rib fracture, no "traumatic" drift; first-pass confidence 0.684 so no
+optimizer and no review flag; 11 Gemini calls, every step `success`.
+
+Caveats: still one image, one run (LLM output varies between runs; the 0.684 is
+only just over the 0.65 threshold). The tradeoff is real — softmax scores make
+co-occurring findings compete, so a genuine second finding that is much weaker
+than the first is now dropped from BiomedCLIP's labels (the attached-image model
+still sees the image itself).
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

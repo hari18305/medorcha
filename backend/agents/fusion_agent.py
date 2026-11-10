@@ -83,6 +83,17 @@ with a lower confidence score rather than fabricating support.
 
 {_PRECEDENT_FRAMING}
 
+Imaging labels are hypotheses, not findings: they come from a fast \
+zero-shot classifier over a small fixed label set and are often wrong, \
+especially any label beyond the first. NEVER add a diagnosis to the \
+differential solely because an imaging label names it. Every diagnosis \
+you list must be supported by the clinical picture, by evidence that \
+actually discusses that condition, or (when you are given the image \
+itself) by what you yourself see in it; if the only thing behind an \
+entry is an imaging label, either omit it or give it a low confidence \
+and say so in "conflicts". Do not introduce a cause or mechanism (for \
+example trauma) that is not stated in the clinical findings.
+
 Explicitly compare the different evidence sources against each other. \
 Whenever imaging findings, offline evidence, and live evidence point in \
 different directions (e.g. imaging suggests X but live evidence \
@@ -125,7 +136,8 @@ label(s) only as a secondary sanity-check: confirm, refine, or override \
 them based on what you actually see in the image. If your own read of \
 the image meaningfully disagrees with the pre-filter's label(s) -- e.g. \
 you see a different finding, or no finding where one was suggested -- \
-add a short, human-readable description of that specific disagreement \
+do NOT rank a pre-filter label you cannot see in the image, and add a \
+short, human-readable description of that specific disagreement \
 to the "conflicts" list (this is a genuinely new conflict type: a \
 disagreement between the pre-filter and your own direct visual read, \
 not just a disagreement between text evidence sources)."""
@@ -187,10 +199,18 @@ def _format_imaging(imaging: ImagingFindings | None) -> str:
             f"for this modality. Do not reason about imaging findings for "
             f"this case; treat it as if no imaging were provided."
         )
+    caution = (
+        "Reliability: these are candidate labels from a fast zero-shot classifier over a "
+        "small fixed label set -- hypotheses to check against the rest of the evidence, not "
+        "established findings."
+    )
+    if len(imaging.findings) > 1:
+        caution += " More than one label is listed because the classifier was torn between them."
     return (
         f"Modality: {imaging.modality}\n"
         f"Findings: {', '.join(imaging.findings)}\n"
-        f"Imaging model confidence: {imaging.confidence:.2f}"
+        f"Imaging model confidence: {imaging.confidence:.2f}\n"
+        f"{caution}"
     )
 
 

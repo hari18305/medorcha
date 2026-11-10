@@ -16,6 +16,7 @@ X-ray, etc. by adding labels to imaging_labels.py, no code changes here.
 """
 
 import asyncio
+import os
 from pathlib import Path
 
 import open_clip
@@ -38,12 +39,30 @@ MODEL_ID = "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
 # rather than a crash (this prototype does not bundle a DICOM codec).
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".dcm", ".dicom"}
 
-# Zero-shot softmax score threshold for including a finding label in the
-# result. Chosen empirically as a low bar so mildly-plausible findings
-# surface for clinician review rather than being silently dropped; the
-# single top-scoring label is always included regardless (see
+# Zero-shot softmax score FLOOR for including a finding label in the
+# result; the single top-scoring label is always included regardless (see
 # analyze_image), so `findings` is never empty.
 FINDING_SCORE_THRESHOLD = 0.15
+
+# A label BEYOND the top one must ALSO score at least this fraction of the
+# top label's score. The scores are a softmax over ~a dozen labels, so they
+# sum to 1: a decisive top label leaves little for the rest, and a secondary
+# label that merely clears the floor is usually noise. Found live: a real
+# pneumothorax film scored pneumothorax 0.68 and a spurious "rib fracture"
+# 0.15 (22% as strong, 0.1514 against a 0.15 floor); fusion then ranked "rib
+# fracture" at 0.85 in the differential though the film shows none.
+# Measured on real images, genuine two-way ambiguity looks like 0.83-0.86 of
+# the top, noise like 0.0-0.53, so 0.6 keeps the former and drops the latter.
+# PROTOTYPE DEFAULT from a handful of images, not a validated value.
+# Override with FINDING_RELATIVE_THRESHOLD.
+def _relative_threshold_from_env() -> float:
+    try:
+        return float(os.getenv("FINDING_RELATIVE_THRESHOLD", "0.6"))
+    except ValueError:
+        return 0.6
+
+
+FINDING_RELATIVE_THRESHOLD = _relative_threshold_from_env()
 
 # CLIP-style logit scale applied to cosine similarities before softmax,
 # matching BiomedCLIP's training configuration.
@@ -228,7 +247,11 @@ def _run_zero_shot_classification(
         finding_scores = _zero_shot_scores(model, tokenizer, image_features, finding_labels)
 
     top_label, top_score = finding_scores[0]
-    findings = [label for label, score in finding_scores if score > FINDING_SCORE_THRESHOLD]
+    findings = [
+        label
+        for label, score in finding_scores
+        if score > FINDING_SCORE_THRESHOLD and score >= FINDING_RELATIVE_THRESHOLD * top_score
+    ]
     if not findings:
         findings = [top_label]
 

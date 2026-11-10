@@ -305,24 +305,60 @@ async def test_findings_never_empty_when_all_scores_below_threshold(monkeypatch)
     assert math.isclose(result.confidence, expected_score, rel_tol=1e-4)
 
 
-async def test_multiple_findings_above_threshold_sorted_descending(monkeypatch):
-    # Two labels close to the image vector (both should clear the 0.15
-    # threshold), everything else far away (should not).
+def _two_close_labels_bundle(monkeypatch, second_cosine: float):
+    """A bundle where "white matter hyperintensity" matches the image perfectly
+    and "mass lesion" matches it with cosine `second_cosine`; every other
+    label points the opposite way (negligible softmax score)."""
     image_embedding = torch.tensor([[1.0, 0.0]])
     text_embeddings = _uniform_text_embeddings(torch.tensor([-1.0, 0.0]))
     text_embeddings["white matter hyperintensity"] = torch.tensor([1.0, 0.0])
-    text_embeddings["mass lesion"] = torch.tensor([0.99, math.sqrt(1 - 0.99**2)])
-
+    text_embeddings["mass lesion"] = torch.tensor([second_cosine, math.sqrt(1 - second_cosine**2)])
     model, preprocess, tokenizer = _make_bundle(image_embedding, text_embeddings)
     monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: (model, preprocess, tokenizer))
 
+
+async def test_a_genuinely_torn_top_two_are_both_reported_sorted_descending(monkeypatch):
+    # cosine 1.0 vs 0.998 -> scores ~0.55 / ~0.45 (the second is ~82% of the
+    # top): the model really is torn between the two, so both are reported.
+    _two_close_labels_bundle(monkeypatch, 0.998)
+
     result = await analyze_image(str(DEMO_IMAGE_1))
 
-    assert result.findings[0] == "white matter hyperintensity"
-    assert "mass lesion" in result.findings
+    assert result.findings[:2] == ["white matter hyperintensity", "mass lesion"]
     assert all(result.findings[i] != result.findings[i + 1] for i in range(len(result.findings) - 1))
-    # descending order
-    assert result.findings.index("white matter hyperintensity") < result.findings.index("mass lesion")
+
+
+async def test_a_weak_secondary_label_is_dropped_even_though_it_clears_the_absolute_floor(monkeypatch):
+    """Regression (found live): a real pneumothorax film scored pneumothorax
+    0.68 and a spurious "rib fracture" 0.15; fusion then ranked "rib fracture"
+    at 0.85. Here cosine 1.0 vs 0.99 gives ~0.73 / ~0.27: the second clears the
+    0.15 floor but is only ~37% of the top, so it must NOT be reported."""
+    _two_close_labels_bundle(monkeypatch, 0.99)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.findings == ["white matter hyperintensity"]
+    assert math.isclose(result.confidence, 0.73, abs_tol=0.02)  # the top label's score is unchanged
+
+
+async def test_the_relative_threshold_is_configurable(monkeypatch):
+    _two_close_labels_bundle(monkeypatch, 0.99)
+    monkeypatch.setattr(imaging_agent, "FINDING_RELATIVE_THRESHOLD", 0.3)  # 0.27/0.73 = 0.37 now qualifies
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.findings == ["white matter hyperintensity", "mass lesion"]
+
+
+async def test_the_absolute_floor_still_applies_on_top_of_the_relative_rule(monkeypatch):
+    # relative threshold 0 would keep anything; the 0.15 floor must still drop
+    # a ~0.01 label
+    _two_close_labels_bundle(monkeypatch, 0.95)  # second ~ 0.007
+    monkeypatch.setattr(imaging_agent, "FINDING_RELATIVE_THRESHOLD", 0.0)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.findings == ["white matter hyperintensity"]
 
 
 async def test_empty_image_path_raises_value_error():

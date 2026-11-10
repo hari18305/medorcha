@@ -424,3 +424,54 @@ async def test_fuse_case_memory_and_visual_precedent_get_distinct_framing(mock_a
     assert "Clinician-verified text precedent" in sent
     assert "Visually-similar past-case precedent" in sent
     assert "[VIS1]" in sent
+
+
+# --------------------------------------------------------------------------
+# Imaging labels are hypotheses, not findings. Regression (found live): a
+# spurious secondary BiomedCLIP label ("rib fracture") was ranked at 0.85 in
+# the differential on a pneumothorax film with no fracture and no trauma.
+# --------------------------------------------------------------------------
+
+
+def test_formatted_imaging_labels_are_presented_as_hypotheses_not_findings():
+    formatted = _format_imaging(IMAGING)
+
+    assert "Reliability" in formatted
+    assert "hypotheses to check" in formatted and "not established findings" in formatted
+    # one decisive label -> no claim that the classifier was torn
+    assert "torn between" not in formatted
+
+
+def test_formatted_imaging_with_several_labels_says_the_classifier_was_torn():
+    two = ImagingFindings(modality="chest X-ray", findings=["pneumothorax", "atelectasis"], confidence=0.55)
+
+    formatted = _format_imaging(two)
+
+    assert "pneumothorax, atelectasis" in formatted
+    assert "torn between" in formatted
+
+
+def test_the_unsupported_modality_wording_is_unchanged_by_the_reliability_note():
+    unsupported = ImagingFindings(
+        modality="unspecified medical image", findings=["no findings model available for this modality"],
+        confidence=0.0, unsupported_modality=True,
+    )
+
+    formatted = _format_imaging(unsupported)
+
+    assert "NOT ASSESSED" in formatted and "Reliability" not in formatted
+
+
+def test_both_system_prompts_forbid_ranking_a_diagnosis_on_an_imaging_label_alone():
+    from backend.agents.fusion_agent import IMAGE_SYSTEM_PROMPT, SYSTEM_PROMPT
+
+    for prompt in (SYSTEM_PROMPT, IMAGE_SYSTEM_PROMPT):
+        assert "Imaging labels are hypotheses, not findings" in prompt
+        assert "NEVER add a diagnosis to the differential solely because an imaging label names it" in prompt
+        assert "Do not introduce a cause or mechanism" in prompt  # the 'traumatic' drift
+
+
+def test_the_image_prompt_tells_the_model_not_to_rank_a_label_it_cannot_see():
+    from backend.agents.fusion_agent import IMAGE_SYSTEM_PROMPT
+
+    assert "do NOT rank a pre-filter label you cannot see in the image" in IMAGE_SYSTEM_PROMPT
