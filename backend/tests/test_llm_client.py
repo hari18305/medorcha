@@ -502,3 +502,46 @@ async def test_call_multimodal_never_raises_for_unsupported_provider_even_with_i
     result = await llm_client.call_multimodal("prompt", tiny_png, provider="some-future-provider")
 
     assert result == "ok"
+
+
+# --------------------------------------------------------------------------
+# The async throttle must not freeze the event loop. Regression: the blocking
+# time.sleep() throttle, called straight from `async def` LLM calls, froze the
+# WHOLE loop while waiting -- so no asyncio timeout could fire and concurrent
+# tasks (e.g. the other live-evidence sources) stalled with it (found live).
+# --------------------------------------------------------------------------
+
+
+async def test_async_throttle_does_not_freeze_the_event_loop(monkeypatch):
+    import asyncio
+    import time
+
+    monkeypatch.setattr(llm_client, "throttle_llm_call_sync", lambda: time.sleep(0.4))
+    ticks = 0
+    stop = False
+
+    async def ticker():
+        nonlocal ticks
+        while not stop:
+            await asyncio.sleep(0.02)
+            ticks += 1
+
+    task = asyncio.create_task(ticker())
+    await asyncio.sleep(0)  # let the ticker start
+
+    await llm_client.throttle_llm_call()  # a 0.4s blocking throttle
+
+    stop = True
+    await task
+    # the loop kept running during the wait (a loop-blocking throttle would leave this at 0)
+    assert ticks >= 10
+
+
+async def test_async_throttle_still_enforces_the_budget(monkeypatch):
+    calls = []
+    monkeypatch.setattr(llm_client, "throttle_llm_call_sync", lambda: calls.append(1))
+
+    await llm_client.throttle_llm_call()
+    await llm_client.throttle_llm_call()
+
+    assert len(calls) == 2

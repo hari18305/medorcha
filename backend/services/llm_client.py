@@ -67,6 +67,7 @@ messages=...)` / `response.content[0].text`) stay completely unchanged
 regardless of which of the five providers is active.
 """
 
+import asyncio
 import logging
 import os
 import threading
@@ -282,6 +283,21 @@ def throttle_llm_call_sync() -> None:
         _recent_request_times[:] = recent
 
 
+async def throttle_llm_call() -> None:
+    """The throttle for use inside `async def` code.
+
+    throttle_llm_call_sync() sleeps with time.sleep(), which -- called
+    directly from a coroutine -- freezes the WHOLE event loop for the wait:
+    no asyncio timeout can fire during it, and every other task sharing the
+    loop (e.g. the other live-evidence sources running concurrently) stalls
+    too. Confirmed live: PubMed's per-abstract LLM summaries queued behind
+    the rate limiter and blew through a 30s source deadline that, with the
+    loop frozen, could not even interrupt them. Running the same blocking
+    throttle (and its threading lock) in a worker thread keeps the loop live.
+    """
+    await asyncio.to_thread(throttle_llm_call_sync)
+
+
 # --------------------------------------------------------------------------
 # Gemini / Mistral adapter -- presents the Anthropic SDK's
 # .messages.create() / response.content[0].text shape over a genuinely
@@ -322,7 +338,7 @@ async def _gemini_complete(*, model: str, max_tokens: int, system: str, messages
     from google import genai
     from google.genai import types
 
-    throttle_llm_call_sync()
+    await throttle_llm_call()
 
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     # Gemini's role for the model's own turns is "model", not
@@ -356,7 +372,7 @@ async def _gemini_complete(*, model: str, max_tokens: int, system: str, messages
 async def _mistral_complete(*, model: str, max_tokens: int, system: str, messages: list[dict]) -> str:
     from mistralai import Mistral
 
-    throttle_llm_call_sync()
+    await throttle_llm_call()
 
     client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
     # Mistral's chat format is already OpenAI-style (system as a
@@ -468,7 +484,7 @@ async def _call_gemini_multimodal(prompt: str, image_path: str, model: str, syst
     from google import genai
     from google.genai import types
 
-    throttle_llm_call_sync()
+    await throttle_llm_call()
 
     media_type, _ = _read_image_as_base64(image_path)
     import pathlib

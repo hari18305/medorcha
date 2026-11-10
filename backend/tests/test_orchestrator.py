@@ -312,3 +312,118 @@ def test_logs_agent_calls_for_each_step(monkeypatch, mock_agents):
     assert all(entry["iteration"] == 0 for entry in logged_events)
     assert all(entry["status"] == "success" for entry in logged_events)
     assert all("latency_ms" in entry for entry in logged_events)
+
+
+# --------------------------------------------------------------------------
+# CrewAI-orchestration-layer failures (regression: a provider quota/outage
+# error in the layer that DECIDES to call a tool used to escape run_case()
+# and become an HTTP 500 -- found live when Gemini's free-tier daily quota
+# ran out mid-run).
+# --------------------------------------------------------------------------
+
+QUOTA_ERROR = "429 RESOURCE_EXHAUSTED. You exceeded your current quota (free tier, 20 requests per day)"
+TOOL_TO_STEP = {
+    "clinical_extraction": "clinical",
+    "imaging_analysis": "imaging",
+    "rag_retrieval": "rag",
+    "live_evidence_gathering": "evidence",
+    "evidence_fusion": "fusion",
+    "confidence_optimizer": "optimizer",
+}
+
+
+def _execute_failing_for(*failing_tools):
+    """Like _direct_execute, but the CrewAI layer itself raises (as a real
+    provider error would) for the named tools -- the tool body never runs."""
+
+    def _execute(agent, task):
+        tool = agent.tools[0]
+        if tool.name in failing_tools:
+            raise RuntimeError(QUOTA_ERROR)
+        return tool._run()
+
+    return _execute
+
+
+@pytest.mark.parametrize(
+    "tool", ["clinical_extraction", "imaging_analysis", "rag_retrieval", "live_evidence_gathering"]
+)
+def test_orchestration_failure_in_an_early_step_degrades_and_the_pipeline_continues(monkeypatch, mock_agents, tool):
+    monkeypatch.setattr(orchestrator, "_execute", _execute_failing_for(tool))
+
+    report = run_case(CASE_TEXT_AND_IMAGE)  # must NOT raise
+
+    assert report.case_id == "CASE001"
+    mock_agents["fuse"].assert_awaited_once()  # later steps still ran
+    failures = [log for log in storage.get_agent_logs("CASE001") if log["status"] == "failure"]
+    assert [f["agent_name"] for f in failures] == [TOOL_TO_STEP[tool]]
+
+
+def test_an_imaging_orchestration_failure_means_no_imaging_in_the_report(monkeypatch, mock_agents):
+    monkeypatch.setattr(orchestrator, "_execute", _execute_failing_for("imaging_analysis"))
+
+    report = run_case(CASE_TEXT_AND_IMAGE)
+
+    assert report.imaging is None
+    mock_agents["analyze_image"].assert_not_called()  # the tool never ran
+
+
+def test_a_live_evidence_orchestration_failure_is_reported_as_unavailable(monkeypatch, mock_agents):
+    monkeypatch.setattr(orchestrator, "_execute", _execute_failing_for("live_evidence_gathering"))
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    assert report.live_evidence_available is False
+    assert not any(item["type"] == "live" for item in report.evidence)
+
+
+def test_a_fusion_orchestration_failure_gives_zero_confidence_and_requires_review(monkeypatch, mock_agents):
+    monkeypatch.setattr(orchestrator, "_execute", _execute_failing_for("evidence_fusion", "confidence_optimizer"))
+
+    report = run_case(CASE_TEXT_ONLY)  # must NOT raise
+
+    assert report.confidence == 0.0
+    assert report.review_required is True
+    assert report.diagnoses == []
+    assert any("Fusion reasoning failed" in c and "RESOURCE_EXHAUSTED" in c for c in report.conflicts)
+    mock_agents["fuse"].assert_not_called()
+
+
+def test_an_optimizer_orchestration_failure_forces_review_even_though_it_never_ran(monkeypatch, mock_agents):
+    mock_agents["confidence_holder"]["value"] = 0.3
+    mock_agents["fuse"].return_value = LOW_CONFIDENCE_FUSION
+    monkeypatch.setattr(orchestrator, "_execute", _execute_failing_for("confidence_optimizer"))
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    mock_agents["optimize"].assert_not_called()
+    assert report.confidence == 0.3 and report.confidence < THRESHOLD
+    assert report.review_required is True  # a below-threshold result is never "no review needed"
+
+
+def test_a_total_provider_outage_still_returns_a_report_flagged_for_review(monkeypatch, mock_agents):
+    every_tool = tuple(TOOL_TO_STEP)
+    monkeypatch.setattr(orchestrator, "_execute", _execute_failing_for(*every_tool))
+
+    report = run_case(CASE_TEXT_AND_IMAGE)  # must NOT raise
+
+    assert report.confidence == 0.0 and report.review_required is True
+    assert report.diagnoses == [] and report.evidence == []
+    assert report.live_evidence_available is False
+    failed_steps = {log["agent_name"] for log in storage.get_agent_logs("CASE001") if log["status"] == "failure"}
+    assert failed_steps == set(TOOL_TO_STEP.values())
+
+
+def test_review_is_required_whenever_confidence_is_below_threshold_even_if_no_step_failed(mock_agents):
+    # a below-threshold result whose optimizer (mistakenly) reported review_required=False
+    mock_agents["confidence_holder"]["value"] = 0.3
+    mock_agents["fuse"].return_value = LOW_CONFIDENCE_FUSION
+    mock_agents["optimize"].return_value = {
+        "final_fusion": LOW_CONFIDENCE_FUSION, "final_confidence": 0.3, "iterations": 3,
+        "review_required": False, "iteration_log": [],
+    }
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    assert report.confidence == 0.3
+    assert report.review_required is True

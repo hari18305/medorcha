@@ -667,3 +667,185 @@ async def test_gather_live_evidence_caches_by_query(monkeypatch):
     assert first == second
     for mock in mocks.values():
         mock.assert_awaited_once()
+
+
+# --------------------------------------------------------------------------
+# PubMed abstract summaries: opt-in LLM, concurrent, time-boxed.
+# Regression: one real LLM call per abstract, in sequence, under the rate
+# limiter, exceeded the 30s source deadline and PubMed's results were thrown
+# away even though its HTTP calls had all succeeded (found live).
+# --------------------------------------------------------------------------
+
+LONG_ABSTRACT = "This abstract is long enough to need summarising. " * 12  # ~600 chars, over the 400-char threshold
+
+
+async def test_llm_summaries_are_off_by_default_and_make_no_llm_call(monkeypatch):
+    monkeypatch.delenv("EVIDENCE_LLM_SUMMARIES", raising=False)
+    never = AsyncMock(side_effect=AssertionError("no LLM call is expected by default"))
+    monkeypatch.setattr(evidence_agent, "_summarize_abstract", never)
+
+    out = await evidence_agent._summarize_all([LONG_ABSTRACT, "A short abstract.", ""])
+
+    never.assert_not_called()
+    assert out[0].endswith("...") and len(out[0]) < len(LONG_ABSTRACT)  # truncated
+    assert out[1] == "A short abstract."                                  # short ones kept whole
+    assert out[2] == "(no abstract available)"
+
+
+async def test_enabled_llm_summaries_run_concurrently_not_one_after_another(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_LLM_SUMMARIES", "true")
+    started = 0
+    all_started = asyncio.Event()
+
+    async def fake_summarize(abstract):
+        nonlocal started
+        started += 1
+        if started == 3:
+            all_started.set()
+        await asyncio.wait_for(all_started.wait(), timeout=2)  # only returns if all 3 run at once
+        return f"LLM summary of {abstract[:1]}"
+
+    monkeypatch.setattr(evidence_agent, "_summarize_abstract", fake_summarize)
+
+    out = await evidence_agent._summarize_all(["a" * 500, "b" * 500, "c" * 500])
+
+    assert out == ["LLM summary of a", "LLM summary of b", "LLM summary of c"]
+
+
+async def test_slow_llm_summaries_are_cut_off_by_the_budget_and_fall_back_to_truncation(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_LLM_SUMMARIES", "true")
+    monkeypatch.setattr(evidence_agent, "SUMMARY_BUDGET_SECONDS", 0.05)
+
+    async def hangs(abstract):
+        await asyncio.sleep(60)
+
+    monkeypatch.setattr(evidence_agent, "_summarize_abstract", hangs)
+
+    out = await asyncio.wait_for(evidence_agent._summarize_all([LONG_ABSTRACT, "short"]), timeout=5)
+
+    assert out[0].endswith("...")      # fell back to truncation
+    assert out[1] == "short"
+
+
+async def test_one_failing_llm_summary_only_affects_that_abstract(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_LLM_SUMMARIES", "true")
+
+    async def flaky(abstract):
+        if abstract.startswith("BAD"):
+            raise RuntimeError("503 UNAVAILABLE")
+        return "LLM summary"
+
+    monkeypatch.setattr(evidence_agent, "_summarize_abstract", flaky)
+
+    out = await evidence_agent._summarize_all(["BAD" + "x" * 500, "good" + "y" * 500])
+
+    assert out[0].endswith("...") and out[1] == "LLM summary"
+
+
+async def test_search_pubmed_keeps_its_results_even_when_llm_summaries_hang(monkeypatch):
+    """The live bug: PubMed's HTTP calls succeed, but slow LLM summaries used
+    to take the whole source (and its results) down with them."""
+    monkeypatch.setenv("EVIDENCE_LLM_SUMMARIES", "true")
+    monkeypatch.setattr(evidence_agent, "SUMMARY_BUDGET_SECONDS", 0.05)
+
+    async def hangs(abstract):
+        await asyncio.sleep(60)
+
+    monkeypatch.setattr(evidence_agent, "_summarize_abstract", hangs)
+    long_efetch = (
+        '<?xml version="1.0"?><PubmedArticleSet>'
+        f'<PubmedArticle><MedlineCitation><PMID Version="1">111</PMID><Article><Abstract><AbstractText>{LONG_ABSTRACT}</AbstractText></Abstract></Article></MedlineCitation></PubmedArticle>'
+        f'<PubmedArticle><MedlineCitation><PMID Version="1">222</PMID><Article><Abstract><AbstractText>{LONG_ABSTRACT}</AbstractText></Abstract></Article></MedlineCitation></PubmedArticle>'
+        "</PubmedArticleSet>"
+    )
+
+    def handler(url, params):
+        if url == evidence_agent.PUBMED_ESEARCH_URL:
+            return _json_response(url, PUBMED_ESEARCH_JSON)
+        if url == evidence_agent.PUBMED_ESUMMARY_URL:
+            return _json_response(url, PUBMED_ESUMMARY_JSON)
+        if url == evidence_agent.PUBMED_EFETCH_URL:
+            return _text_response(url, long_efetch)
+        raise AssertionError(f"unexpected URL {url}")
+
+    _patch_client(monkeypatch, handler)
+
+    results = await asyncio.wait_for(search_pubmed("headache", max_results=2), timeout=5)
+
+    assert [r["url"] for r in results] == [
+        "https://pubmed.ncbi.nlm.nih.gov/111/", "https://pubmed.ncbi.nlm.nih.gov/222/",
+    ]
+    assert all(r["summary"].endswith("...") for r in results)  # truncated, not lost
+
+
+# --------------------------------------------------------------------------
+# ClinicalTrials.gov query length + not retrying client errors.
+# Regression (found live): the optimizer's refined 15-20 word queries made
+# ClinicalTrials.gov answer 400 "Too complicated query" -- measured limit is
+# 13 words -- and the 400 was then pointlessly retried.
+# --------------------------------------------------------------------------
+
+
+def test_clinicaltrials_query_is_capped_at_twelve_terms_keeping_the_first_ones():
+    long_query = (
+        "chest pain, shortness of breath, right lower lung opacity, subpulmonic fluid collection, "
+        "differential pneumothorax vs large bulla vs pleural effusion"
+    )
+
+    capped = evidence_agent._clinicaltrials_query(long_query)
+
+    assert len(capped.split()) == 12
+    assert capped == "chest pain shortness of breath right lower lung opacity subpulmonic fluid collection"
+    assert "," not in capped and ";" not in capped
+
+
+def test_clinicaltrials_query_leaves_short_queries_alone_apart_from_punctuation():
+    assert evidence_agent._clinicaltrials_query("hypertension headache") == "hypertension headache"
+    assert evidence_agent._clinicaltrials_query("headache, dizziness; history of hypertension") == (
+        "headache dizziness history of hypertension"
+    )
+
+
+async def test_search_clinicaltrials_sends_the_capped_query(monkeypatch):
+    seen = {}
+
+    def handler(url, params):
+        seen.update(params)
+        return _json_response(url, {"studies": []})
+
+    _patch_client(monkeypatch, handler)
+
+    await search_clinicaltrials("one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen")
+
+    assert len(seen["query.term"].split()) == 12
+
+
+async def test_a_client_error_is_not_retried(monkeypatch):
+    calls = 0
+
+    def handler(url, params):
+        nonlocal calls
+        calls += 1
+        return httpx.Response(400, text="Too complicated query", request=httpx.Request("GET", url))
+
+    _patch_client(monkeypatch, handler)
+
+    with pytest.raises(EvidenceSourceUnavailableError, match="after 1 attempt"):
+        await search_clinicaltrials("anything")
+    assert calls == 1
+
+
+@pytest.mark.parametrize("status", [429, 503])
+async def test_rate_limit_and_server_errors_are_still_retried(monkeypatch, status):
+    calls = 0
+
+    def handler(url, params):
+        nonlocal calls
+        calls += 1
+        return httpx.Response(status, text="try later", request=httpx.Request("GET", url))
+
+    _patch_client(monkeypatch, handler)
+
+    with pytest.raises(EvidenceSourceUnavailableError):
+        await search_clinicaltrials("anything")
+    assert calls == evidence_agent.MAX_ATTEMPTS

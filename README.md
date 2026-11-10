@@ -206,6 +206,7 @@ Open `.env` and fill in:
 | `QDRANT_URL` / `QDRANT_API_KEY` | No | Leave blank to use an embedded local Qdrant store at `data/qdrant_local/` — no server needed. Set these only if you have a real Qdrant Cloud/self-hosted instance. |
 | `PUBMED_API_KEY` | No | PubMed, MedlinePlus, Europe PMC and ClinicalTrials.gov all work without a key at this call volume. |
 | `CASE_MEMORY_MIN_SCORE` / `VISUAL_MEMORY_MIN_SCORE` | No | Minimum similarity for a past clinician override to be shown as a precedent (defaults 0.6 text / 0.85 visual — see "Case memory"). |
+| `EVIDENCE_LLM_SUMMARIES` | No | `false` (default): PubMed abstracts are truncated, with no LLM call. `true`: one LLM call per abstract, concurrent, 12s budget. Keep it off on a free tier — it uses most of the daily quota. |
 | `RERANK_SCORE_CENTER` / `RERANK_SCORE_SCALE` | No | Calibration of the reranker's 0–1 relevance score (the S_rag confidence signal): `sigmoid((logit − center) / scale)`, defaults −7 / 2. Hand-calibrated for the current knowledge base; re-check with `python -m backend.rag.calibrate_reranker` if the corpus or reranker model changes. |
 | `DATABASE_URL` | No | Defaults to `sqlite:///./medorchestrate.db`; created automatically on first run. |
 | `LANGFUSE_ENABLED` | No | Defaults to `false`. Leave off unless you have Langfuse credentials. |

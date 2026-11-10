@@ -488,6 +488,52 @@ def _execute(agent: Agent, task: Task) -> str:
     return str(result)
 
 
+def _short(exc: Exception, limit: int = 160) -> str:
+    text = " ".join(str(exc).split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _apply_degraded_defaults(context: _CaseContext, step: str, exc: Exception) -> None:
+    """When a step's CrewAI layer failed BEFORE its tool could run, the tool
+    never filled in its slice of the shared context. Give downstream steps
+    the same safe, empty value the tool itself would have produced had IT
+    failed, so the pipeline continues on whatever evidence remains."""
+    if step == "clinical" and context.clinical is None:
+        context.clinical = ClinicalFindings(demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[])
+    elif step == "rag" and context.rag is None:
+        context.rag = RAGEvidence(evidence=[])
+    elif step == "evidence" and context.live is None:
+        context.live = LiveEvidence(sources=[])  # sources_queried == 0 -> reported as unavailable
+    elif step == "fusion" and context.fusion is None:
+        context.fusion = FusionResult(
+            diagnoses=[], overall_confidence=0.0, conflicts=[f"Fusion reasoning failed: {_short(exc)}"]
+        )
+        context.confidence = 0.0
+    elif step == "optimizer":
+        context.review_required = True
+
+
+def _run_step(context: _CaseContext, step: str, agent: Agent, task: Task) -> None:
+    """Runs one pipeline step and NEVER raises.
+
+    Each tool already handles its own failures, but the CrewAI layer that
+    decides to call the tool makes its own LLM call, which sits outside every
+    tool's try/except. Confirmed live: Gemini's free-tier daily quota ran out
+    (429) during that call and the exception escaped run_case(), turning a
+    degradable provider failure into an HTTP 500. The spec requires that one
+    external failure never crash run_case() -- so it is logged here and the
+    run continues in degraded form."""
+    start = time.perf_counter()
+    try:
+        _execute(agent, task)
+    except Exception as exc:
+        _log_agent_call(
+            context, step, 0, "failure", (time.perf_counter() - start) * 1000,
+            error=f"orchestration layer failed: {_short(exc, 300)}", layer="crewai",
+        )
+        _apply_degraded_defaults(context, step, exc)
+
+
 def _combine_evidence(rag: RAGEvidence | None, live: LiveEvidence | None) -> list[dict]:
     """Merge RAG + live evidence into FinalReport.evidence (list[dict] --
     intentionally untyped in the shared schema; see schemas.py). Each
@@ -530,11 +576,11 @@ def run_case(case: CaseInput) -> FinalReport:
     # running it unconditionally supports text-only, image-only, and
     # text+image cases uniformly -- imaging is the only conditional step.
     clinical_agent = _build_agent(ClinicalTool(context), "clinical")
-    _execute(clinical_agent, _build_task(clinical_agent))
+    _run_step(context, "clinical", clinical_agent, _build_task(clinical_agent))
 
     if case.image_path:
         imaging_agent = _build_agent(ImagingTool(context), "imaging")
-        _execute(imaging_agent, _build_task(imaging_agent))
+        _run_step(context, "imaging", imaging_agent, _build_task(imaging_agent))
     # else: context.imaging stays None -- handled uniformly downstream.
 
     # Step 2: the structured multimodal case at this point is exactly
@@ -542,20 +588,20 @@ def run_case(case: CaseInput) -> FinalReport:
 
     # Step 3: RAG + Evidence.
     rag_agent_instance = _build_agent(RAGTool(context), "rag")
-    _execute(rag_agent_instance, _build_task(rag_agent_instance))
+    _run_step(context, "rag", rag_agent_instance, _build_task(rag_agent_instance))
 
     evidence_agent_instance = _build_agent(EvidenceTool(context), "evidence")
-    _execute(evidence_agent_instance, _build_task(evidence_agent_instance))
+    _run_step(context, "evidence", evidence_agent_instance, _build_task(evidence_agent_instance))
 
     # Step 4: Fusion, then confidence (computed inside FusionTool, right
     # after fuse(), from exactly the rag/live/fusion triple just produced).
     fusion_agent_instance = _build_agent(FusionTool(context), "fusion")
-    _execute(fusion_agent_instance, _build_task(fusion_agent_instance))
+    _run_step(context, "fusion", fusion_agent_instance, _build_task(fusion_agent_instance))
 
     # Step 5: optimizer only if confidence is below threshold.
     if context.confidence is not None and context.confidence < THRESHOLD:
         optimizer_agent_instance = _build_agent(OptimizerTool(context), "optimizer")
-        _execute(optimizer_agent_instance, _build_task(optimizer_agent_instance))
+        _run_step(context, "optimizer", optimizer_agent_instance, _build_task(optimizer_agent_instance))
 
     # Step 6: assemble FinalReport.
     fusion = context.fusion or FusionResult(diagnoses=[], overall_confidence=0.0, conflicts=[])
@@ -569,7 +615,9 @@ def run_case(case: CaseInput) -> FinalReport:
         diagnoses=fusion.diagnoses,
         confidence=confidence,
         evidence=_combine_evidence(context.rag, context.live),
-        review_required=context.review_required,
+        # Never present a below-threshold result as not needing review, even
+        # if the optimizer step could not run (e.g. the provider was down).
+        review_required=context.review_required or confidence < THRESHOLD,
         conflicts=fusion.conflicts,
         iteration_count=context.iterations,
         imaging=context.imaging,

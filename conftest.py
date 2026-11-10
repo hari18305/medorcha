@@ -24,4 +24,17 @@ for their own local real-usage runs.
 
 import os
 
+import pytest
+
 os.environ["LLM_PROVIDER"] = "anthropic"
+
+
+@pytest.fixture(autouse=True)
+def _isolate_upload_dir(tmp_path, monkeypatch):
+    """POST /diagnose saves uploaded images under routes.UPLOAD_DIR
+    (data/images/uploads/). Without this, every test that uploads an image
+    wrote its (tiny, fake) file into the REAL uploads folder -- littering the
+    dev data a developer's own real runs live in."""
+    import backend.api.routes as routes
+
+    monkeypatch.setattr(routes, "UPLOAD_DIR", tmp_path / "uploads")

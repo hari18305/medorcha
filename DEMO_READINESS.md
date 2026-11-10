@@ -216,6 +216,55 @@ system; **re-run Mode 1** (real Gemini calls) before quoting any figures.
   cases, then a refit that changes the next run's confidence); and a rating
   never changing the accept/override label.
 
+## Update 2026-11-10: first real end-to-end run of the current system
+
+One real case (28M, "chest pain and shortness of breath", plus a real chest
+X-ray) submitted through the real React UI to the real backend with real Gemini
+calls, BiomedCLIP, Qdrant and all four live evidence sources.
+
+**Run 1 failed (HTTP 500) and exposed four bugs** — none visible to the mocked
+tests:
+1. `.env` selected `gemini-3.6-flash`, whose free tier is **20 requests per
+   day**; one case used it up (plus several 503 "high demand" errors).
+2. When CrewAI's own orchestration LLM call failed (429), the exception
+   escaped `run_case()` and became a 500 instead of a degraded, flagged report.
+   Fixed: `_run_step` logs it and continues with safe defaults; a
+   below-threshold confidence can no longer come back as `review_required=False`.
+3. The rate limiter was a blocking `time.sleep()` inside `async def` calls,
+   freezing the whole event loop (no timeout could fire; the other evidence
+   sources stalled). Fixed: it now runs in a worker thread.
+4. PubMed's per-abstract LLM summaries queued behind that limiter and blew past
+   the 30s source deadline, discarding PubMed even though its HTTP calls
+   succeeded. Fixed: summaries are now opt-in (`EVIDENCE_LLM_SUMMARIES`, off by
+   default), and when on they run concurrently under a 12s budget.
+5. ClinicalTrials.gov answers `400 "Too complicated query"` above 13 words, and
+   the optimizer's refined queries run to 15–20. Fixed: capped at 12 terms, and
+   client errors are no longer retried.
+
+**Run 2** (same case, `GEMINI_MODEL_ID=gemini-3.5-flash-lite` for that process
+only) **completed: HTTP 200 in 72s, 12 Gemini calls, every step `success`.**
+All four evidence sources answered (11 live items); `fuse()` logged
+"multimodal path (attaching raw image (chest X-ray) alongside text for provider
+'gemini')" on every fusion pass — i.e. **the raw image is attached to the LLM
+call in a live run**. First-pass confidence 0.623 (< 0.65) triggered the
+optimizer: 0.617, 0.458, 0.660 → final 0.66, `review_required=False`. The
+reranker's calibrated relevance spread over the real knowledge base was sensible
+(98%, 88%, 77%, 47%, 31%).
+
+**What this does NOT show:** the top diagnosis (pneumothorax, 82%) simply agrees
+with BiomedCLIP's label, and no image-vs-BiomedCLIP conflict was raised. The
+teammate's mid-review deck shows a different reading of what appears to be the
+same image (a large gas-filled structure in the left lower chest read as a
+possible gastric bubble / diaphragmatic hernia rather than pneumothorax), so the
+model's visual read varies by model and is not validated — one run proves the
+wiring, not the quality, and this is decision support for clinician review only.
+Confidence landed only just above the threshold, after three optimizer passes.
+
+**Action for you:** unset `GEMINI_MODEL_ID` in `.env` (or set it to
+`gemini-3.5-flash-lite`). As written, `gemini-3.6-flash` allows ~1–2 cases/day
+on the free tier. Mode 1 over 24 cases needs a paid tier or several days of
+quota.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

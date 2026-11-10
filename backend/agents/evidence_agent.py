@@ -56,6 +56,7 @@ import asyncio
 import difflib
 import html
 import logging
+import os
 import re
 import xml.etree.ElementTree as ET
 
@@ -85,9 +86,24 @@ SOURCE_DEADLINE_SECONDS = 30.0
 TITLE_DUPLICATE_RATIO = 0.9
 
 # Abstracts at or under this length are used as-is for `summary`;
-# longer ones are auto-summarized via Claude (falling back to a
-# truncated snippet if that call fails for any reason).
+# longer ones are truncated -- or, only when EVIDENCE_LLM_SUMMARIES is
+# enabled, summarized with an LLM call (falling back to the truncated
+# snippet if that call fails for any reason or runs out of time).
 ABSTRACT_SUMMARIZE_THRESHOLD_CHARS = 400
+# Total time PubMed's LLM summaries may take before the rest fall back to
+# truncation. Keeps one slow/throttled LLM from costing PubMed's results.
+SUMMARY_BUDGET_SECONDS = 12.0
+
+
+def _llm_summaries_enabled() -> bool:
+    """LLM abstract summaries are OFF by default: each one is a real LLM call
+    (5 per PubMed query, 3x that again across optimizer iterations), which on
+    a free tier burns most of the daily quota (e.g. Gemini's 20 requests/day
+    for gemini-3.6-flash) for a marginal readability gain, and under the rate
+    limiter once pushed PubMed past its source deadline. Europe PMC and
+    ClinicalTrials.gov already use plain truncation. Set
+    EVIDENCE_LLM_SUMMARIES=true on a paid tier to turn them on."""
+    return os.getenv("EVIDENCE_LLM_SUMMARIES", "false").strip().lower() in ("1", "true", "yes", "on")
 CLAUDE_MODEL = get_model_name()
 
 # --------------------------------------------------------------------------
@@ -181,18 +197,29 @@ async def _get_with_retries(
     client: httpx.AsyncClient, url: str, params: dict, source_name: str
 ) -> httpx.Response:
     last_exc: Exception | None = None
+    attempts = 0
     for attempt in range(1, MAX_ATTEMPTS + 1):
+        attempts = attempt
         try:
             response = await client.get(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
             response.raise_for_status()
             return response
+        except httpx.HTTPStatusError as exc:
+            last_exc = exc
+            status = exc.response.status_code
+            logger.warning("%s request failed (attempt %d/%d): %s", source_name, attempt, MAX_ATTEMPTS, exc)
+            # A client error (400, 404, ...) is the same request failing the same
+            # way: retrying it only burns time. 408 (timeout) and 429 (rate limit)
+            # are the transient exceptions; 5xx are server-side and retried too.
+            if 400 <= status < 500 and status not in (408, 429):
+                break
         except (httpx.TimeoutException, httpx.HTTPError) as exc:
             last_exc = exc
             logger.warning(
                 "%s request failed (attempt %d/%d): %s", source_name, attempt, MAX_ATTEMPTS, exc
             )
     raise EvidenceSourceUnavailableError(
-        f"{source_name} unavailable after {MAX_ATTEMPTS} attempts: {last_exc}"
+        f"{source_name} unavailable after {attempts} attempt(s): {last_exc}"
     )
 
 
@@ -280,6 +307,47 @@ async def _summarize_abstract(abstract: str) -> str:
         return _truncate(abstract)
 
 
+def _summary_without_llm(abstract: str) -> str:
+    """What `summary` is when no LLM summary is produced: the abstract itself
+    if short, else a truncated snippet."""
+    if not abstract:
+        return "(no abstract available)"
+    if len(abstract) <= ABSTRACT_SUMMARIZE_THRESHOLD_CHARS:
+        return abstract
+    return _truncate(abstract)
+
+
+async def _summarize_all(abstracts: list[str]) -> list[str]:
+    """One `summary` per abstract. Truncation unless LLM summaries are
+    enabled; when they are, they run CONCURRENTLY under SUMMARY_BUDGET_SECONDS
+    and any that haven't finished by then (or failed) fall back to the
+    truncated abstract -- so slow summaries can never cost PubMed its results.
+    """
+    if not abstracts:
+        return []
+    if not _llm_summaries_enabled():
+        return [_summary_without_llm(a) for a in abstracts]
+
+    tasks = [asyncio.ensure_future(_summarize_abstract(a)) for a in abstracts]
+    done, pending = await asyncio.wait(tasks, timeout=SUMMARY_BUDGET_SECONDS)
+    if pending:
+        logger.warning(
+            "PubMed: %d of %d abstract summaries did not finish within %.0fs; using the truncated abstract instead",
+            len(pending), len(tasks), SUMMARY_BUDGET_SECONDS,
+        )
+        for task in pending:
+            task.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)  # let the cancellations settle
+
+    summaries = []
+    for abstract, task in zip(abstracts, tasks):
+        if task in done and not task.cancelled() and task.exception() is None:
+            summaries.append(task.result())
+        else:
+            summaries.append(_summary_without_llm(abstract))
+    return summaries
+
+
 async def search_pubmed(query: str, max_results: int = 5) -> list[dict]:
     async with httpx.AsyncClient() as client:
         try:
@@ -305,14 +373,16 @@ async def search_pubmed(query: str, max_results: int = 5) -> list[dict]:
             logger.warning("PubMed efetch unavailable for query %r: %s", query, exc)
             abstracts = {}
 
+    abstract_texts = [abstracts.get(pmid, "") for pmid in pmids]
+    evidence_summaries = await _summarize_all(abstract_texts)
+
     results = []
-    for pmid in pmids:
+    for pmid, evidence_summary in zip(pmids, evidence_summaries):
         summary_meta = summaries.get(pmid, {})
         title = (summary_meta.get("title") or "").strip() or "(title unavailable)"
         pubdate = summary_meta.get("pubdate") or None
         abstract = abstracts.get(pmid, "")
 
-        evidence_summary = await _summarize_abstract(abstract)
         results.append(
             {
                 "title": title,
@@ -489,13 +559,28 @@ def _parse_clinicaltrials_json(payload: dict, max_results: int) -> list[dict]:
     return results
 
 
+# ClinicalTrials.gov rejects long queries outright: HTTP 400 "Error parsing
+# query in Other terms: Too complicated query". Measured against the live API:
+# 13 words succeed, 14 fail (punctuation is irrelevant -- it is the word count).
+# The optimizer's refined queries run to 15-20 words, which made this source
+# fail on exactly the iterations meant to improve the evidence. 12 leaves margin.
+CLINICALTRIALS_MAX_QUERY_TERMS = 12
+_TERM_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9'\-]*")
+
+
+def _clinicaltrials_query(query: str) -> str:
+    """The first CLINICALTRIALS_MAX_QUERY_TERMS words of `query` (the most
+    important symptoms come first), punctuation dropped."""
+    return " ".join(_TERM_RE.findall(query)[:CLINICALTRIALS_MAX_QUERY_TERMS])
+
+
 async def search_clinicaltrials(query: str, max_results: int = 3) -> list[dict]:
     async with httpx.AsyncClient() as client:
         try:
             response = await _get_with_retries(
                 client,
                 CLINICALTRIALS_SEARCH_URL,
-                {"query.term": query, "pageSize": max_results, "format": "json"},
+                {"query.term": _clinicaltrials_query(query), "pageSize": max_results, "format": "json"},
                 "ClinicalTrials.gov",
             )
         except EvidenceSourceUnavailableError as exc:
