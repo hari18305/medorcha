@@ -338,6 +338,47 @@ co-occurring findings compete, so a genuine second finding that is much weaker
 than the first is now dropped from BiomedCLIP's labels (the attached-image model
 still sees the image itself).
 
+## Update 2026-11-12: LLM-judged evaluation, answer key, simulated recalibration demo
+
+**Added (tooling only; no pipeline code changed):**
+- `data/test_cases/answer_key.json` - expected-diagnosis key for all 30 cases
+  (acceptable differential, or `abstain` for inputs too vague to diagnose).
+  **Developer-drafted, NOT clinician-verified**; the file says so and a test
+  fails if that label is removed. Treat any score computed from it as a
+  consistency check until a clinician has reviewed it.
+- `backend/tests/llm_judge.py` + `run_llm_judge.py` - RAGAS-style metrics
+  (faithfulness, context precision, diagnosis correctness, unsupported claims)
+  implemented natively, not the `ragas` library (it would pull langchain into
+  the CrewAI environment). It judges *saved* reports, so judging can be re-run
+  with a different judge without re-running the pipeline.
+  `scripts/run_cases_live.py` produces the saved reports. 26 unit tests with a
+  fake judge; four scoring mutations were each caught.
+- `scripts/demo_recalibration_simulated.py` - shows the recalibration
+  *mechanism* using 3 real reviews + 7 reviews written by the developer
+  (labelled `SIMULATED-developer`) in a throwaway DB. The real DB is verified
+  byte-identical afterwards. **The resulting weights only reflect a rule chosen
+  in the script; they are not learned from clinicians and must not be quoted as such.**
+
+**Smoke test (2 real cases, Gemini judging Gemini - i.e. self-grading):**
+diagnosis in answer key 2/2; faithfulness 0.50; context precision 0.50; 0
+unsupported claims. n=2, not a result. Two things it exposed:
+1. **Knowledge-base coverage gap.** REAL004 (memory loss + unsteady gait) got
+   0/5 relevant passages: the 30-passage KB has nothing on dementia,
+   Alzheimer's or hydrocephalus. The metric found a real hole.
+2. **Judge inconsistency.** For that same case the judge rated the WMH passage
+   "not relevant" under context precision yet "supports" a diagnosis under
+   faithfulness. LLM judges are noisy; do not over-read small differences.
+
+**Live CT/MRI runs (REAL001 head CT, REAL004 brain MRI):** both completed with
+no failed step and the multimodal path. REAL004 took 505 s (3 optimizer
+iterations) - too slow to run live in a demo. Europe PMC timed out on both;
+the other three live sources answered.
+
+**Case-memory contamination (found by the REAL001 run):** its top diagnosis
+(TIA) came from a stored override by `Dr. Demo` (2026-09-08) in the *real*
+case-memory store - a demo artefact, not model reasoning. Same store holds two
+empty-text `Dr. Lee` points. Remove before any recorded demo or evaluation run.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.
