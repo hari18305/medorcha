@@ -17,9 +17,10 @@ def corpus():
     return ingest.load_corpus()
 
 
-def test_corpus_size_is_within_the_spec_range(corpus):
-    # Phase 2: "20-30 short passages".
-    assert 20 <= len(corpus) <= 30
+def test_corpus_size_is_sane(corpus):
+    # Spec said 20-30; the KB was extended to 42 (data/knowledge_base/README.md
+    # explains why). The upper bound just catches an accidental duplicate load.
+    assert 20 <= len(corpus) <= 60
 
 
 def test_at_least_80_percent_of_passages_are_real(corpus):

@@ -379,6 +379,29 @@ the other three live sources answered.
 case-memory store - a demo artefact, not model reasoning. Same store holds two
 empty-text `Dr. Lee` points. Remove before any recorded demo or evaluation run.
 
+## Update 2026-11-12 (later): knowledge base 30 -> 42 passages
+
+Added 12 verbatim MedlinePlus / PubMed passages for answer-key conditions that
+had nothing behind them (Alzheimer disease, dementia, vascular cognitive
+impairment, normal pressure hydrocephalus, hydrocephalus, idiopathic
+intracranial hypertension, subarachnoid / hemorrhagic stroke, traumatic brain
+injury, lung cancer, tuberculosis, chest injuries / rib fracture). The builder
+now defaults to add-only (`--rebuild` re-fetches everything); the 30 existing
+passages are byte-identical. This exceeds the spec's "20-30" and says so in
+`data/knowledge_base/README.md`.
+
+**Regression check** (old vs new KB, 12 answer-key queries, in-memory Qdrant,
+real BioBERT + reranker): a relevant passage in the top 5 for **9/12 -> 11/12**
+queries, and no query got worse. The memory-loss + gait case went from no
+relevant passage to Dementia ranked 1st. Head injury on warfarin went from none
+to Subarachnoid hemorrhage ranked 1st. Small sample, hand-chosen "relevant"
+sets (mine, not a clinician's): evidence the gap closed, not a retrieval benchmark.
+
+**Still not fixed:** the *chronic subdural hematoma* passage is never retrieved
+for CASE009 (elderly, warfarin, fall, gait unsteadiness) in either KB, so the
+case's classic diagnosis gets no supporting passage. That is a dense-retrieval
+weakness (BioBERT query->passage matching), not missing content. Not chased.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

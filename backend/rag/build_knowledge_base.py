@@ -3,7 +3,8 @@ citable public sources. NOT run at ingest time or by the app -- ingest.py
 reads the checked-in JSON files; this script exists so every passage's
 provenance can be re-verified or refreshed:
 
-    python -m backend.rag.build_knowledge_base
+    python -m backend.rag.build_knowledge_base            # add only the missing doc_ids
+    python -m backend.rag.build_knowledge_base --rebuild  # re-fetch every passage
 
 Sources (all free/keyless, same families the live Evidence Agent uses):
 
@@ -54,6 +55,12 @@ ENCY_DOCS = [
     ("brain_mri_overview", "symptom_disease", "003791", ["Why the Test is Performed", "What Abnormal Results Mean"]),
     ("head_ct_overview", "symptom_disease", "003786", ["Why the Test is Performed", "What Abnormal Results Mean"]),
     ("chest_xray_overview", "symptom_disease", "003804", ["Why the Test is Performed", "What Abnormal Results Mean"]),
+    # Added 2026-11-12 after an LLM-judged run showed 0/5 relevant passages for a
+    # memory-loss + gait case: the KB had nothing on dementia / hydrocephalus.
+    ("alzheimer_disease", "symptom_disease", "000760", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("dementia_overview", "symptom_disease", "000739", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("subarachnoid_hemorrhage", "symptom_disease", "000701", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("pulmonary_tuberculosis", "symptom_disease", "000077", ["Causes", "Symptoms", "Exams and Tests"]),
 ]
 
 # (doc_id, folder, MedlinePlus health-topic search term, expected title)
@@ -64,6 +71,11 @@ TOPIC_DOCS = [
     ("sinusitis_headache", "symptom_disease", "sinusitis", "Sinusitis"),
     ("pneumonia_chest_xray", "symptom_disease", "pneumonia", "Pneumonia"),
     ("pneumothorax_collapsed_lung", "symptom_disease", "collapsed lung", "Collapsed Lung"),
+    ("hydrocephalus_overview", "symptom_disease", "hydrocephalus", "Hydrocephalus"),
+    ("lung_cancer_overview", "symptom_disease", "lung cancer", "Lung Cancer"),
+    ("hemorrhagic_stroke_overview", "symptom_disease", "hemorrhagic stroke", "Hemorrhagic Stroke"),
+    ("traumatic_brain_injury_overview", "symptom_disease", "traumatic brain injury", "Traumatic Brain Injury"),
+    ("chest_injuries_rib_fracture", "symptom_disease", "chest injuries and disorders", "Chest Injuries and Disorders"),
 ]
 
 # (doc_id, folder, PMID, expected title fragment) -- PMIDs were looked up
@@ -83,6 +95,9 @@ PUBMED_DOCS = [
     ("white_matter_hyperintensities_small_vessel", "symptom_disease", "28685621", "White matter hyperintensities"),
     ("pulmonary_nodule_fleischner_2017", "guidelines", "28240562", "Pulmonary Nodules"),
     ("cardiomegaly_chest_radiograph", "symptom_disease", "29073657", "cardiomegaly"),
+    ("idiopathic_nph_guidelines_2021", "guidelines", "33455998", "Normal Pressure Hydrocephalus"),
+    ("idiopathic_intracranial_hypertension_consensus_2018", "guidelines", "29903905", "Idiopathic intracranial hypertension"),
+    ("vascular_contributions_to_cognitive_impairment_aha_2011", "guidelines", "21778438", "Vascular contributions to cognitive impairment"),
 ]
 
 
@@ -199,24 +214,46 @@ def fetch_pubmed(client: httpx.Client, pmid: str, expected_fragment: str) -> dic
     }
 
 
-def build() -> dict[str, list[dict]]:
+def _existing() -> dict[str, list[dict]]:
+    """Records already checked in, by folder -- kept untouched in add mode so a
+    passage's verified text and 'retrieved' date are not silently refreshed."""
+    out: dict[str, list[dict]] = {"guidelines": [], "symptom_disease": []}
+    for folder in out:
+        path = KB_ROOT / folder / f"{folder}.json"
+        if path.exists():
+            out[folder] = json.loads(path.read_text(encoding="utf-8"))
+    return out
+
+
+def build(rebuild: bool = False) -> dict[str, list[dict]]:
+    """Default (add mode): fetch only doc_ids not already on disk and append them.
+    rebuild=True re-fetches EVERYTHING (refreshing every passage and date)."""
     retrieved = date.today().isoformat()
-    folders: dict[str, list[dict]] = {"guidelines": [], "symptom_disease": []}
+    folders = {"guidelines": [], "symptom_disease": []} if rebuild else _existing()
+    have = {r["doc_id"] for records in folders.values() for r in records}
     with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, follow_redirects=True) as client:
         for doc_id, folder, article_id, priority in ENCY_DOCS:
+            if doc_id in have:
+                continue
             folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_ency(client, article_id, priority)})
             time.sleep(0.3)
         for doc_id, folder, term, title in TOPIC_DOCS:
+            if doc_id in have:
+                continue
             folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_topic(client, term, title)})
             time.sleep(0.3)
         for doc_id, folder, pmid, fragment in PUBMED_DOCS:
+            if doc_id in have:
+                continue
             folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_pubmed(client, pmid, fragment)})
             time.sleep(0.4)
     return folders
 
 
 def main() -> None:
-    folders = build()
+    import sys
+
+    folders = build(rebuild="--rebuild" in sys.argv)
     for folder, records in folders.items():
         path = KB_ROOT / folder / f"{folder}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
