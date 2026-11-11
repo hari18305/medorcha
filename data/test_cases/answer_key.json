@@ -1,0 +1,44 @@
+{
+  "_provenance": {
+    "status": "DRAFT - developer-drafted, NOT clinician-verified",
+    "drafted_by": "Claude (AI assistant), from each case's own text/report plus general clinical knowledge",
+    "verified_by": null,
+    "how_to_read": "Each case is keyed by its file name (CASE001.json and CASE001_with_image.json share a case_id, so the id is not unique). 'differential' lists diagnoses that count as CORRECT if any of them appears in the system's top-3. It is an acceptable differential, not a single true answer: most synthetic cases are deliberately vague (e.g. 'headache and dizziness'), so several diagnoses are clinically reasonable. 'abstain' means no diagnosis can be determined from the input, so the CORRECT behaviour is low confidence and review_required, not a confident diagnosis. Synthetic images (synthetic_demo_*) depict no real pathology, so they never contribute a diagnosis.",
+    "limits": "A clinician must review this before the numbers it produces are quoted as accuracy. Until then treat any score computed from it as a consistency check against the developer's expectation."
+  },
+  "cases": {
+    "CASE001": {"kind": "differential", "differential": ["hypertension-related headache", "tension-type headache", "chronic small vessel ischemic disease", "migraine"]},
+    "CASE001_with_image": {"kind": "differential", "differential": ["hypertension-related headache", "tension-type headache", "chronic small vessel ischemic disease", "migraine"], "note": "image is synthetic; text decides"},
+    "CASE002_text_only": {"kind": "differential", "differential": ["hypertension-related headache", "tension-type headache", "chronic small vessel ischemic disease", "migraine"]},
+    "CASE003_image_only": {"kind": "abstain", "note": "synthetic MRI, no text"},
+    "CASE004_text_and_image": {"kind": "differential", "differential": ["hypertension-related headache", "tension-type headache", "chronic small vessel ischemic disease", "migraine"], "note": "image is synthetic; text decides"},
+    "CASE005_text_and_medical_report": {"kind": "differential", "differential": ["chronic small vessel ischemic disease", "hypertension-related headache", "tension-type headache"]},
+    "CASE006_medical_report_only": {"kind": "differential", "differential": ["chronic small vessel ischemic disease"]},
+    "CASE007_high_confidence_candidate": {"kind": "differential", "differential": ["hypertension-related headache", "hypertensive encephalopathy", "chronic small vessel ischemic disease"]},
+    "CASE008_low_confidence_candidate": {"kind": "abstain", "note": "deliberately non-specific; correct behaviour is low confidence and human review"},
+    "CASE009_elderly_patient": {"kind": "differential", "differential": ["chronic subdural hematoma", "subdural hematoma", "intracranial hemorrhage"], "note": "warfarin + prior fall + gait unsteadiness + headache is the classic presentation"},
+    "CASE010_pediatric_patient": {"kind": "differential", "differential": ["tension-type headache", "post-viral headache", "sinusitis", "migraine"]},
+    "CASE011_with_labs": {"kind": "differential", "differential": ["iron deficiency anemia", "anemia", "orthostatic hypotension"]},
+    "CASE012_extensive_history": {"kind": "differential", "differential": ["recurrent ischemic stroke", "transient ischemic attack", "hypertension-related headache", "vertebrobasilar insufficiency"]},
+    "CASE013_minimal_no_content": {"kind": "abstain", "note": "no input at all"},
+    "CASE014_headache_focused": {"kind": "differential", "differential": ["migraine"]},
+    "CASE015_dizziness_focused": {"kind": "differential", "differential": ["benign paroxysmal positional vertigo"]},
+    "CASE016_multiple_symptoms_with_image": {"kind": "differential", "differential": ["chronic small vessel ischemic disease", "hypertension-related headache", "normal pressure hydrocephalus", "vertebrobasilar insufficiency"], "note": "image is synthetic; text decides"},
+    "CASE017_ct_image_only": {"kind": "abstain", "note": "synthetic CT, no text"},
+    "CASE018_ct_text_and_image": {"kind": "differential", "differential": ["subdural hematoma", "intracranial hemorrhage", "traumatic brain injury", "subarachnoid hemorrhage"], "note": "anticoagulated, head injury, drowsy and confused; image is synthetic"},
+    "CASE019_ct_text_report_and_image": {"kind": "differential", "differential": ["chronic small vessel ischemic disease", "hypertension-related headache", "tension-type headache"], "note": "report says no acute findings"},
+    "CASE020_chest_xray_text_and_image": {"kind": "differential", "differential": ["pneumonia", "chronic obstructive pulmonary disease", "lung cancer", "tuberculosis"], "note": "image is synthetic; text decides"},
+    "CASE021_chest_xray_image_only": {"kind": "abstain", "note": "synthetic chest X-ray, no text"},
+    "CASE022_chest_xray_text_report_and_image": {"kind": "differential", "differential": ["pneumothorax"]},
+    "CASE023_unsupported_modality_image": {"kind": "differential", "differential": ["hypertension-related headache", "tension-type headache", "chronic small vessel ischemic disease", "migraine"], "note": "unrecognised image must be ignored; text decides"}
+  },
+  "real_cases": {
+    "REAL001_ct_head_text_and_image": {"kind": "differential", "differential": ["hypertension-related headache", "tension-type headache", "chronic small vessel ischemic disease"]},
+    "REAL002_ct_head_image_only": {"kind": "abstain", "note": "image alone with no findings stated"},
+    "REAL003_ct_head_text_report_and_image": {"kind": "differential", "differential": ["tension-type headache", "migraine", "idiopathic intracranial hypertension", "refractive error"], "note": "report says no acute CT findings"},
+    "REAL004_brain_mri_text_and_image": {"kind": "differential", "differential": ["vascular dementia", "normal pressure hydrocephalus", "alzheimer's disease", "dementia"]},
+    "REAL005_chest_xray_normal_text_and_image": {"kind": "differential", "differential": ["chest wall contusion", "musculoskeletal chest pain", "rib fracture"], "note": "normal film; a normal image must not produce a lung diagnosis"},
+    "REAL006_chest_xray_pneumothorax_text_and_image": {"kind": "differential", "differential": ["pneumothorax"]},
+    "REAL007_chest_xray_pneumothorax_image_only": {"kind": "differential", "differential": ["pneumothorax"]}
+  }
+}
