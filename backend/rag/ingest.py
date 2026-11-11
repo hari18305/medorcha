@@ -35,7 +35,10 @@ COLLECTION_NAME = "medorchestrate_kb"
 # chunking purposes (real subword tokenization would require loading
 # the model's tokenizer just to size chunks, which is unnecessary
 # precision for a prototype-scoped corpus this small).
-CHUNK_SIZE_TOKENS = 300
+# 350 (was 300): the KB builder now keeps up to 340 words per passage so a
+# MedlinePlus article's Symptoms AND Causes both survive; with a 300-word window the
+# last sentences would spill into a tiny second chunk.
+CHUNK_SIZE_TOKENS = 350
 MIN_CHUNK_TOKENS = 200
 MAX_CHUNK_TOKENS = 400
 

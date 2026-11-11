@@ -397,10 +397,29 @@ relevant passage to Dementia ranked 1st. Head injury on warfarin went from none
 to Subarachnoid hemorrhage ranked 1st. Small sample, hand-chosen "relevant"
 sets (mine, not a clinician's): evidence the gap closed, not a retrieval benchmark.
 
-**Still not fixed:** the *chronic subdural hematoma* passage is never retrieved
-for CASE009 (elderly, warfarin, fall, gait unsteadiness) in either KB, so the
-case's classic diagnosis gets no supporting passage. That is a dense-retrieval
-weakness (BioBERT query->passage matching), not missing content. Not chased.
+**CORRECTION / FIXED (same day):** the paragraph that stood here called the
+missing chronic-subdural retrieval "a dense-retrieval weakness, not missing
+content". That diagnosis was wrong. Root cause was in the KB builder: it
+appended "Causes" before "Symptoms" and cut at ~300 words, so in 10 of 15
+encyclopedia articles the Symptoms section was cut off or dropped. The subdural
+passage described acute head-injury mechanics and never mentioned headache,
+confusion or balance/walking problems, so a patient presenting with exactly
+those could not match it (and widening the stage-1 candidate pool to all 42
+passages changed nothing, which is what pointed at the content).
+
+Fix: Symptoms now comes first (still verbatim), passages may run to 340 words
+(`ingest.CHUNK_SIZE_TOKENS` 300 -> 350 so one passage stays one chunk), whole KB
+rebuilt, new `--refresh DOC_ID...` builder option, and tests that fail if
+Symptoms stops coming first. Measured on 14 answer-key queries (committed KB vs
+fixed KB, real BioBERT + reranker, in-memory Qdrant): relevant passage in the
+top 5 for **12/14 -> 14/14**, top-1 unchanged at 8. CASE009 with the query the
+pipeline really builds: subdural not retrieved -> **rank 2**.
+
+Costs, not hidden: two queries ranked worse - the memory-loss/gait case 1st ->
+2nd (still found), and the chest-pain-after-sport case 1st -> 5th (the Chest
+Injuries passage is still not in the stage-1 top 10 for it). The cross-encoder
+is volatile: a passage's score can swing a lot when ~40 words are added. 14
+hand-picked queries with relevant-sets chosen by the developer; not a benchmark.
 
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 

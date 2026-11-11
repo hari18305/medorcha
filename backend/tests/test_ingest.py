@@ -155,3 +155,39 @@ def test_ingest_rebuilds_the_collection_and_a_bad_kb_never_wipes_it(monkeypatch)
     assert ("create", ingest.COLLECTION_NAME) in calls
     assert calls[-1] == ("upsert", ingest.COLLECTION_NAME, count)
     assert calls.index(("delete", ingest.COLLECTION_NAME)) < calls.index(("create", ingest.COLLECTION_NAME))
+
+
+# --- Symptoms-first guard (2026-11-12) -------------------------------------
+# A passage is cut at ~300 words, so whatever the builder puts FIRST survives.
+# With "Causes" first, the Symptoms section was cut off or dropped in 10 of 15
+# encyclopedia articles, and a patient presenting with those symptoms could not
+# retrieve the right passage (e.g. chronic subdural hematoma for headache +
+# unsteady gait + warfarin). These tests keep that from silently coming back.
+from backend.rag import build_knowledge_base as builder  # noqa: E402
+
+
+def test_symptomatic_encyclopedia_articles_put_symptoms_first():
+    symptomatic = [d for d in builder.ENCY_DOCS if "Symptoms" in d[3]]
+    assert symptomatic, "expected some encyclopedia articles with a Symptoms section"
+    for doc_id, _folder, _article, priority in symptomatic:
+        assert priority[0] == "Symptoms", f"{doc_id}: Symptoms must come first, got {priority}"
+
+
+def test_subdural_passage_contains_its_presenting_symptoms(corpus):
+    doc = next(d for d in corpus if d["doc_id"] == "chronic_subdural_hematoma")
+    text = doc["text"]
+    assert "Problems with balance or walking" in text and "Headache" in text
+    assert "warfarin" in text  # the risk-factor sentence must survive too
+
+
+def test_put_replaces_in_place_and_appends_new():
+    records = [{"doc_id": "a", "text": "1"}, {"doc_id": "b", "text": "2"}]
+    builder._put(records, {"doc_id": "a", "text": "new"})
+    builder._put(records, {"doc_id": "c", "text": "3"})
+    assert [r["doc_id"] for r in records] == ["a", "b", "c"]
+    assert records[0]["text"] == "new"
+
+
+def test_refresh_rejects_unknown_doc_ids():
+    with pytest.raises(SystemExit):
+        builder.build(refresh=frozenset({"no_such_doc"}))

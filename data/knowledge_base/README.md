@@ -10,7 +10,7 @@ synthetic.**
 
 | Source | Count | What was taken | Licence / status |
 |---|---|---|---|
-| MedlinePlus Medical Encyclopedia and health topics (U.S. National Library of Medicine) | 29 | Verbatim text of the page summary plus selected sections (causes, symptoms, exams/tests, or why-performed / abnormal results for imaging pages), cut only at a sentence boundary to fit ~300 words | U.S. Government work, public domain |
+| MedlinePlus Medical Encyclopedia and health topics (U.S. National Library of Medicine) | 29 | Verbatim text of the page summary plus selected sections (causes, symptoms, exams/tests, or why-performed / abnormal results for imaging pages), Symptoms section first, cut only at a sentence boundary to fit ~340 words | U.S. Government work, public domain |
 | PubMed abstracts (NCBI E-utilities) | 13 | A short verbatim abstract excerpt, cited by PMID, first author, journal and year | Abstracts remain the publishers' property; excerpted for prototype retrieval with attribution |
 
 Nothing is paraphrased or rewritten. The only edits are mechanical:
@@ -27,6 +27,7 @@ removed.
 
 ```bash
 python -m backend.rag.build_knowledge_base            # fetches only doc_ids not already on disk and appends them
+python -m backend.rag.build_knowledge_base --refresh DOC_ID [DOC_ID ...]  # re-fetches just these, in place
 python -m backend.rag.build_knowledge_base --rebuild  # re-fetches EVERY passage (refreshes text and dates)
 python -m backend.rag.ingest                          # rebuilds the Qdrant collection from the JSON
 ```
@@ -59,5 +60,5 @@ relevant. 12 passages were added on 2026-11-12 for conditions in
 disease, dementia, vascular cognitive impairment, normal pressure
 hydrocephalus, hydrocephalus, idiopathic intracranial hypertension,
 subarachnoid and hemorrhagic stroke, traumatic brain injury, lung cancer,
-pulmonary tuberculosis, and chest injuries (rib fracture). Add-only: the 30
-existing passages are byte-identical.
+pulmonary tuberculosis, and chest injuries (rib fracture). (The whole KB was later rebuilt once with a Symptoms-first section order; see
+DEMO_READINESS.md, 2026-11-12.)

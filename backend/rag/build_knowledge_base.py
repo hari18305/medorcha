@@ -4,6 +4,7 @@ reads the checked-in JSON files; this script exists so every passage's
 provenance can be re-verified or refreshed:
 
     python -m backend.rag.build_knowledge_base            # add only the missing doc_ids
+    python -m backend.rag.build_knowledge_base --refresh DOC_ID [DOC_ID ...]  # re-fetch just these
     python -m backend.rag.build_knowledge_base --rebuild  # re-fetch every passage
 
 Sources (all free/keyless, same families the live Evidence Agent uses):
@@ -35,32 +36,40 @@ from pathlib import Path
 import httpx
 
 KB_ROOT = Path("data/knowledge_base")
-MAX_WORDS = 300  # ~one 200-400 token chunk; see ingest.chunk_document
+MAX_WORDS = 340  # < ingest.CHUNK_SIZE_TOKENS (350) so one passage stays one chunk; was 300
 HTTP_TIMEOUT_SECONDS = 30
 EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
 
 # (doc_id, folder, MedlinePlus Medical Encyclopedia article id, section priority)
+#
+# Section order matters because a passage is cut at ~MAX_WORDS: whatever comes
+# first survives. "Symptoms" is deliberately FIRST -- a clinical query describes
+# what the patient presents with, and with "Causes" first the Symptoms section
+# was cut off or dropped in 10 of 15 articles (e.g. the subdural hematoma
+# passage ended up describing acute head-injury mechanics and never mentioned
+# headache, confusion or balance/walking problems, so it was not retrieved for
+# a patient with exactly those). Text is still verbatim; only the order changed.
 ENCY_DOCS = [
-    ("headache_tension_type", "symptom_disease", "000797", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("migraine_overview", "symptom_disease", "000709", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("bppv", "symptom_disease", "001420", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("menieres_disease", "symptom_disease", "000702", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("hypertension_overview", "symptom_disease", "000468", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("orthostatic_hypotension_low_blood_pressure", "symptom_disease", "007278", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("anemia_overview", "symptom_disease", "000560", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("tia_overview", "symptom_disease", "000730", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("chronic_subdural_hematoma", "symptom_disease", "000713", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("copd_chest_xray_context", "symptom_disease", "000091", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("pleural_effusion_chest_xray", "symptom_disease", "000086", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("headache_tension_type", "symptom_disease", "000797", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("migraine_overview", "symptom_disease", "000709", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("bppv", "symptom_disease", "001420", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("menieres_disease", "symptom_disease", "000702", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("hypertension_overview", "symptom_disease", "000468", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("orthostatic_hypotension_low_blood_pressure", "symptom_disease", "007278", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("anemia_overview", "symptom_disease", "000560", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("tia_overview", "symptom_disease", "000730", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("chronic_subdural_hematoma", "symptom_disease", "000713", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("copd_chest_xray_context", "symptom_disease", "000091", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("pleural_effusion_chest_xray", "symptom_disease", "000086", ["Symptoms", "Causes", "Exams and Tests"]),
     ("brain_mri_overview", "symptom_disease", "003791", ["Why the Test is Performed", "What Abnormal Results Mean"]),
     ("head_ct_overview", "symptom_disease", "003786", ["Why the Test is Performed", "What Abnormal Results Mean"]),
     ("chest_xray_overview", "symptom_disease", "003804", ["Why the Test is Performed", "What Abnormal Results Mean"]),
     # Added 2026-11-12 after an LLM-judged run showed 0/5 relevant passages for a
     # memory-loss + gait case: the KB had nothing on dementia / hydrocephalus.
-    ("alzheimer_disease", "symptom_disease", "000760", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("dementia_overview", "symptom_disease", "000739", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("subarachnoid_hemorrhage", "symptom_disease", "000701", ["Causes", "Symptoms", "Exams and Tests"]),
-    ("pulmonary_tuberculosis", "symptom_disease", "000077", ["Causes", "Symptoms", "Exams and Tests"]),
+    ("alzheimer_disease", "symptom_disease", "000760", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("dementia_overview", "symptom_disease", "000739", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("subarachnoid_hemorrhage", "symptom_disease", "000701", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("pulmonary_tuberculosis", "symptom_disease", "000077", ["Symptoms", "Causes", "Exams and Tests"]),
 ]
 
 # (doc_id, folder, MedlinePlus health-topic search term, expected title)
@@ -225,27 +234,41 @@ def _existing() -> dict[str, list[dict]]:
     return out
 
 
-def build(rebuild: bool = False) -> dict[str, list[dict]]:
+def _put(records: list[dict], record: dict) -> None:
+    """Replace the record with the same doc_id in place (keeps file order and
+    diffs small); append if it is new."""
+    for i, old in enumerate(records):
+        if old["doc_id"] == record["doc_id"]:
+            records[i] = record
+            return
+    records.append(record)
+
+
+def build(rebuild: bool = False, refresh: frozenset[str] = frozenset()) -> dict[str, list[dict]]:
     """Default (add mode): fetch only doc_ids not already on disk and append them.
+    refresh: doc_ids to re-fetch and replace in place (everything else untouched).
     rebuild=True re-fetches EVERYTHING (refreshing every passage and date)."""
     retrieved = date.today().isoformat()
     folders = {"guidelines": [], "symptom_disease": []} if rebuild else _existing()
-    have = {r["doc_id"] for records in folders.values() for r in records}
+    have = {r["doc_id"] for records in folders.values() for r in records} - set(refresh)
+    unknown = set(refresh) - {d[0] for d in ENCY_DOCS + TOPIC_DOCS + PUBMED_DOCS}
+    if unknown:
+        raise SystemExit(f"--refresh: unknown doc_id(s): {sorted(unknown)}")
     with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, follow_redirects=True) as client:
         for doc_id, folder, article_id, priority in ENCY_DOCS:
             if doc_id in have:
                 continue
-            folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_ency(client, article_id, priority)})
+            _put(folders[folder], {"doc_id": doc_id, "retrieved": retrieved, **fetch_ency(client, article_id, priority)})
             time.sleep(0.3)
         for doc_id, folder, term, title in TOPIC_DOCS:
             if doc_id in have:
                 continue
-            folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_topic(client, term, title)})
+            _put(folders[folder], {"doc_id": doc_id, "retrieved": retrieved, **fetch_topic(client, term, title)})
             time.sleep(0.3)
         for doc_id, folder, pmid, fragment in PUBMED_DOCS:
             if doc_id in have:
                 continue
-            folders[folder].append({"doc_id": doc_id, "retrieved": retrieved, **fetch_pubmed(client, pmid, fragment)})
+            _put(folders[folder], {"doc_id": doc_id, "retrieved": retrieved, **fetch_pubmed(client, pmid, fragment)})
             time.sleep(0.4)
     return folders
 
@@ -253,7 +276,9 @@ def build(rebuild: bool = False) -> dict[str, list[dict]]:
 def main() -> None:
     import sys
 
-    folders = build(rebuild="--rebuild" in sys.argv)
+    args = sys.argv[1:]
+    refresh = frozenset(args[args.index("--refresh") + 1 :]) if "--refresh" in args else frozenset()
+    folders = build(rebuild="--rebuild" in args, refresh=refresh)
     for folder, records in folders.items():
         path = KB_ROOT / folder / f"{folder}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
