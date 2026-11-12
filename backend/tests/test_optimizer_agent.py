@@ -98,7 +98,7 @@ async def test_clears_threshold_on_first_iteration(mock_pipeline, monkeypatch):
     mock_pipeline["run_rag"].return_value = _rag(0.9)
     final_fusion = _fusion(0.8)
     mock_pipeline["fuse"].return_value = final_fusion
-    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion: 0.8)
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: 0.8)
 
     result = await optimize(CASE, CLINICAL, None, _fusion(0.4), initial_confidence=0.4)
 
@@ -136,7 +136,7 @@ async def test_never_clears_threshold_after_max_iterations(mock_pipeline, monkey
 
     confidences = [0.55, 0.5, 0.45]
     confidence_iter = iter(confidences)
-    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion: next(confidence_iter))
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: next(confidence_iter))
 
     result = await optimize(CASE, CLINICAL, None, _fusion(0.4), initial_confidence=0.4)
 
@@ -159,7 +159,7 @@ async def test_best_result_can_beat_initial_but_still_below_threshold(mock_pipel
     mock_pipeline["run_rag"].return_value = _rag(0.5)
     iter1_fusion = _fusion(0.5)
     mock_pipeline["fuse"].return_value = iter1_fusion
-    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion: 0.5)
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: 0.5)
 
     result = await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3)
 
@@ -186,7 +186,7 @@ async def test_one_iteration_raises_exception_loop_continues_safely(mock_pipelin
     mock_pipeline["fuse"].side_effect = [fusion_v1, fusion_v3]
 
     confidences = iter([0.5, 0.55])
-    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion: next(confidences))
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: next(confidences))
 
     result = await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3)
 
@@ -253,3 +253,24 @@ async def test_image_path_passed_through_unchanged_on_every_iteration(mock_pipel
         assert call.kwargs["image_path"] == image_case.image_path
     for call in mock_pipeline["fuse"].await_args_list:
         assert call.kwargs["image_path"] == image_case.image_path
+
+
+# --------------------------------------------------------------------------
+# No clinical anchor: more retrieval cannot help, so do not iterate
+# --------------------------------------------------------------------------
+
+
+async def test_no_clinical_anchor_skips_the_loop_and_requires_review(mock_pipeline):
+    empty = ClinicalFindings(demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[])
+    initial = _fusion(0.4)
+
+    result = await optimize(CASE, empty, None, initial, initial_confidence=0.5)
+
+    assert result["iterations"] == 0
+    assert result["review_required"] is True
+    assert result["final_fusion"] == initial
+    assert result["final_confidence"] == 0.5
+    assert result["iteration_log"] == []
+    mock_pipeline["select_strategy"].assert_not_called()
+    mock_pipeline["run_rag"].assert_not_called()
+    mock_pipeline["fuse"].assert_not_called()

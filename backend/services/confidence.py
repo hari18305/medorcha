@@ -33,7 +33,7 @@ on the very next call, with no restart needed. THRESHOLD stays a true
 fixed constant, never subject to automatic recalibration.
 """
 
-from backend.models.schemas import FusionResult, LiveEvidence, RAGEvidence
+from backend.models.schemas import ClinicalFindings, FusionResult, LiveEvidence, RAGEvidence
 from backend.services import storage
 
 # --------------------------------------------------------------------------
@@ -80,6 +80,32 @@ EVIDENCE_LEVEL_WEIGHTS = {
 # disagreements between evidence streams contributes no agreement
 # credit at all, rather than going negative.
 CONFLICT_PENALTY = 0.25
+
+
+# Input-sufficiency gate. S_rag and S_web measure how much evidence was
+# retrieved, not whether the case gave the system anything to reason from, and
+# retrieval always returns something -- so an image-only or empty case still
+# scored 0.67-0.79 and skipped review (31-case run, 2026-11-13: only 1 of 6
+# "should abstain" cases was sent to review). Without a clinical anchor
+# confidence is capped below THRESHOLD, which forces review.
+INSUFFICIENT_INPUT_CAP = 0.5
+
+INSUFFICIENT_INPUT_NOTE = (
+    "Insufficient clinical input: no symptoms, laboratory values or report findings "
+    f"were provided, so confidence is capped at {INSUFFICIENT_INPUT_CAP:.2f} and "
+    "clinician review is required. Any diagnosis shown rests on the image and "
+    "retrieved literature alone."
+)
+
+
+def has_clinical_anchor(clinical: ClinicalFindings | None) -> bool:
+    """True when the case supplied something to reason from: at least one
+    symptom, one lab value, or one finding extracted from a report. History and
+    demographics alone do not count (they are context, not a presenting
+    problem), and neither do findings the imaging model itself produced."""
+    if clinical is None:
+        return True  # caller did not pass clinical findings: gate not applied
+    return bool(clinical.symptoms or clinical.labs or clinical.imaging_text_findings)
 
 
 def _compute_s_rag(rag: RAGEvidence) -> float:
@@ -130,12 +156,17 @@ def get_current_weights() -> dict:
     return {"w1": row["w1"], "w2": row["w2"], "w3": row["w3"]}
 
 
-def compute_confidence_breakdown(rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult) -> dict:
+def compute_confidence_breakdown(
+    rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult, clinical: ClinicalFindings | None = None
+) -> dict:
     """Exposes all three intermediate signals alongside the final score
     -- Phase 14 persists this dict (via storage.save_report's
     confidence_breakdown param) so weight_tuner.py can later recalibrate
     w1/w2/w3 from real accept/override outcomes joined against exactly
     these numbers.
+
+    Passing `clinical` applies the input-sufficiency gate (see
+    INSUFFICIENT_INPUT_CAP); the result then carries "input_sufficient".
     """
     weights = get_current_weights()
     s_rag = _compute_s_rag(rag)
@@ -156,11 +187,20 @@ def compute_confidence_breakdown(rag: RAGEvidence, live: LiveEvidence, fusion: F
     if not fusion.diagnoses:
         confidence = 0.0
 
-    return {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence}
+    sufficient = has_clinical_anchor(clinical)
+    if not sufficient:
+        confidence = min(confidence, INSUFFICIENT_INPUT_CAP)
+
+    result = {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence}
+    if clinical is not None:
+        result["input_sufficient"] = sufficient
+    return result
 
 
-def compute_confidence(rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult) -> float:
+def compute_confidence(
+    rag: RAGEvidence, live: LiveEvidence, fusion: FusionResult, clinical: ClinicalFindings | None = None
+) -> float:
     """Thin wrapper around compute_confidence_breakdown() for callers
     that only need the final float (most of the pipeline) -- see that
     function's docstring for the full breakdown."""
-    return compute_confidence_breakdown(rag, live, fusion)["confidence"]
+    return compute_confidence_breakdown(rag, live, fusion, clinical)["confidence"]

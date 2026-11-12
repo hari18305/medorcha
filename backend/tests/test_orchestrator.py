@@ -105,7 +105,7 @@ def mock_agents(monkeypatch):
     # default; individual tests override this to go below THRESHOLD.
     confidence_holder = {"value": 0.8}
 
-    def _fake_compute_confidence_breakdown(rag, live, fusion):
+    def _fake_compute_confidence_breakdown(rag, live, fusion, clinical=None):
         return {"s_rag": 0.0, "s_web": 0.0, "agreement": 0.0, "confidence": confidence_holder["value"]}
 
     monkeypatch.setattr(orchestrator, "compute_confidence_breakdown", _fake_compute_confidence_breakdown)
@@ -427,3 +427,35 @@ def test_review_is_required_whenever_confidence_is_below_threshold_even_if_no_st
 
     assert report.confidence == 0.3
     assert report.review_required is True
+
+
+def test_no_clinical_anchor_reports_the_reason_and_requires_review(monkeypatch, mock_agents):
+    # Real confidence math (not the fake used elsewhere in this file): the case
+    # has strong evidence and a diagnosis but no symptoms, labs or report findings.
+    from backend.services.confidence import (
+        INSUFFICIENT_INPUT_CAP,
+        INSUFFICIENT_INPUT_NOTE,
+        compute_confidence_breakdown as real_breakdown,
+    )
+
+    monkeypatch.setattr(orchestrator, "compute_confidence_breakdown", real_breakdown)
+    mock_agents["extract_clinical_findings"].return_value = ClinicalFindings(
+        demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[]
+    )
+    mock_agents["optimize"].return_value = {
+        "final_fusion": HIGH_CONFIDENCE_FUSION,
+        "final_confidence": INSUFFICIENT_INPUT_CAP,
+        # the real optimize() hands back the breakdown it was given
+        "final_breakdown": {"s_rag": 0.9, "s_web": 1.0, "agreement": 1.0,
+                            "confidence": INSUFFICIENT_INPUT_CAP, "input_sufficient": False},
+        "iterations": 0,
+        "review_required": True,
+        "iteration_log": [],
+    }
+
+    report = run_case(CASE_IMAGE_ONLY)
+
+    assert report.confidence <= INSUFFICIENT_INPUT_CAP
+    assert report.review_required is True
+    assert report.conflicts[0] == INSUFFICIENT_INPUT_NOTE
+    assert report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses  # still shown to the reviewer

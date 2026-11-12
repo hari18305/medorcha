@@ -225,3 +225,61 @@ def test_no_diagnosis_forces_zero_confidence():
     assert compute_confidence(_rag([0.9]), _live(["high"]), empty) < THRESHOLD
     # and the same evidence WITH a diagnosis still clears the bar
     assert compute_confidence(_rag([0.9]), _live(["high"]), _fusion([])) == pytest.approx(0.96)
+
+
+# --------------------------------------------------------------------------
+# Input-sufficiency gate
+# --------------------------------------------------------------------------
+
+from backend.models.schemas import ClinicalFindings  # noqa: E402
+from backend.services.confidence import INSUFFICIENT_INPUT_CAP, has_clinical_anchor  # noqa: E402
+
+
+def _clin(symptoms=(), labs=None, imaging_text=(), history=()):
+    return ClinicalFindings(
+        demographics={"age": 50}, symptoms=list(symptoms), history=list(history),
+        labs=labs or {}, imaging_text_findings=list(imaging_text),
+    )
+
+
+def test_cap_is_below_threshold():
+    assert INSUFFICIENT_INPUT_CAP < THRESHOLD
+
+
+@pytest.mark.parametrize(
+    "clinical, expected",
+    [
+        (_clin(), False),
+        (_clin(history=["hypertension"]), False),  # history is context, not a presenting problem
+        (_clin(symptoms=["headache"]), True),
+        (_clin(labs={"Hb": 9.1}), True),
+        (_clin(imaging_text=["no acute findings"]), True),  # finding extracted from a report
+        (None, True),  # gate not applied when the caller passes no clinical findings
+    ],
+)
+def test_has_clinical_anchor(clinical, expected):
+    assert has_clinical_anchor(clinical) is expected
+
+
+def test_no_anchor_caps_confidence_below_threshold():
+    # Strong evidence + a diagnosis would score 0.96 (see test above) but the
+    # case supplied nothing to reason from. Regression: 5 of 6 such cases
+    # scored 0.67-0.79 in the 31-case run and skipped review.
+    breakdown = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), _fusion([]), _clin())
+    assert breakdown["confidence"] == INSUFFICIENT_INPUT_CAP
+    assert breakdown["input_sufficient"] is False
+    assert breakdown["s_rag"] == pytest.approx(0.9)  # raw signals unchanged
+
+
+def test_anchor_leaves_confidence_unchanged():
+    with_anchor = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), _fusion([]), _clin(symptoms=["headache"]))
+    without_arg = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), _fusion([]))
+    assert with_anchor["confidence"] == pytest.approx(0.96)
+    assert with_anchor["confidence"] == without_arg["confidence"]
+    assert with_anchor["input_sufficient"] is True
+    assert "input_sufficient" not in without_arg
+
+
+def test_cap_never_raises_a_lower_confidence():
+    weak = compute_confidence_breakdown(_rag([0.0]), _live([]), _fusion(["a", "b", "c", "d"]), _clin())
+    assert weak["confidence"] == 0.0

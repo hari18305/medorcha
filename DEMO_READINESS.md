@@ -444,18 +444,34 @@ produced no diagnosis, and 0.4*S_rag + 0.3*S_web + 0.3*A cleared 0.65. A result
 with no diagnosis now gets confidence 0.0 (`confidence.py`), with a regression
 test. The saved CASE013 report predates the fix.
 
-**Open finding, not fixed: abstention is mostly wrong.** The answer key marks 6
-cases as "abstain" (no usable input: `CASE003`, `CASE008`, `CASE013`, `CASE017`,
-`CASE021`, `REAL002`); the correct behaviour is low confidence / human review.
-Before the fix above, only `CASE021` did that (1/6; CASE013 would now also pass,
-unconfirmed by a re-run). The others returned 0.67-0.69 with a confident
-diagnosis such as "Ischemic Stroke" for an image-only case. Reason: S_rag and
-S_web reward *retrieval volume*, and retrieval always returns something, so
-thin input still clears 0.65. The 0.65 threshold and the 0.4/0.3/0.3 weights are
-unvalidated and this is the clearest evidence so far that they are miscalibrated
-for sparse input. Fixing it (for example penalising input sparsity, or
-requiring a clinical-text anchor before confidence can exceed the threshold) is
-a design decision for the team, and would need the same 31 cases re-run.
+**Abstention was mostly wrong - now gated for structurally empty input.** The
+answer key marks 6 cases as "abstain" (`CASE003`, `CASE008`, `CASE013`,
+`CASE017`, `CASE021`, `REAL002`); the correct behaviour is low confidence / human
+review. Before the fix only `CASE021` did that (1/6). The others returned
+0.67-0.69 with a confident diagnosis (e.g. "Ischemic Stroke" for an image-only
+case). The breakdowns show why: agreement is 1.00 for nearly every case (a free
+0.30), S_web sits at 0.4-0.8 whatever the input, and retrieval always returns
+something, so C lands near 0.65 regardless of how little the case contained.
+
+Fix: an input-sufficiency gate (`confidence.has_clinical_anchor`). With no
+symptom, lab value or report finding, confidence is capped at 0.50, review is
+required, the optimizer is skipped (retrieval cannot create missing input, and
+it saved ~5 minutes per such case), and the report's `conflicts[0]` says why.
+Diagnoses are still shown. Covered by unit tests (confidence, optimizer,
+orchestrator; the gate was mutation-checked). By construction it applies to
+`CASE003`, `CASE013`, `CASE017`, `CASE021`, `REAL002` - and to `REAL007`
+(image-only pneumothorax, which the key treats as a correct diagnosis: it keeps
+its diagnosis but now goes to review, which is the intended trade-off).
+
+**Not verified live and not solved:** (1) the gate was not re-run on the real
+pipeline because Gemini quota was still exhausted (4 attempted cases all failed
+safe: confidence 0, review required); the change is unit-tested only. (2)
+`CASE006` (report only) should count as anchored because the extractor returns
+findings from the report, but that depends on the LLM and is unconfirmed. (3)
+`CASE008` (vague symptoms: "feeling generally unwell") still gets 0.68 and no
+review - the gate checks that input exists, not that it is specific. (4) The
+0.65 threshold, the 0.4/0.3/0.3 weights, and the constant 1.0 agreement signal
+remain uncalibrated; re-run the 31 cases when quota returns.
 
 **LLM-judge run: did not produce usable scores.** `run_llm_judge` was run over
 all 31 reports with Gemini as judge, but 70 of its 72 failed metric calls were

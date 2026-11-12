@@ -37,7 +37,7 @@ from backend.models.schemas import (
     LiveEvidence,
     RAGEvidence,
 )
-from backend.services.confidence import THRESHOLD, compute_confidence, compute_confidence_breakdown
+from backend.services.confidence import THRESHOLD, compute_confidence, compute_confidence_breakdown, has_clinical_anchor
 from backend.services.llm_client import get_llm_client, get_model_name
 
 logger = logging.getLogger(__name__)
@@ -235,6 +235,20 @@ async def optimize(
             "iteration_log": [],
         }
 
+    # Step 1b: with no clinical anchor (no symptoms, labs or report findings)
+    # more retrieval cannot create the missing input, and confidence is capped
+    # below THRESHOLD regardless. Stop before burning up to 3 LLM iterations
+    # (about 5 minutes) and hand the case to a clinician.
+    if not has_clinical_anchor(clinical):
+        return {
+            "final_fusion": initial_fusion,
+            "final_confidence": initial_confidence,
+            "final_breakdown": initial_breakdown,
+            "iterations": 0,
+            "review_required": True,
+            "iteration_log": [],
+        }
+
     iteration_log: list[dict] = []
     best_fusion = initial_fusion
     best_confidence = initial_confidence
@@ -268,12 +282,12 @@ async def optimize(
             # image itself doesn't change, only the text query does (see
             # module docstring / Phase 7 spec).
             new_fusion = await fuse(clinical, imaging, new_rag, new_live, image_path=case.image_path)
-            new_confidence = compute_confidence(new_rag, new_live, new_fusion)
+            new_confidence = compute_confidence(new_rag, new_live, new_fusion, clinical)
             # Real, unmocked call even in tests that monkeypatch
             # compute_confidence -- this is extra bookkeeping for Phase
             # 14's persistence, not part of the threshold-check logic
             # under test above, which stays exactly as before.
-            new_breakdown = compute_confidence_breakdown(new_rag, new_live, new_fusion)
+            new_breakdown = compute_confidence_breakdown(new_rag, new_live, new_fusion, clinical)
 
             iteration_log.append(
                 {"iteration": i, "strategy": strategy, "query": refined_query, "confidence": new_confidence}

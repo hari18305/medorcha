@@ -59,7 +59,7 @@ from backend.models.schemas import (
     RAGEvidence,
 )
 from backend.services import storage
-from backend.services.confidence import THRESHOLD, compute_confidence_breakdown
+from backend.services.confidence import INSUFFICIENT_INPUT_NOTE, THRESHOLD, compute_confidence_breakdown
 from backend.services import llm_client
 from backend.services.llm_client import get_crewai_model_string
 from backend.services.logging import log_event
@@ -310,7 +310,9 @@ class FusionTool(BaseTool):
             ctx.fusion = _run_sync(
                 fuse(ctx.clinical, ctx.imaging, ctx.rag, ctx.live, image_path=ctx.case.image_path)
             )
-            ctx.confidence_breakdown = compute_confidence_breakdown(ctx.rag, ctx.live, ctx.fusion)
+            ctx.confidence_breakdown = compute_confidence_breakdown(
+                ctx.rag, ctx.live, ctx.fusion, ctx.clinical
+            )
             ctx.confidence = ctx.confidence_breakdown["confidence"]
             _log_agent_call(ctx, "fusion", 0, "success", (time.perf_counter() - start) * 1000)
             return (
@@ -610,6 +612,15 @@ def run_case(case: CaseInput) -> FinalReport:
     if context.confidence_breakdown is not None:
         _LAST_CONFIDENCE_BREAKDOWN[case.case_id] = context.confidence_breakdown
 
+    # Tell the reviewer WHY confidence is capped, in the report itself.
+    conflicts = list(fusion.conflicts)
+    insufficient = (
+        context.confidence_breakdown is not None
+        and context.confidence_breakdown.get("input_sufficient") is False
+    )
+    if insufficient:
+        conflicts.insert(0, INSUFFICIENT_INPUT_NOTE)
+
     return FinalReport(
         case_id=case.case_id,
         diagnoses=fusion.diagnoses,
@@ -617,8 +628,8 @@ def run_case(case: CaseInput) -> FinalReport:
         evidence=_combine_evidence(context.rag, context.live),
         # Never present a below-threshold result as not needing review, even
         # if the optimizer step could not run (e.g. the provider was down).
-        review_required=context.review_required or confidence < THRESHOLD,
-        conflicts=fusion.conflicts,
+        review_required=context.review_required or insufficient or confidence < THRESHOLD,
+        conflicts=conflicts,
         iteration_count=context.iterations,
         imaging=context.imaging,
         # False only when live evidence was genuinely unavailable: no live

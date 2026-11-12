@@ -111,6 +111,21 @@ A precedent is only retrieved if it is genuinely similar:
   an *unvalidated* prototype default; the synthetic demo images can't
   calibrate it).
 
+### Confidence and the input-sufficiency gate
+
+`C = w1*S_rag + w2*S_web + w3*A` measures how much *evidence* was retrieved,
+not whether the case gave the system anything to reason from, and retrieval
+always returns something. So two rules sit on top of the formula:
+
+- **No diagnosis -> confidence 0.0.**
+- **No clinical anchor -> confidence capped at 0.50 (< 0.65), review required,
+  optimizer skipped.** An anchor is at least one symptom, lab value or finding
+  extracted from a report; history and demographics alone do not count, nor do
+  findings the imaging model produced. The report carries a note saying why.
+  This makes an image-only or empty case go to a clinician; any diagnosis is
+  still shown. It does **not** catch a case with vague symptoms (e.g. "feeling
+  unwell"); the 0.65 threshold and the weights remain unvalidated.
+
 ### Confidence weight recalibration
 
 `backend/services/weight_tuner.py` periodically refits the confidence
