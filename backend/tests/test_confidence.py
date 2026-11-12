@@ -53,7 +53,9 @@ def _live(levels: list[str]) -> LiveEvidence:
 
 
 def _fusion(conflicts: list[str]) -> FusionResult:
-    return FusionResult(diagnoses=[], overall_confidence=0.5, conflicts=conflicts)
+    # One placeholder diagnosis: with none, confidence is forced to 0.0 (see
+    # test_no_diagnosis_forces_zero_confidence below).
+    return FusionResult(diagnoses=[{"name": "x", "confidence": 0.5}], overall_confidence=0.5, conflicts=conflicts)
 
 
 def test_weights_sum_to_one():
@@ -209,3 +211,17 @@ def test_compute_confidence_uses_recalibrated_weights():
     assert default_result == pytest.approx(0.58)
     assert recalibrated_result == pytest.approx(0.87)
     assert recalibrated_result != default_result
+
+
+def test_no_diagnosis_forces_zero_confidence():
+    # Strong evidence on both streams and no conflicts would score
+    # 0.4*0.9 + 0.3*1.0 + 0.3*1.0 = 0.96 by the formula, but a result with
+    # no diagnosis has nothing to be confident in. Regression: the 31-case
+    # run scored an empty case 0.79 with zero diagnoses and skipped review.
+    empty = FusionResult(diagnoses=[], overall_confidence=0.0, conflicts=[])
+    breakdown = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), empty)
+    assert breakdown["confidence"] == 0.0
+    assert breakdown["s_rag"] == pytest.approx(0.9)  # signals still reported
+    assert compute_confidence(_rag([0.9]), _live(["high"]), empty) < THRESHOLD
+    # and the same evidence WITH a diagnosis still clears the bar
+    assert compute_confidence(_rag([0.9]), _live(["high"]), _fusion([])) == pytest.approx(0.96)

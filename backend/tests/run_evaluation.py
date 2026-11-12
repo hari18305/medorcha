@@ -722,7 +722,8 @@ def run_medqa_pubmedqa_benchmark(n_per_benchmark: int = 50, calibration_fraction
             live = asyncio.run(gather_live_evidence(item["question"]))
             from backend.models.schemas import FusionResult
 
-            fusion = FusionResult(diagnoses=[], overall_confidence=0.5, conflicts=[])
+            # placeholder diagnosis: confidence is forced to 0.0 when there is none
+            fusion = FusionResult(diagnoses=[{"name": "placeholder"}], overall_confidence=0.5, conflicts=[])
             return compute_confidence_breakdown(rag, live, fusion)
 
         def _calibration_accuracy(slice_items: list[dict]) -> float:

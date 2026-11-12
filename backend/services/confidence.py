@@ -148,6 +148,13 @@ def compute_confidence_breakdown(rag: RAGEvidence, live: LiveEvidence, fusion: F
     # of weights (or a future formula change) can't silently push C
     # outside [0, 1].
     confidence = max(0.0, min(1.0, confidence))
+    # No diagnosis means there is nothing to be confident in. Without this,
+    # strong retrieval for a refined query (the optimizer can retrieve well
+    # for an empty case) scored 0.79 for a report with zero diagnoses, which
+    # cleared THRESHOLD and skipped human review (found by the 31-case run,
+    # CASE013).
+    if not fusion.diagnoses:
+        confidence = 0.0
 
     return {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence}
 

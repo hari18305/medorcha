@@ -421,7 +421,53 @@ Injuries passage is still not in the stage-1 top 10 for it). The cross-encoder
 is volatile: a passage's score can swing a lot when ~40 words are added. 14
 hand-picked queries with relevant-sets chosen by the developer; not a benchmark.
 
-## Known gaps (carried over from the team's HANDOFF.md, still true)
+## Update 2026-11-13: 31-case live run, a confidence bug, and the judge run that did not score
+
+All 31 test cases (24 synthetic `CASE*`, 7 real-image `REAL*`) ran through the
+live pipeline (Gemini `gemini-3.5-flash-lite`) in an **isolated copy** of the
+store (`eval_run/`, gitignored: its own SQLite DB and a Qdrant copy with the 3
+stale case-memory points removed, KB = 42). The real DB and real case memory
+were not touched. The backend died once mid-run (cause unknown, no traceback);
+it was restarted and the remaining cases re-run, so the run is two sessions.
+
+**Pipeline facts (from the saved reports, no LLM judging involved):** 31/31
+returned a report. Mean confidence 0.69; `review_required` on 3/31; optimizer
+iterations 0 x17, 1 x11, 2 x1, 3 x2; live evidence present on 28/31.
+**CASE007 is not a valid result**: Gemini returned 429 (quota) during fusion, so
+it has no diagnoses and confidence 0.00 - it needs a re-run.
+
+**Bug found and fixed: an empty case scored 0.79 and skipped review.**
+`CASE013` (no input at all) came back with zero diagnoses, confidence 0.79 and
+`review_required=False`. Cause: `compute_confidence` scored only evidence
+quality; the optimizer's refined query retrieved strong passages, fusion still
+produced no diagnosis, and 0.4*S_rag + 0.3*S_web + 0.3*A cleared 0.65. A result
+with no diagnosis now gets confidence 0.0 (`confidence.py`), with a regression
+test. The saved CASE013 report predates the fix.
+
+**Open finding, not fixed: abstention is mostly wrong.** The answer key marks 6
+cases as "abstain" (no usable input: `CASE003`, `CASE008`, `CASE013`, `CASE017`,
+`CASE021`, `REAL002`); the correct behaviour is low confidence / human review.
+Before the fix above, only `CASE021` did that (1/6; CASE013 would now also pass,
+unconfirmed by a re-run). The others returned 0.67-0.69 with a confident
+diagnosis such as "Ischemic Stroke" for an image-only case. Reason: S_rag and
+S_web reward *retrieval volume*, and retrieval always returns something, so
+thin input still clears 0.65. The 0.65 threshold and the 0.4/0.3/0.3 weights are
+unvalidated and this is the clearest evidence so far that they are miscalibrated
+for sparse input. Fixing it (for example penalising input sparsity, or
+requiring a clinical-text anchor before confidence can exceed the threshold) is
+a design decision for the team, and would need the same 31 cases re-run.
+
+**LLM-judge run: did not produce usable scores.** `run_llm_judge` was run over
+all 31 reports with Gemini as judge, but 70 of its 72 failed metric calls were
+Gemini `429 RESOURCE_EXHAUSTED` (quota; the paid-billing balance had not yet
+reflected). The numbers it printed (for example "diagnosis correct 0.4") are
+computed from the few calls that succeeded and are **not** results; the output
+was discarded, not committed. Re-run when quota is available:
+`python -m backend.tests.run_llm_judge --reports eval_run/reports` (it is slow -
+several LLM calls per case - so run it detached). Even then it is self-grading (Gemini
+judging Gemini output), the answer key is developer-drafted and not
+clinician-verified, and n = 31, so it is a consistency check, not accuracy.
+
 
 - `/diagnose` is fully synchronous — no async polling yet.
 - The optimizer's later-iteration RAG/live evidence isn't exposed back
