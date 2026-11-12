@@ -163,7 +163,10 @@ def get_qdrant_client() -> QdrantClient:
     if qdrant_url:
         _shared_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
     else:
-        _shared_client = QdrantClient(path=DEFAULT_LOCAL_QDRANT_PATH)
+        # QDRANT_LOCAL_PATH lets an evaluation run use a throwaway COPY of the
+        # embedded store (e.g. without stale demo case-memory points) while
+        # leaving the real one untouched. Unset = the normal location.
+        _shared_client = QdrantClient(path=os.getenv("QDRANT_LOCAL_PATH") or DEFAULT_LOCAL_QDRANT_PATH)
     return _shared_client
 
 

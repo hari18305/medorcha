@@ -1,5 +1,5 @@
 {
-  "case_id": "CASE001",
+  "case_id": "CASE001_with_image",
   "patient": {
     "age": 45,
     "sex": "male"

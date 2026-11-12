@@ -20,7 +20,10 @@ under the stated principle "off-the-shelf LLMs selected per task, no
 fine-tuning." This implementation runs every agent (clinical
 extraction, RAG reranking, fusion reasoning, the optimizer, and
 CrewAI's own orchestration layer) on a single model by default instead
-(`LLM_PROVIDER=anthropic` — Claude).
+(the code default is `LLM_PROVIDER=anthropic` — Claude). **Every live run and
+evaluation recorded in this repository was made with `LLM_PROVIDER=gemini`
+(`gemini-3.5-flash-lite`)**; the Claude path is implemented and unit-tested
+but has not been exercised end to end here.
 
 This is a deliberate, consistent substitution, not an oversight or a
 partial implementation: the same underlying principle holds (an
@@ -54,9 +57,11 @@ feedback captured as retrievable case memory (text **and** visual) →
 periodic confidence-weight recalibration from real accept/override
 outcomes.
 
-**Running the pipeline for real requires a valid `ANTHROPIC_API_KEY`**
-(see below) — several steps (clinical extraction, fusion reasoning, the
-optimizer, and CrewAI's own agent-decision layer) call Claude directly.
+**Running the pipeline for real requires a valid key for the configured
+provider** (`GEMINI_API_KEY` for the setup used in this repo's runs, or
+`ANTHROPIC_API_KEY` for the code default — see below) — several steps
+(clinical extraction, fusion reasoning, the optimizer, and CrewAI's own
+agent-decision layer) call the LLM directly.
 Without a key, `/diagnose` will return a clean `500` rather than hang
 or crash (the backend degrades gracefully), but it won't produce a real
 diagnosis.
@@ -202,7 +207,9 @@ Open `.env` and fill in:
 
 | Variable | Required? | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | **Yes**, for real runs | Get one from console.anthropic.com. Without it, Claude-dependent steps fail gracefully but the pipeline won't produce real output. |
+| `LLM_PROVIDER` | **Yes** in practice | `anthropic` (the code default if unset), `bedrock`, `vertex`, `gemini` or `mistral`. `.env.example` sets `gemini`, the provider every run in this repo used. |
+| `GEMINI_API_KEY` | **Yes** if `LLM_PROVIDER=gemini` | From aistudio.google.com. A free key works for single cases but its daily quota is too small for batch runs or evaluation (one model allowed 20 requests/day); use a paid key for those. |
+| `ANTHROPIC_API_KEY` | **Yes** if `LLM_PROVIDER=anthropic` | Get one from console.anthropic.com. Without a key for the chosen provider the LLM steps fail gracefully but the pipeline won't produce real output. |
 | `QDRANT_URL` / `QDRANT_API_KEY` | No | Leave blank to use an embedded local Qdrant store at `data/qdrant_local/` — no server needed. Set these only if you have a real Qdrant Cloud/self-hosted instance. |
 | `PUBMED_API_KEY` | No | PubMed, MedlinePlus, Europe PMC and ClinicalTrials.gov all work without a key at this call volume. |
 | `CASE_MEMORY_MIN_SCORE` / `VISUAL_MEMORY_MIN_SCORE` | No | Minimum similarity for a past clinician override to be shown as a precedent (defaults 0.6 text / 0.85 visual — see "Case memory"). |
@@ -341,7 +348,7 @@ real server instead; see `docker-compose.yml`'s `QDRANT_URL` override).
 
 ```bash
 cp .env.example .env
-# edit .env and fill in ANTHROPIC_API_KEY (required for real diagnoses;
+# edit .env: set LLM_PROVIDER and the matching key, e.g. GEMINI_API_KEY (required for real diagnoses;
 # see the "Status" section above for what happens without one)
 
 docker compose up --build

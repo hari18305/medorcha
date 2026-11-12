@@ -52,3 +52,4 @@ backend/tests/*.log
 backend/tests/eval_*.csv
 backend/tests/eval_*.md
 backend/tests/mode2_items.csv
+eval_run/

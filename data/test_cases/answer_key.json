@@ -3,7 +3,7 @@
     "status": "DRAFT - developer-drafted, NOT clinician-verified",
     "drafted_by": "Claude (AI assistant), from each case's own text/report plus general clinical knowledge",
     "verified_by": null,
-    "how_to_read": "Each case is keyed by its file name (CASE001.json and CASE001_with_image.json share a case_id, so the id is not unique). 'differential' lists diagnoses that count as CORRECT if any of them appears in the system's top-3. It is an acceptable differential, not a single true answer: most synthetic cases are deliberately vague (e.g. 'headache and dizziness'), so several diagnoses are clinically reasonable. 'abstain' means no diagnosis can be determined from the input, so the CORRECT behaviour is low confidence and review_required, not a confident diagnosis. Synthetic images (synthetic_demo_*) depict no real pathology, so they never contribute a diagnosis.",
+    "how_to_read": "Each case is keyed by its file name (case ids are now unique too, but the file name is the canonical key). 'differential' lists diagnoses that count as CORRECT if any of them appears in the system's top-3. It is an acceptable differential, not a single true answer: most synthetic cases are deliberately vague (e.g. 'headache and dizziness'), so several diagnoses are clinically reasonable. 'abstain' means no diagnosis can be determined from the input, so the CORRECT behaviour is low confidence and review_required, not a confident diagnosis. Synthetic images (synthetic_demo_*) depict no real pathology, so they never contribute a diagnosis.",
     "limits": "A clinician must review this before the numbers it produces are quoted as accuracy. Until then treat any score computed from it as a consistency check against the developer's expectation."
   },
   "cases": {

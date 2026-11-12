@@ -427,8 +427,8 @@ hand-picked queries with relevant-sets chosen by the developer; not a benchmark.
 - The optimizer's later-iteration RAG/live evidence isn't exposed back
   into `FinalReport.evidence` (only first-pass retrieval is shown,
   even if a later iteration is what actually cleared the threshold).
-- `CASE001.json` and `CASE001_with_image.json` share a `case_id` —
-  harmless unless both are submitted through the real API.
+- ~~`CASE001.json` and `CASE001_with_image.json` share a `case_id`~~ — fixed
+  2026-11-12 (the image variant is now `CASE001_with_image`).
 - A fresh clone/environment needs `python -m backend.rag.ingest` run
   once (or, in Docker, `docker compose exec backend python -m
   backend.rag.ingest`) before RAG retrieval finds anything.
