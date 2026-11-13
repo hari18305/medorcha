@@ -667,13 +667,33 @@ test-half row):
 any more (the failure flagged above); brain-MRI tumours 0/4 -> 4/4; CT sinus 0/2 -> 2/2;
 emphysema 0/2 -> 2/2; lung nodule/mass 0/3 -> 2/3.
 
-**What got worse, and the rule did not see it.** The captions bias the model toward naming
-a finding: normal chest X-rays 3/4 -> 1/4, normal head CT 3/3 -> 1/3 (one subject), normal MRI
-1/2 -> 0/2, and atelectasis 2/3 -> 0/3. I did not pre-register specificity, so adoption follows
-the rule, but this is a real trade-off: fewer missed abnormalities (sensitivity up), more normal
-films reported with a spurious finding (specificity down, 9 normals so the interval is 27-81%).
-Whether that is acceptable is a judgement for whoever owns the clinical risk; it is one
-environment variable to reverse. Consolidation is still 0/3 top-1 (now 3/3 in the top 3).
+**What got worse, and the rule did not see it.** On the whole set, specificity (normal called
+normal) fell from 7/9 to 5/9. Taken apart:
+
+- It is entirely a DEV-half effect (6/6 -> 3/6). On the held-out TEST half specificity went
+  1/3 -> 2/3 and sensitivity was unchanged (21/22 both): no harm showed up there, on 3 normals.
+- It is one failure mode: the "sinus abnormality" caption attracts normal brain images. Two of
+  the three normal head-CT slices (one subject) and one normal brain MRI are now called sinus
+  abnormality (scores 0.72-0.89). Those two CT slices are the ones the real-image demo cases use.
+- Part of the "normal got worse" signal is a scoring inconsistency of mine, not the model:
+  3 of 4 normal chest films now get "no significant abnormality", which is semantically normal
+  and counts as normal in sensitivity/specificity, but my top-1 scoring accepted that synonym for
+  MRI normals only (not chest or CT), so it counted them wrong. Counted as normal, chest is 4/4
+  (old wording 3/4). I left the benchmark's labels alone so the held-out result stays exactly what
+  was pre-registered; changing the accepted labels after seeing it would favour the new wording.
+- Atelectasis did fall 2/3 -> 0/3 (top-3 3 -> 1), and consolidation is still 0/3 top-1 (3/3 top-3).
+
+**Decision (2026-11-13): keep the new captions.** The held-out half is the only unbiased evidence
+and favours them on every downstream-relevant measure (top-1 7 -> 12 of 25, truth reported 8 -> 12,
+a wrong finding passed on 19 -> 14, sensitivity equal, specificity not worse). Reverting would
+overrule the pre-registered rule because of a concern that did not appear on the held-out half.
+Two honest caveats. (1) Not statistically significant (p = 0.18), and the normals are only 9
+images from about 6 subjects, so a real specificity cost is not excluded; head CT in practice is
+mostly normal, which makes false findings matter more than in this abnormal-heavy set. (2) The
+real normal-CT demo images (`real_ct_scan_06/10`, used by REAL001-REAL003) now report "sinus
+abnormality" at the imaging step, which also reaches their retrieval query. If that is unacceptable
+for the demo, set `IMAGING_FINDING_PROMPTS=label` in `.env` (all three read "normal head CT" at
+~1.00 under the old wording) and restart; do not edit the descriptions to chase it.
 
 **Limits.** I had seen the full-set failure patterns before writing the descriptions, so they
 are informed by them (never tuned against a run); the descriptions are a non-radiologist's; the
