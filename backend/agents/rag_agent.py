@@ -32,7 +32,7 @@ from backend.rag.visual_memory import retrieve_visual_memory
 
 logger = logging.getLogger(__name__)
 
-RETRIEVE_TOP_K = 10
+RETRIEVE_TOP_K = 20  # was 10 for the 42-passage KB; at 67 passages new related passages pushed a relevant one (CASE009 subdural) out of the top 10
 RERANK_TOP_K = 5
 CASE_MEMORY_TOP_K = 3
 VISUAL_MEMORY_TOP_K = 3

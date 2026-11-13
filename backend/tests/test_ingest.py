@@ -18,9 +18,9 @@ def corpus():
 
 
 def test_corpus_size_is_sane(corpus):
-    # Spec said 20-30; the KB was extended to 42 (data/knowledge_base/README.md
+    # Spec said 20-30; the KB was extended to 42, then 67 (data/knowledge_base/README.md
     # explains why). The upper bound just catches an accidental duplicate load.
-    assert 20 <= len(corpus) <= 60
+    assert 20 <= len(corpus) <= 100
 
 
 def test_at_least_80_percent_of_passages_are_real(corpus):

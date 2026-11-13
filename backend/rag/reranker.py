@@ -40,8 +40,11 @@ with a per-model (center, scale) -- MS MARCO: -7 / 2 (on-topic ~0.16-0.80,
 mean ~0.56; off-topic ~0.15-0.29); MedCPT: -12.5 / 3.5. MedCPT's raw logits sit on
 a very different range (on-topic top-5 mean about -8, off-topic about -15.7), so
 its constants were fitted by hand to leave average confidence where it was:
-the pair (-12.5, 3.5) reproduces the MS MARCO pipeline's mean S_rag over the 14
-real agent queries (0.659 -> 0.659) and over 6 off-topic queries (0.284 -> 0.288).
+the pair (-12.5, 3.5) reproduced the MS MARCO pipeline's mean S_rag over the 14
+real agent queries (0.659 -> 0.659) and over 6 off-topic queries (0.284 -> 0.288) on
+the original 42-passage knowledge base. Growing it to 67 passages (and the candidate
+pool from 10 to 20) lifted the same queries' mean to 0.754 and off-topic to 0.315, so
+the centre was shifted to -10.4, which restores 0.659 on the 14 queries (off-topic 0.209).
 They are a prototype calibration on a small sample, not a validated one: only the
 AVERAGE is matched, per-query S_rag still differs between the models (up to about
 0.3, i.e. 0.12 of confidence, on the 14 queries). Re-fit with
@@ -63,7 +66,7 @@ MODEL_NAME = os.getenv("RERANK_MODEL", MEDCPT_MODEL).strip() or MEDCPT_MODEL
 # back to the MS MARCO values and should be re-fit with calibrate_reranker.
 CALIBRATION_BY_MODEL = {
     MS_MARCO_MODEL: (-7.0, 2.0),
-    MEDCPT_MODEL: (-12.5, 3.5),
+    MEDCPT_MODEL: (-10.4, 3.5),  # centre was -12.5 for the 42-passage KB / top-10 pool; refit 2026-11-13 for 67 passages / top-20
 }
 
 

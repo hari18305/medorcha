@@ -340,7 +340,7 @@ python -m backend.rag.ingest
 ```
 
 This downloads the BioBERT embedding model (first run only, a few
-minutes) and embeds the 42 knowledge-base passages from
+minutes) and embeds the 67 knowledge-base passages from
 `data/knowledge_base/` into the local Qdrant store. The corpus is
 **100% real, citable content** — verbatim MedlinePlus text (U.S. NLM,
 public domain) and short PubMed abstract excerpts, each with its real

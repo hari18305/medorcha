@@ -70,6 +70,12 @@ ENCY_DOCS = [
     ("dementia_overview", "symptom_disease", "000739", ["Symptoms", "Causes", "Exams and Tests"]),
     ("subarachnoid_hemorrhage", "symptom_disease", "000701", ["Symptoms", "Causes", "Exams and Tests"]),
     ("pulmonary_tuberculosis", "symptom_disease", "000077", ["Symptoms", "Causes", "Exams and Tests"]),
+    # Added 2026-11-13 (gap analysis, see data/knowledge_base/README.md): conditions the imaging models can
+    # name (pulmonary edema, atelectasis) or that the answer key / live differentials reach for.
+    ("pulmonary_edema", "symptom_disease", "000140", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("atelectasis", "symptom_disease", "000065", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("cluster_headache", "symptom_disease", "000786", ["Symptoms", "Causes", "Exams and Tests"]),
+    ("brain_abscess", "symptom_disease", "000783", ["Symptoms", "Causes", "Exams and Tests"]),
 ]
 
 # (doc_id, folder, MedlinePlus health-topic search term, expected title)
@@ -85,6 +91,21 @@ TOPIC_DOCS = [
     ("hemorrhagic_stroke_overview", "symptom_disease", "hemorrhagic stroke", "Hemorrhagic Stroke"),
     ("traumatic_brain_injury_overview", "symptom_disease", "traumatic brain injury", "Traumatic Brain Injury"),
     ("chest_injuries_rib_fracture", "symptom_disease", "chest injuries and disorders", "Chest Injuries and Disorders"),
+    # Added 2026-11-13 (gap analysis)
+    ("heart_failure", "symptom_disease", "heart failure", "Heart Failure"),
+    ("brain_tumors", "symptom_disease", "brain tumors", "Brain Tumors"),
+    ("meningitis", "symptom_disease", "meningitis", "Meningitis"),
+    ("chest_pain", "symptom_disease", "chest pain", "Chest Pain"),
+    ("fainting", "symptom_disease", "fainting", "Fainting"),
+    ("fatigue", "symptom_disease", "fatigue", "Fatigue"),
+    ("multiple_sclerosis", "symptom_disease", "multiple sclerosis", "Multiple Sclerosis"),
+    ("giant_cell_arteritis", "symptom_disease", "giant cell arteritis", "Giant Cell Arteritis"),
+    ("concussion", "symptom_disease", "concussion", "Concussion"),
+    ("brain_aneurysm", "symptom_disease", "brain aneurysm", "Brain Aneurysm"),
+    ("arteriovenous_malformations", "symptom_disease", "arteriovenous malformations", "Arteriovenous Malformations"),
+    ("aortic_aneurysm", "symptom_disease", "aortic aneurysm", "Aortic Aneurysm"),
+    ("long_covid", "symptom_disease", "long covid", "Long COVID"),
+    ("refractive_errors", "symptom_disease", "refractive errors", "Refractive Errors"),
 ]
 
 # (doc_id, folder, PMID, expected title fragment) -- PMIDs were looked up
@@ -107,6 +128,14 @@ PUBMED_DOCS = [
     ("idiopathic_nph_guidelines_2021", "guidelines", "33455998", "Normal Pressure Hydrocephalus"),
     ("idiopathic_intracranial_hypertension_consensus_2018", "guidelines", "29903905", "Idiopathic intracranial hypertension"),
     ("vascular_contributions_to_cognitive_impairment_aha_2011", "guidelines", "21778438", "Vascular contributions to cognitive impairment"),
+    # Added 2026-11-13 (gap analysis)
+    ("vertebrobasilar_insufficiency_review", "symptom_disease", "28680502", "Vertebrobasilar Insufficiency"),
+    ("pres_review_2025", "symptom_disease", "40818477", "Posterior reversible encephalopathy syndrome"),
+    ("intracranial_calcification_vs_hemorrhage_ct", "symptom_disease", "37994049", "calcification"),
+    ("long_covid_headache", "symptom_disease", "35915417", "Long COVID headache"),
+    ("musculoskeletal_chest_pain_prevalence", "symptom_disease", "33838099", "musculoskeletal chest pain"),
+    ("massive_cerebral_infarction_review", "symptom_disease", "15860137", "Massive cerebral infarction"),
+    ("chest_pain_guideline_2021", "guidelines", "34756653", "Chest Pain"),
 ]
 
 

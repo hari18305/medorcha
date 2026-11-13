@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from qdrant_client import QdrantClient  # noqa: E402
 
 from backend.agents.clinical_agent import merge_structured_fields  # noqa: E402
-from backend.agents.rag_agent import _build_query  # noqa: E402
+from backend.agents.rag_agent import RETRIEVE_TOP_K, _build_query  # noqa: E402
 from backend.models.schemas import ClinicalFindings, ImagingFindings  # noqa: E402
 from backend.rag import ingest, retriever  # noqa: E402
 from backend.rag.reranker import rerank  # noqa: E402
@@ -99,6 +99,56 @@ QUERIES = [
 
 RERANK_TOP_K = 5
 
+# --- Knowledge-base gap queries (written 2026-11-13, before the 25 gap passages were first retrieved) -------------
+# Queries phrased the way the agents build them (symptom phrases, imaging labels), for conditions the original
+# 42-passage KB had nothing on. Relevant sets include an existing passage where one is genuinely relevant. CAVEAT: the
+# author knew the new passages existed, so this measures COVERAGE (is there anything to retrieve?) more than
+# retrieval quality, and it is small. `GAP_NEW` lets the same queries be run as if the new passages did not exist.
+GAP_NEW = {
+    "pulmonary_edema", "atelectasis", "cluster_headache", "brain_abscess", "heart_failure", "brain_tumors", "meningitis",
+    "chest_pain", "fainting", "fatigue", "multiple_sclerosis", "giant_cell_arteritis", "concussion", "brain_aneurysm",
+    "arteriovenous_malformations", "aortic_aneurysm", "long_covid", "refractive_errors",
+    "vertebrobasilar_insufficiency_review", "pres_review_2025", "intracranial_calcification_vs_hemorrhage_ct",
+    "long_covid_headache", "musculoskeletal_chest_pain_prevalence", "massive_cerebral_infarction_review",
+    "chest_pain_guideline_2021",
+}
+GAP_QUERIES = [
+    ("G pulmonary edema (text)", _query("shortness of breath lying flat, frothy sputum, ankle swelling", imaging=["pulmonary edema", "cardiomegaly"]),
+     {"pulmonary_edema", "heart_failure"}),
+    ("G pulmonary edema (image only)", _query("", imaging=["pulmonary edema"]), {"pulmonary_edema", "heart_failure"}),
+    ("G atelectasis (image only)", _query("", imaging=["atelectasis"]), {"atelectasis"}),
+    ("G mediastinal widening", _query("sudden tearing chest pain radiating to the back", imaging=["hilar or mediastinal widening"]),
+     {"aortic_aneurysm"}),
+    ("G brain mass (image only)", _query("", imaging=["mass lesion"]), {"brain_tumors"}),
+    ("G vascular malformation (image)", _query("", imaging=["vascular malformation"]),
+     {"arteriovenous_malformations", "brain_aneurysm", "hemorrhagic_stroke_overview"}),
+    ("G midline shift (image)", _query("headache, drowsiness", imaging=["midline shift"]),
+     {"massive_cerebral_infarction_review", "traumatic_brain_injury_overview", "chronic_subdural_hematoma"}),
+    ("G CT calcification (image)", _query("", imaging=["calcification"]), {"intracranial_calcification_vs_hemorrhage_ct"}),
+    ("G cluster headache", _query("severe one-sided eye pain with tearing, attacks at the same time each night"), {"cluster_headache"}),
+    ("G temporal arteritis", _query("new headache, jaw pain when chewing, scalp tenderness, visual loss", case_history=["age 72"]),
+     {"giant_cell_arteritis"}),
+    ("G meningitis", _query("fever, severe headache, stiff neck, sensitivity to light"),
+     {"meningitis", "brain_abscess", "secondary_headache_red_flags_snnoop10"}),
+    ("G exertional chest pain", _query("chest pressure on exertion radiating to the left arm, nausea"),
+     {"chest_pain", "chest_pain_guideline_2021"}),
+    ("G fainting", _query("fainted after standing up, lightheaded beforehand"),
+     {"fainting", "orthostatic_hypotension_low_blood_pressure"}),
+    ("G chronic fatigue", _query("tired for months, unrefreshed sleep, worse after exertion, poor concentration"), {"fatigue", "long_covid"}),
+    ("G vertebrobasilar", _query("recurrent vertigo with double vision and drop attacks"),
+     {"vertebrobasilar_insufficiency_review", "tia_overview"}),
+    ("G hypertensive encephalopathy", _query("headache, seizure, confusion and visual disturbance, blood pressure 220/120"),
+     {"pres_review_2025", "hypertensive_emergency_review"}),
+    ("G post-COVID headache", _query("headache persisting for weeks after COVID-19 infection"), {"long_covid_headache", "long_covid"}),
+    ("G refractive error", _query("blurred distance vision, squinting, headaches after reading"), {"refractive_errors"}),
+    ("G multiple sclerosis", _query("relapsing numbness and optic neuritis in a young woman, white matter lesions"), {"multiple_sclerosis"}),
+    ("G concussion", _query("blow to the head, brief loss of consciousness, headache, nausea, confusion"),
+     {"concussion", "traumatic_brain_injury_overview"}),
+    ("G musculoskeletal chest pain", _query("chest wall pain reproduced by pressing on the ribs, normal ECG and chest X-ray"),
+     {"musculoskeletal_chest_pain_prevalence", "chest_injuries_rib_fracture"}),
+]
+
+
 
 def build_index() -> QdrantClient:
     client = QdrantClient(":memory:")
@@ -114,13 +164,21 @@ def first_rank(results: list[dict], wanted: set[str]) -> int | None:
     return None
 
 
-def evaluate(queries=QUERIES, stage1_k: int = 10, pipeline=None) -> dict:
+def _retrieve(query: str, k: int, exclude: frozenset = frozenset()) -> list[dict]:
+    """Dense top-k, as if the doc_ids in `exclude` were not in the index (dense order does not depend on
+    the other passages, so dropping them from a larger list and taking k is exactly what a smaller index returns)."""
+    if not exclude:
+        return retriever.retrieve(query, top_k=k)
+    return [r for r in retriever.retrieve(query, top_k=1000) if r["doc_id"] not in exclude][:k]
+
+
+def evaluate(queries=QUERIES, stage1_k: int = RETRIEVE_TOP_K, pipeline=None, exclude: frozenset = frozenset()) -> dict:
     """`pipeline(query) -> ranked results` lets a caller evaluate a changed
     pipeline; the default is the production one (retrieve stage1_k -> rerank 5)."""
     rows = []
     for label, query, wanted in queries:
         if pipeline is None:
-            ranked = rerank(query, retriever.retrieve(query, top_k=stage1_k), top_k=RERANK_TOP_K)
+            ranked = rerank(query, _retrieve(query, stage1_k, exclude), top_k=RERANK_TOP_K)
         else:
             ranked = pipeline(query)
         # where the relevant passage sat in the dense stage alone (all docs)
@@ -152,10 +210,22 @@ def print_report(result: dict) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage1-k", type=int, default=10)
+    ap.add_argument("--stage1-k", type=int, default=RETRIEVE_TOP_K)
     ap.add_argument("--json", help="write the result to this path")
+    ap.add_argument("--gap", action="store_true", help="run the knowledge-base gap queries (with and without the new passages)")
     args = ap.parse_args()
     build_index()
+    if args.gap:
+        full = evaluate(GAP_QUERIES, stage1_k=RETRIEVE_TOP_K)
+        # the original system: 42 passages and a top-10 candidate pool
+        old = evaluate(GAP_QUERIES, stage1_k=10, exclude=frozenset(GAP_NEW))
+        print("=== gap queries, 67-passage KB, top-20 pool ===")
+        print_report(full)
+        print("\n=== same queries, original 42-passage KB, top-10 pool ===")
+        print_report(old)
+        if args.json:
+            Path(args.json).write_text(json.dumps({"with_new": full, "original": old}, indent=2), encoding="utf-8")
+        raise SystemExit(0)
     res = evaluate(stage1_k=args.stage1_k)
     print_report(res)
     if args.json:

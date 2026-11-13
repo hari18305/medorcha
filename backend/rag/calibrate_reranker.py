@@ -25,7 +25,7 @@ from backend.rag.reranker import SCORE_CENTER, SCORE_SCALE, _get_model, relevanc
 from backend.rag.retriever import retrieve
 
 TEST_CASES_GLOB = "data/test_cases/CASE0*.json"
-RETRIEVE_TOP_K = 10
+from backend.agents.rag_agent import RETRIEVE_TOP_K  # the pool size production uses
 KEEP_TOP_K = 5
 
 # Queries the knowledge base has nothing on: a good S_rag must stay LOW here.
