@@ -171,3 +171,47 @@ async def test_raises_after_two_invalid_responses(mock_anthropic_client):
         )
 
     assert mock_anthropic_client.messages.create.await_count == 2
+
+
+# --------------------------------------------------------------------------
+# merge_structured_fields: the case's typed history/labs must reach the findings
+# --------------------------------------------------------------------------
+
+from backend.agents.clinical_agent import merge_structured_fields  # noqa: E402
+
+
+def _findings(symptoms=(), history=(), labs=None):
+    return ClinicalFindings(
+        demographics={}, symptoms=list(symptoms), history=list(history), labs=labs or {}, imaging_text_findings=[]
+    )
+
+
+def test_merge_appends_structured_history_after_extracted():
+    merged = merge_structured_fields(
+        _findings(history=["fall two months ago"]), ["hypertension", "atrial fibrillation"], None
+    )
+    assert merged.history == ["fall two months ago", "hypertension", "atrial fibrillation"]
+
+
+def test_merge_dedupes_history_case_insensitively_and_ignores_history_of_prefix():
+    merged = merge_structured_fields(_findings(history=["History of Hypertension"]), ["hypertension", " Hypertension "], None)
+    assert merged.history == ["History of Hypertension"]
+
+
+def test_merge_structured_labs_override_extracted_ones():
+    merged = merge_structured_fields(_findings(labs={"hemoglobin": "9"}), None, {"hemoglobin": "10.2 g/dL", "hematocrit": "31%"})
+    assert merged.labs == {"hemoglobin": "10.2 g/dL", "hematocrit": "31%"}
+
+
+def test_merge_with_nothing_structured_is_a_no_op_copy():
+    original = _findings(symptoms=["headache"], history=["migraine"], labs={"x": "1"})
+    merged = merge_structured_fields(original, [], {})
+    assert merged == original
+    assert merged is not original
+
+
+def test_merge_skips_blank_history_items_and_does_not_mutate_input():
+    original = _findings(history=["a"])
+    merged = merge_structured_fields(original, ["", "  ", "b"], None)
+    assert merged.history == ["a", "b"]
+    assert original.history == ["a"]

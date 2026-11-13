@@ -43,7 +43,7 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.tools import BaseTool
 from pydantic import PrivateAttr
 
-from backend.agents.clinical_agent import extract_clinical_findings
+from backend.agents.clinical_agent import extract_clinical_findings, merge_structured_fields
 from backend.agents.evidence_agent import gather_live_evidence
 from backend.agents.fusion_agent import fuse
 from backend.agents.imaging_agent import analyze_image
@@ -191,14 +191,19 @@ class ClinicalTool(BaseTool):
         ctx = self._context
         start = time.perf_counter()
         try:
-            ctx.clinical = _run_sync(
+            extracted = _run_sync(
                 extract_clinical_findings(ctx.case.clinical_text, ctx.case.medical_report)
             )
+            ctx.clinical = merge_structured_fields(extracted, ctx.case.history, ctx.case.labs)
             _log_agent_call(ctx, "clinical", 0, "success", (time.perf_counter() - start) * 1000)
             return f"clinical extraction succeeded: {len(ctx.clinical.symptoms)} symptom(s) found"
         except Exception as exc:  # Claude API failure, etc. -- degrade, don't crash
-            ctx.clinical = ClinicalFindings(
-                demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[]
+            # Extraction failed, but the structured fields the clinician typed
+            # are still real input: keep them rather than dropping them too.
+            ctx.clinical = merge_structured_fields(
+                ClinicalFindings(demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[]),
+                ctx.case.history,
+                ctx.case.labs,
             )
             _log_agent_call(
                 ctx, "clinical", 0, "failure", (time.perf_counter() - start) * 1000, error=str(exc)

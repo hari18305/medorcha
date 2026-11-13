@@ -231,6 +231,7 @@ Open `.env` and fill in:
 | `FINDING_RELATIVE_THRESHOLD` | No | Imaging: a finding label beyond the top one is reported only if it is at least this fraction (default 0.6) as strong as the top label, and above a 0.15 floor. Drops weak secondary labels that were leaking spurious diagnoses into the differential. A prototype value, not validated. |
 | `EVIDENCE_LLM_SUMMARIES` | No | `false` (default): PubMed abstracts are truncated, with no LLM call. `true`: one LLM call per abstract, concurrent, 12s budget. Keep it off on a free tier — it uses most of the daily quota. |
 | `RERANK_SCORE_CENTER` / `RERANK_SCORE_SCALE` | No | Calibration of the reranker's 0–1 relevance score (the S_rag confidence signal): `sigmoid((logit − center) / scale)`, defaults −7 / 2. Hand-calibrated for the current knowledge base; re-check with `python -m backend.rag.calibrate_reranker` if the corpus or reranker model changes. |
+| `RERANK_ORDER` | No | How the reranked top-5 is *ordered* (default `rrf`): reciprocal-rank fusion of the BioBERT rank and the cross-encoder rank. `ce` restores cross-encoder-only order. Which 5 passages are chosen, and so S_rag, is the same either way. Measured on 14 real agent queries (`python -m scripts.eval_retrieval`): MRR@5 0.768 → 0.827, hit@1 8 → 10, hit@5 14/14 either way; helped 3, hurt 1. A regression check, not a benchmark. |
 | `DATABASE_URL` | No | Defaults to `sqlite:///./medorchestrate.db`; created automatically on first run. |
 | `LANGFUSE_ENABLED` | No | Defaults to `false`. Leave off unless you have Langfuse credentials. |
 

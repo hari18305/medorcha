@@ -459,3 +459,50 @@ def test_no_clinical_anchor_reports_the_reason_and_requires_review(monkeypatch, 
     assert report.review_required is True
     assert report.conflicts[0] == INSUFFICIENT_INPUT_NOTE
     assert report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses  # still shown to the reviewer
+
+
+def test_structured_history_and_labs_reach_the_pipeline(mock_agents):
+    # The extractor only sees the text, so the typed history/labs used to be
+    # dropped before retrieval and fusion (17 of the 31 test cases carry them).
+    case = CaseInput(
+        case_id="CASE011", patient=Patient(age=39, sex="female"),
+        clinical_text="fatigue and dizziness, especially on standing",
+        history=["iron deficiency anemia"], labs={"hemoglobin": "10.2 g/dL"},
+    )
+    run_case(case)
+
+    for step in ("run_rag", "fuse"):
+        clinical = mock_agents[step].call_args.args[0]
+        assert "iron deficiency anemia" in clinical.history, step
+        assert clinical.labs["hemoglobin"] == "10.2 g/dL", step
+
+
+def test_structured_fields_survive_an_extraction_failure(mock_agents):
+    mock_agents["extract_clinical_findings"].side_effect = RuntimeError("provider down")
+    case = CaseInput(
+        case_id="C", patient=Patient(age=50, sex="male"), clinical_text="chest pain",
+        history=["hypertension"], labs={"troponin": "0.4"},
+    )
+    run_case(case)
+
+    clinical = mock_agents["fuse"].call_args.args[0]
+    assert clinical.history == ["hypertension"]
+    assert clinical.labs == {"troponin": "0.4"}
+
+
+def test_labs_alone_count_as_a_clinical_anchor_through_the_pipeline(monkeypatch, mock_agents):
+    # Labs supplied only as a structured field must not trip the
+    # insufficient-input gate (they never used to reach ClinicalFindings).
+    from backend.services.confidence import INSUFFICIENT_INPUT_NOTE, compute_confidence_breakdown as real_breakdown
+
+    monkeypatch.setattr(orchestrator, "compute_confidence_breakdown", real_breakdown)
+    mock_agents["extract_clinical_findings"].return_value = ClinicalFindings(
+        demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[]
+    )
+    case = CaseInput(
+        case_id="LABS", patient=Patient(age=60, sex="female"),
+        image_path="data/images/synthetic_demo_brain_mri_001.png", labs={"hemoglobin": "8.1 g/dL"},
+    )
+    report = run_case(case)
+
+    assert INSUFFICIENT_INPUT_NOTE not in report.conflicts

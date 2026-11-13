@@ -56,6 +56,23 @@ def _float_from_env(name: str, default: float) -> float:
 SCORE_CENTER = _float_from_env("RERANK_SCORE_CENTER", -7.0)
 SCORE_SCALE = _float_from_env("RERANK_SCORE_SCALE", 2.0)
 
+# How the final top-k is ORDERED (which passages make the top-k is always the
+# cross-encoder's call, so S_rag - the mean of those scores - never depends on
+# this setting):
+#   "rrf" (default) - reciprocal rank fusion of the dense (BioBERT) rank and the
+#                     cross-encoder rank, k=60 (the standard constant, not tuned).
+#   "ce"            - cross-encoder order only (the behaviour before 2026-11-13).
+# Why: the MS MARCO cross-encoder is general-domain and sometimes puts an
+# off-topic passage first (a subarachnoid-haemorrhage passage topped plain
+# "headache, dizziness; history of hypertension"; pleural effusion and TB made
+# the top 3 for a child's headache) where BioBERT had the right one at rank 1.
+# Measured with scripts/eval_retrieval.py on 14 real agent queries: MRR@5
+# 0.768 -> 0.827, hit@1 8 -> 10, hit@5 unchanged at 14/14. Helped 3 queries and
+# hurt 1 (the CASE009 subdural passage moved from 2nd to 4th). n=14, developer-
+# judged relevance: a regression check, not proof.
+RERANK_ORDER = os.getenv("RERANK_ORDER", "rrf").strip().lower()
+RRF_K = 60
+
 _model: CrossEncoder | None = None
 
 
@@ -81,15 +98,29 @@ def relevance_score(logit: float) -> float:
     return _sigmoid((logit - SCORE_CENTER) / SCORE_SCALE)
 
 
+def _rrf_order(top: list[dict]) -> list[dict]:
+    """Reorder `top` (already the cross-encoder's chosen top-k, best first) by
+    reciprocal rank fusion of each item's dense rank and cross-encoder rank.
+    Each item carries "_dense_rank" (1-based position in the retrieval order)."""
+    ce_rank = {id(item): i for i, item in enumerate(top, 1)}
+    return sorted(
+        top,
+        key=lambda item: -(1.0 / (RRF_K + item["_dense_rank"]) + 1.0 / (RRF_K + ce_rank[id(item)])),
+    )
+
+
 def rerank(query: str, candidates: list[dict], top_k: int = 5) -> list[dict]:
     """Rerank `candidates` by cross-encoder relevance to `query`.
+
+    `candidates` must be in dense-retrieval order (best cosine first), which is
+    what retriever.retrieve() returns: that position is the dense rank used by
+    the optional RRF ordering (see RERANK_ORDER).
 
     Each candidate's "score" is overwritten with the cross-encoder's
     relevance score -- its raw logit rescaled onto an interpretable (0, 1)
     range by relevance_score() -- which is what callers compare against a
-    relevance threshold and what feeds S_rag. Candidates are re-sorted by
-    this new score, not by whatever score they arrived with (e.g. cosine
-    similarity from retrieval).
+    relevance threshold and what feeds S_rag. The top_k are chosen by this
+    score; their final order is the cross-encoder's, or the RRF order (default).
     """
     if not candidates:
         return []
@@ -99,9 +130,14 @@ def rerank(query: str, candidates: list[dict], top_k: int = 5) -> list[dict]:
     raw_scores = model.predict(pairs)
 
     reranked = [
-        {**candidate, "score": relevance_score(float(raw_score))}
-        for candidate, raw_score in zip(candidates, raw_scores)
+        {**candidate, "score": relevance_score(float(raw_score)), "_dense_rank": rank}
+        for rank, (candidate, raw_score) in enumerate(zip(candidates, raw_scores), 1)
     ]
     reranked.sort(key=lambda c: c["score"], reverse=True)
 
-    return reranked[:top_k]
+    top = reranked[:top_k]
+    if RERANK_ORDER == "rrf" and len(top) > 1:
+        top = _rrf_order(top)
+    for item in top:
+        del item["_dense_rank"]
+    return top

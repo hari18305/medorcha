@@ -141,3 +141,36 @@ async def extract_clinical_findings(
                 "Failed to extract valid ClinicalFindings JSON after retry: "
                 f"{second_error}"
             ) from second_error
+
+
+def _history_key(item: str) -> str:
+    """Normalised form for de-duplicating history items ("History of Hypertension" == "hypertension")."""
+    key = " ".join(item.lower().split())
+    for prefix in ("history of ", "h/o "):
+        if key.startswith(prefix):
+            key = key[len(prefix):]
+    return key
+
+
+def merge_structured_fields(
+    findings: ClinicalFindings, history: list[str] | None, labs: dict | None
+) -> ClinicalFindings:
+    """Fold the case's structured `history` and `labs` fields into the findings.
+
+    The API accepts and stores `history` and `labs` on every case, but the
+    extractor only ever reads clinical_text and medical_report, so before this
+    merge they never reached retrieval, fusion or the confidence gate (17 of the
+    31 test cases carry them, e.g. CASE018's atrial fibrillation + warfarin and
+    CASE011's anemia + hemoglobin). Structured values are what the clinician
+    typed into a field, so they win over anything the model inferred from prose:
+    labs override same-named extracted labs; history is appended after the
+    extracted items, de-duplicated case-insensitively.
+    """
+    seen = {_history_key(item) for item in findings.history}
+    merged_history = list(findings.history)
+    for item in history or []:
+        item = (item or "").strip()
+        if item and _history_key(item) not in seen:
+            seen.add(_history_key(item))
+            merged_history.append(item)
+    return findings.model_copy(update={"history": merged_history, "labs": {**findings.labs, **(labs or {})}})

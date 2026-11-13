@@ -482,8 +482,58 @@ was discarded, not committed. Re-run when quota is available:
 `python -m backend.tests.run_llm_judge --reports eval_run/reports` (it is slow -
 several LLM calls per case - so run it detached). Even then it is self-grading (Gemini
 judging Gemini output), the answer key is developer-drafted and not
-clinician-verified, and n = 31, so it is a consistency check, not accuracy.
+## Update 2026-11-13 (later): retrieval regressions, and a bug that hid case history and labs
 
+**Correction.** The "chest-pain-after-sport 1st -> 5th" regression listed above was
+measured on a query I wrote by hand ("...after a collision during sport, no
+breathlessness"). The query the pipeline really built for that case (REAL005) was
+`left-sided chest pain; imaging findings: normal chest X-ray, no acute findings`:
+the clinical agent had dropped the collision/sport detail. On that real query the
+relevant passage is rank 1, so it was never a retrieval regression. The real
+problem is that extraction lost the mechanism of injury (not fixed: it needs a
+clinical-prompt change that can only be verified with a working LLM).
+
+**New harness, on real queries.** `python -m scripts.eval_retrieval` runs the real
+BioBERT -> cross-encoder pipeline on an in-memory index of the committed corpus (no
+API key, no network, real store untouched) over 14 queries recovered from the live
+31-case run's log, relevant passages chosen by the developer (not clinician-verified).
+
+**Bug found: the case's `history` and `labs` never reached the pipeline.** The API
+accepts and stores them, but the clinical step only read `clinical_text` and
+`medical_report`, so they were absent from the findings, the retrieval query, the
+fusion prompt and the confidence gate. 17 of the 31 test cases carry them (e.g.
+CASE018's atrial fibrillation + warfarin, CASE011's anemia + hemoglobin, CASE012's
+five-item history). Fixed by `merge_structured_fields` (structured labs win;
+history appended and de-duplicated); it also keeps them if extraction fails, and a
+case whose only input is a lab value is no longer wrongly gated as "no clinical
+input". **Consequence: the 31-case live run above, and any judged score from it,
+predates this fix for those 17 cases and must be re-run.** (The web form has no
+history/labs fields, so this affects API and scripted use.)
+
+**Measured (14 queries, hit@5 / hit@1 / MRR@5):**
+
+| pipeline | hit@5 | hit@1 | MRR@5 |
+|---|---|---|---|
+| before (history/labs missing from queries) | 13/14 | 7 | 0.685 |
+| + history/labs merged (CASE011 miss -> rank 1) | 14/14 | 8 | 0.768 |
+| + RRF ordering (`RERANK_ORDER=rrf`, now default) | 14/14 | 10 | 0.827 |
+
+RRF fuses the BioBERT rank with the cross-encoder rank to order the top 5 (k=60,
+untuned). It never changes WHICH 5 passages are chosen or their scores, so S_rag and
+confidence are unchanged; I first tried full RRF over the whole pool and rejected it
+because it changed the top-5 membership on 7 of 14 queries and lowered mean S_rag
+0.659 -> 0.630. `RERANK_ORDER=ce` restores the old order.
+
+**Costs, not hidden.** RRF helped 3 queries (CASE001, CASE010, REAL004) and hurt 1:
+the CASE009 subdural passage (the original complaint) moved from 2nd to 4th - still
+in the top 5 and still shown to the fusion model, but lower. n=14 and developer-judged,
+so this is a regression check, not evidence the ordering is better in general. The
+remaining weakness is the general-domain cross-encoder: for a child's headache +
+URTI (CASE010) pulmonary tuberculosis is still ranked first and the relevant
+headache passage third. A biomedical cross-encoder (e.g. NCBI's MedCPT) is the
+obvious next step; it needs a ~440 MB model download, so it has not been tried.
+
+## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.
 - The optimizer's later-iteration RAG/live evidence isn't exposed back
