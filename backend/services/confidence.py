@@ -33,6 +33,8 @@ on the very next call, with no restart needed. THRESHOLD stays a true
 fixed constant, never subject to automatic recalibration.
 """
 
+import re
+
 from backend.models.schemas import ClinicalFindings, FusionResult, LiveEvidence, RAGEvidence
 from backend.services import storage
 
@@ -96,6 +98,67 @@ INSUFFICIENT_INPUT_NOTE = (
     "clinician review is required. Any diagnosis shown rests on the image and "
     "retrieved literature alone."
 )
+
+
+# Non-specific presentation. A case whose only symptoms are constitutional
+# ("feeling generally unwell, mild fatigue, occasional lightheadedness") points
+# at hundreds of conditions, yet retrieval still returns plausible passages and
+# the case scored 0.68 and skipped review (CASE008, 31-case run). Like the gate
+# above, the cap sits below THRESHOLD so such cases go to a clinician, and
+# for the same reason the optimizer is skipped: more queries cannot make the
+# complaint more specific.
+#
+# This is a hand-written lexicon, deliberately small and matched against the
+# WHOLE symptom phrase (after dropping qualifiers), so "arm weakness" or
+# "fatigue after exertion with chest pain" are NOT non-specific. It is a
+# transparent heuristic, not a validated classifier; the 0.60 cap is a chosen
+# value, not a fitted one.
+NONSPECIFIC_INPUT_CAP = 0.6
+
+NONSPECIFIC_INPUT_NOTE = (
+    "Non-specific clinical input: the only symptoms reported are general ones "
+    "(for example tiredness, feeling unwell or lightheadedness) with no laboratory "
+    f"values or report findings, so confidence is capped at {NONSPECIFIC_INPUT_CAP:.2f} "
+    "and clinician review is required. The differential is broad and should be "
+    "narrowed by history and examination."
+)
+
+_NONSPECIFIC_SYMPTOMS = frozenset({
+    "fatigue", "tiredness", "tired", "malaise", "unwell", "lethargy", "weakness", "low energy",
+    "run down", "lightheadedness", "light headedness", "lightheaded", "light headed",
+    "not feeling well", "feeling off", "general discomfort", "generally unwell", "poor energy",
+    "feeling tired", "feeling weak", "feeling unwell",
+})
+_QUALIFIERS = frozenset({
+    "mild", "slight", "slightly", "occasional", "occasionally", "intermittent", "general", "generalized",
+    "generalised", "generally", "vague", "some", "a", "bit", "little", "feeling", "feels", "feel",
+    "overall", "just", "very", "somewhat", "of", "and", "mildly", "episodes", "the", "being", "nothing", "specific", "particular", "for", "few", "several", "days", "day", "weeks", "week", "past", "last",
+})
+
+
+def _is_nonspecific_symptom(symptom: str) -> bool:
+    words = [w for w in re.sub(r"[^a-z\- ]", " ", symptom.lower()).replace("-", " ").split() if w not in _QUALIFIERS]
+    if not words:
+        return True  # nothing but qualifiers ("nothing specific", "just generally")
+    return " ".join(words) in _NONSPECIFIC_SYMPTOMS
+
+
+def is_nonspecific_presentation(clinical: ClinicalFindings | None) -> bool:
+    """True when there is at least one symptom, every symptom is a general one,
+    and there are no lab values or report findings. A case with no symptoms at
+    all is the insufficient-input case, handled by has_clinical_anchor()."""
+    if clinical is None or clinical.labs or clinical.imaging_text_findings or not clinical.symptoms:
+        return False
+    return all(_is_nonspecific_symptom(s) for s in clinical.symptoms)
+
+
+def input_quality(clinical: ClinicalFindings | None) -> str:
+    """"ok", "no_anchor" (nothing to reason from) or "nonspecific"."""
+    if not has_clinical_anchor(clinical):
+        return "no_anchor"
+    if is_nonspecific_presentation(clinical):
+        return "nonspecific"
+    return "ok"
 
 
 def has_clinical_anchor(clinical: ClinicalFindings | None) -> bool:
@@ -187,13 +250,18 @@ def compute_confidence_breakdown(
     if not fusion.diagnoses:
         confidence = 0.0
 
-    sufficient = has_clinical_anchor(clinical)
-    if not sufficient:
+    quality = input_quality(clinical)
+    if quality == "no_anchor":
         confidence = min(confidence, INSUFFICIENT_INPUT_CAP)
+    elif quality == "nonspecific":
+        confidence = min(confidence, NONSPECIFIC_INPUT_CAP)
 
     result = {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence}
     if clinical is not None:
-        result["input_sufficient"] = sufficient
+        # "input_sufficient" keeps its meaning (anything to reason from at all);
+        # "input_quality" adds the non-specific case.
+        result["input_sufficient"] = quality != "no_anchor"
+        result["input_quality"] = quality
     return result
 
 

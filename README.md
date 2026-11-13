@@ -123,8 +123,17 @@ always returns something. So two rules sit on top of the formula:
   extracted from a report; history and demographics alone do not count, nor do
   findings the imaging model produced. The report carries a note saying why.
   This makes an image-only or empty case go to a clinician; any diagnosis is
-  still shown. It does **not** catch a case with vague symptoms (e.g. "feeling
-  unwell"); the 0.65 threshold and the weights remain unvalidated.
+  still shown.
+- **Only general symptoms -> confidence capped at 0.60 (< 0.65), review
+  required, optimizer skipped.** If every symptom is a general one ("feeling
+  unwell", "mild fatigue", "lightheadedness") and there are no lab values or
+  report findings, the differential is too broad to be sure of, and more
+  retrieval cannot narrow it. The match is on the whole symptom phrase against
+  a small hand-written list (`confidence.py`), so "arm weakness" or "fatigue
+  with chest pain" are not caught. It is a transparent heuristic, not a
+  validated classifier, and the 0.60 cap is a chosen value, not a fitted one.
+
+The 0.65 threshold and the weights remain unvalidated.
 
 ### Confidence weight recalibration
 

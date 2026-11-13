@@ -792,3 +792,37 @@ screen; worth replacing with a generic message before a demo if the quota proble
    services, and the one-sentence framing again: evidence-grounded
    decision *support*, confidence-scored and citation-traceable,
    never an autonomous diagnostic authority.
+
+---
+
+## Vague-input signal (2026-11-13)
+
+`CASE008` ("feeling generally unwell for a few days, mild fatigue, occasional
+lightheadedness, nothing specific") scored 0.68 and skipped review in the 31-case
+run, because the gate above only checks that *some* symptom exists.
+
+Fix: `confidence.input_quality()` now returns `ok`, `no_anchor` or `nonspecific`.
+When every extracted symptom is a general one (whole-phrase match against a small
+hand-written list, after dropping qualifiers such as "mild", "occasional" and
+duration words) and there are no labs or report findings, confidence is capped at
+`NONSPECIFIC_INPUT_CAP = 0.60`, review is required, the optimizer is skipped, and
+`conflicts[0]` carries `NONSPECIFIC_INPUT_NOTE`. The breakdown gains
+`input_quality`; `input_sufficient` keeps its old meaning. The frontend shows the
+note beside the review notice, as for the first gate.
+
+**Verified:** 581 backend tests (18 new: lexicon cases including "arm weakness",
+"dizziness" and "fatigue + headache" staying specific, labs and report findings
+overriding the cap, the cap never raising a lower score, the optimizer skip and
+the orchestrator note) and the frontend build. A rough scan of the 24 text fixtures
+finds `CASE008` the only one it would cap. One integration test used "fatigue" as
+its low-confidence symptom to exercise the optimizer loop; it now uses
+"unexplained weight loss", since "fatigue" alone is now correctly non-specific.
+
+**Not verified:** not run live (Gemini quota). Whether the extractor phrases
+`CASE008`'s symptoms in a way the lexicon matches is unconfirmed: the list matches
+phrases such as "feeling unwell" or "mild fatigue", not every paraphrase, so a
+vague case worded differently can slip through. Cases a clinician would call
+non-specific but that name one specific symptom (for example "dizziness") are not
+caught on purpose. The 0.60 cap is chosen, not fitted. Demo note: the "avoid
+generic filler" advice above still holds for the evidence panel, but such a case
+now goes straight to review instead of three optimizer rounds.

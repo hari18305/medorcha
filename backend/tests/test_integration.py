@@ -644,7 +644,7 @@ def test_high_confidence_case_skips_optimizer(monkeypatch):
 
 
 def _setup_low_confidence_scenario(monkeypatch):
-    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["fatigue"], history=[]))
+    _install_clinical_mock(monkeypatch, _clinical_response(symptoms=["unexplained weight loss"], history=[]))
     # Every RAG call (initial pass + all 3 optimizer iterations) returns
     # the same low-scoring payload -- our fake Qdrant client ignores the
     # actual query text, so confidence stays low deterministically across
@@ -662,7 +662,7 @@ def _setup_low_confidence_scenario(monkeypatch):
             _optimizer_refinement_response("paraphrase", "tiredness alternate phrasing"),
         ],
     )
-    case = CaseInput(case_id="INTEG-LOW-CONF", patient=Patient(age=50, sex="female"), clinical_text="fatigue")
+    case = CaseInput(case_id="INTEG-LOW-CONF", patient=Patient(age=50, sex="female"), clinical_text="unexplained weight loss")
     return case, optimizer_client
 
 

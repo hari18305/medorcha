@@ -461,6 +461,36 @@ def test_no_clinical_anchor_reports_the_reason_and_requires_review(monkeypatch, 
     assert report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses  # still shown to the reviewer
 
 
+def test_nonspecific_complaint_reports_the_reason_and_requires_review(monkeypatch, mock_agents):
+    # CASE008-style input: only general symptoms. Real confidence math again.
+    from backend.services.confidence import (
+        NONSPECIFIC_INPUT_CAP,
+        NONSPECIFIC_INPUT_NOTE,
+        compute_confidence_breakdown as real_breakdown,
+    )
+
+    monkeypatch.setattr(orchestrator, "compute_confidence_breakdown", real_breakdown)
+    mock_agents["extract_clinical_findings"].return_value = ClinicalFindings(
+        demographics={}, symptoms=["feeling generally unwell", "mild fatigue"], history=[], labs={}, imaging_text_findings=[]
+    )
+    mock_agents["optimize"].return_value = {
+        "final_fusion": HIGH_CONFIDENCE_FUSION,
+        "final_confidence": NONSPECIFIC_INPUT_CAP,
+        "final_breakdown": {"s_rag": 0.9, "s_web": 1.0, "agreement": 1.0, "confidence": NONSPECIFIC_INPUT_CAP,
+                            "input_sufficient": True, "input_quality": "nonspecific"},
+        "iterations": 0,
+        "review_required": True,
+        "iteration_log": [],
+    }
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    assert report.confidence <= NONSPECIFIC_INPUT_CAP
+    assert report.review_required is True
+    assert report.conflicts[0] == NONSPECIFIC_INPUT_NOTE
+    assert report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses
+
+
 def test_structured_history_and_labs_reach_the_pipeline(mock_agents):
     # The extractor only sees the text, so the typed history/labs used to be
     # dropped before retrieval and fusion (17 of the 31 test cases carry them).

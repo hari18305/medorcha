@@ -276,6 +276,19 @@ async def test_no_clinical_anchor_skips_the_loop_and_requires_review(mock_pipeli
     mock_pipeline["fuse"].assert_not_called()
 
 
+async def test_nonspecific_complaint_skips_the_loop_and_requires_review(mock_pipeline):
+    vague = ClinicalFindings(demographics={}, symptoms=["feeling generally unwell", "mild fatigue"], history=[], labs={}, imaging_text_findings=[])
+    initial = _fusion(0.4)
+
+    result = await optimize(CASE, vague, None, initial, initial_confidence=0.6)
+
+    assert result["iterations"] == 0
+    assert result["review_required"] is True
+    assert result["final_confidence"] == 0.6
+    mock_pipeline["select_strategy"].assert_not_called()
+    mock_pipeline["run_rag"].assert_not_called()
+
+
 # --------------------------------------------------------------------------
 # on_iteration: live progress for each refinement round
 # --------------------------------------------------------------------------

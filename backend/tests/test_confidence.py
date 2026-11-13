@@ -283,3 +283,70 @@ def test_anchor_leaves_confidence_unchanged():
 def test_cap_never_raises_a_lower_confidence():
     weak = compute_confidence_breakdown(_rag([0.0]), _live([]), _fusion(["a", "b", "c", "d"]), _clin())
     assert weak["confidence"] == 0.0
+
+
+# --------------------------------------------------------------------------
+# Non-specific presentation (CASE008: "generally unwell, mild fatigue,
+# occasional lightheadedness, nothing specific" scored 0.68 and skipped review)
+# --------------------------------------------------------------------------
+
+from backend.services.confidence import (  # noqa: E402
+    NONSPECIFIC_INPUT_CAP,
+    input_quality,
+    is_nonspecific_presentation,
+)
+
+
+def test_nonspecific_cap_sits_between_the_gate_cap_and_threshold():
+    assert INSUFFICIENT_INPUT_CAP < NONSPECIFIC_INPUT_CAP < THRESHOLD
+
+
+@pytest.mark.parametrize(
+    "symptoms, expected",
+    [
+        (["feeling generally unwell", "mild fatigue", "occasional lightheadedness"], True),  # CASE008
+        (["fatigue"], True),
+        (["Tiredness", "malaise"], True),
+        (["light-headedness"], True),
+        (["nothing specific"], True),  # only qualifiers left
+        (["fatigue", "headache"], False),  # one specific symptom is enough
+        (["arm weakness"], False),  # focal weakness is not a general complaint
+        (["fatigue after exertion with chest pain"], False),
+        (["dizziness"], False),  # deliberately not in the lexicon
+        ([], False),  # no symptoms is the insufficient-input case, not this one
+    ],
+)
+def test_is_nonspecific_presentation(symptoms, expected):
+    assert is_nonspecific_presentation(_clin(symptoms=symptoms)) is expected
+
+
+def test_labs_or_report_findings_make_a_general_complaint_specific():
+    assert is_nonspecific_presentation(_clin(symptoms=["fatigue"], labs={"Hb": 8.1})) is False
+    assert is_nonspecific_presentation(_clin(symptoms=["fatigue"], imaging_text=["cardiomegaly"])) is False
+    assert is_nonspecific_presentation(None) is False
+
+
+def test_input_quality_levels():
+    assert input_quality(_clin()) == "no_anchor"
+    assert input_quality(_clin(symptoms=["fatigue"])) == "nonspecific"
+    assert input_quality(_clin(symptoms=["chest pain"])) == "ok"
+    assert input_quality(None) == "ok"
+
+
+def test_nonspecific_input_is_capped_below_threshold():
+    breakdown = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), _fusion([]), _clin(symptoms=["fatigue", "malaise"]))
+    assert breakdown["confidence"] == NONSPECIFIC_INPUT_CAP
+    assert breakdown["input_quality"] == "nonspecific"
+    assert breakdown["input_sufficient"] is True  # it did supply something to reason from
+    assert breakdown["s_rag"] == pytest.approx(0.9)  # raw signals unchanged
+
+
+def test_nonspecific_cap_never_raises_a_lower_confidence():
+    weak = compute_confidence_breakdown(_rag([0.0]), _live([]), _fusion(["a", "b", "c", "d"]), _clin(symptoms=["fatigue"]))
+    assert weak["confidence"] == 0.0
+
+
+def test_specific_symptoms_are_untouched_by_the_nonspecific_cap():
+    breakdown = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), _fusion([]), _clin(symptoms=["fatigue", "chest pain"]))
+    assert breakdown["confidence"] == pytest.approx(0.96)
+    assert breakdown["input_quality"] == "ok"

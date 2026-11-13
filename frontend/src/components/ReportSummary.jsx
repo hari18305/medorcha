@@ -41,10 +41,12 @@ export function isImageConflict(text) {
 // INSUFFICIENT_INPUT_NOTE) puts its explanation at the front of
 // report.conflicts. It is not a disagreement between evidence sources, so it
 // is shown with the review notice instead of under "Conflicting evidence".
-const INSUFFICIENT_INPUT_PREFIX = "Insufficient clinical input:";
+// A second note (NONSPECIFIC_INPUT_NOTE) covers a complaint made only of general
+// symptoms; it is shown the same way.
+const INPUT_NOTE_PREFIXES = ["Insufficient clinical input:", "Non-specific clinical input:"];
 
 export function isInsufficientInputNote(text) {
-  return typeof text === "string" && text.startsWith(INSUFFICIENT_INPUT_PREFIX);
+  return typeof text === "string" && INPUT_NOTE_PREFIXES.some((prefix) => text.startsWith(prefix));
 }
 
 // The fusion model cites evidence as [RAG1], [LIVE2], ... (fusion_agent.py

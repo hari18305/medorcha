@@ -37,7 +37,7 @@ from backend.models.schemas import (
     LiveEvidence,
     RAGEvidence,
 )
-from backend.services.confidence import THRESHOLD, compute_confidence, compute_confidence_breakdown, has_clinical_anchor
+from backend.services.confidence import THRESHOLD, compute_confidence, compute_confidence_breakdown, input_quality
 from backend.services.llm_client import get_llm_client, get_model_name
 
 logger = logging.getLogger(__name__)
@@ -249,11 +249,12 @@ async def optimize(
             "iteration_log": [],
         }
 
-    # Step 1b: with no clinical anchor (no symptoms, labs or report findings)
-    # more retrieval cannot create the missing input, and confidence is capped
-    # below THRESHOLD regardless. Stop before burning up to 3 LLM iterations
-    # (about 5 minutes) and hand the case to a clinician.
-    if not has_clinical_anchor(clinical):
+    # Step 1b: with no clinical anchor (no symptoms, labs or report findings),
+    # or only general symptoms, more retrieval cannot create the missing
+    # specificity, and confidence is capped below THRESHOLD regardless. Stop
+    # before burning up to 3 LLM iterations (about 5 minutes) and hand the case
+    # to a clinician.
+    if input_quality(clinical) != "ok":
         return {
             "final_fusion": initial_fusion,
             "final_confidence": initial_confidence,

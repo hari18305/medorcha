@@ -59,7 +59,12 @@ from backend.models.schemas import (
     RAGEvidence,
 )
 from backend.services import storage
-from backend.services.confidence import INSUFFICIENT_INPUT_NOTE, THRESHOLD, compute_confidence_breakdown
+from backend.services.confidence import (
+    INSUFFICIENT_INPUT_NOTE,
+    NONSPECIFIC_INPUT_NOTE,
+    THRESHOLD,
+    compute_confidence_breakdown,
+)
 from backend.services import llm_client
 from backend.services.llm_client import get_crewai_model_string
 from backend.services.logging import log_event
@@ -567,12 +572,24 @@ def _step_detail(context: _CaseContext, step: str) -> str | None:
             n = len(context.fusion.diagnoses)
             return f"{n} diagnosis(es)" + (f", confidence {context.confidence:.0%}" if context.confidence is not None else "")
         if step == "optimizer":
-            if context.confidence_breakdown and context.confidence_breakdown.get("input_sufficient") is False:
+            quality = _input_quality(context.confidence_breakdown)
+            if quality == "no_anchor":
                 return "skipped: no clinical input to refine from"
+            if quality == "nonspecific":
+                return "skipped: complaint too general to refine"
             return f"{context.iterations} round(s), confidence {context.confidence:.0%}" if context.confidence is not None else None
     except Exception:  # noqa: BLE001
         return None
     return None
+
+
+def _input_quality(breakdown: dict | None) -> str:
+    """"ok", "no_anchor" or "nonspecific", from the confidence breakdown."""
+    if not breakdown:
+        return "ok"
+    if "input_quality" in breakdown:
+        return breakdown["input_quality"]
+    return "no_anchor" if breakdown.get("input_sufficient") is False else "ok"
 
 
 def _run_step(context: _CaseContext, step: str, agent: Agent, task: Task) -> None:
@@ -696,12 +713,12 @@ def run_case(case: CaseInput, progress=None) -> FinalReport:
 
     # Tell the reviewer WHY confidence is capped, in the report itself.
     conflicts = list(fusion.conflicts)
-    insufficient = (
-        context.confidence_breakdown is not None
-        and context.confidence_breakdown.get("input_sufficient") is False
-    )
-    if insufficient:
+    quality = _input_quality(context.confidence_breakdown)
+    insufficient = quality != "ok"
+    if quality == "no_anchor":
         conflicts.insert(0, INSUFFICIENT_INPUT_NOTE)
+    elif quality == "nonspecific":
+        conflicts.insert(0, NONSPECIFIC_INPUT_NOTE)
 
     return FinalReport(
         case_id=case.case_id,
