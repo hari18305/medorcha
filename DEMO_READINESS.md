@@ -1031,3 +1031,89 @@ candidates are composites, annotated, or carry a patient's name and birth date. 
 **3. Retrieval relevance re-judged.** About 40% of the MRR drop was a stale key: re-judged MRR@5 is 0.881 (42 passages) against
 0.821 (67 passages), versus 0.863 against 0.764 under the original sets (knowledge-base README has the table and the caveats; the
 additions were committed before re-scoring, by a non-clinician).
+
+---
+
+## Six items worked through (2026-11-14)
+
+### 1. CASE004 image steering: fixed (indecisive reads are not used)
+
+**The failure.** CASE004 pairs "headache and dizziness, history of hypertension" with a generated picture. BiomedCLIP's labels for it
+were edema 0.34 / cerebral atrophy 0.23 / chronic infarct 0.22 (top score 0.34: a flat softmax, i.e. "could not tell"). They were listed
+as imaging findings, went into the retrieval query, and steered the differential to TIA / vertebrobasilar insufficiency / PRES at
+confidence 0.73 with no review, although the key says the text decides.
+
+**The fix.** `imaging_agent.INDECISIVE_SCORE_THRESHOLD = 0.40` (env `IMAGING_MIN_TOP_SCORE`): a read whose top label scores below it is
+returned with `inconclusive=True`. `ImagingFindings.drives_retrieval` is false for it, so it is kept out of the RAG query, case memory,
+the optimizer prompt and the fusion prompt (which is told the read was inconclusive and not to use its labels). The report keeps the
+labels for transparency and the UI says "Inconclusive read (best label 34%) ... not used".
+
+**Live result.** CASE004 now returns vestibular migraine / hypertension-related headache and dizziness / giant cell arteritis at 0.75, no
+review (text-driven, as the key expects). CASE001_with_image, CASE016, REAL004 and REAL006 were re-run as controls and their images were
+still read as decisive (0.65 to 0.82), so nothing changed in how they are used.
+
+**What it does not fix, and what it costs.** (a) A *confident* wrong read is not caught: the generated brain MRI in CASE001_with_image
+scores "cerebral atrophy" 0.65 and a generated chest X-ray "pulmonary nodule" 0.9, because a softmax over a closed label set always
+looks decisive on nonsense. (b) The threshold is not validated. On the 88 real benchmark images, reads with a top score under 0.4 were
+right 4 times in 9 and reads at 0.8 or above 24 times in 35, so the rule drops about 4 correct reads to avoid 5 wrong ones. It is a
+safety measure for indecisive reads, not an accuracy gain.
+
+### 2. Backend crash: reproduced without any LLM call, worked around, not root-caused
+
+The backend process died with exit code 139 and no Python traceback in three long runs. With `faulthandler` on, the dump showed a
+Windows access violation inside a torch operation (an embedding lookup the first time, a GELU the next) in a ThreadPoolExecutor worker,
+in the middle of the MedCPT cross-encoder call from `rag_agent._run_pipeline`. The orchestrator runs each step with `asyncio.run()`,
+which creates a new event loop and a new default executor, so retrieval ran on a fresh thread on almost every call.
+`scripts/stress_model_threads.py` repeats the real retrieval + rerank + BiomedCLIP read in that pattern with no model API calls: it
+**crashed after about 35 iterations (about 4 minutes)**, in a different torch op than the server crash. `backend/services/inference.py`
+now routes every neural-network call (BioBERT embed, MedCPT rerank, BiomedCLIP) through one persistent thread; the same stress test then
+**completed 300 iterations (33 minutes) without a crash**. That points at torch's per-thread native state, not at a particular model, but
+the exact native cause was not found, so treat it as a measured workaround. Side effect: model calls are serialised across concurrent
+cases (they were CPU-bound anyway). Tests: `test_inference.py`.
+
+### 3. Clinical extraction dropping detail (REAL005): fixed in the prompt
+
+For "left-sided chest pain after a collision during sport, no breathlessness" the extractor returned only "left-sided chest pain"
+(and on a later call kept the mechanism but not the negative), so the trauma context never reached retrieval or fusion. The prompt now
+asks for stated negatives as "absence of X" and for the recent event and its timing in `history`. Three live calls on the REAL005 text
+now all return `symptoms: [left-sided chest pain, absence of breathlessness]`, `history: [collision during sport]`; two other texts
+(a URTI headache, an anticoagulated fall) were also checked. Because "absence of ..." entries are now symptoms, the confidence gate
+ignores stated negatives (`absence of`, `no `, `denies`, `without`), so a case made only of negatives is still "no clinical anchor";
+3 new tests. Not shown: that retrieval or the differential improved for REAL005 (it was not re-run end to end).
+
+### 4. Demo CT cases: two of the three real CT demo images are read as "sinus abnormality"
+
+REAL001 and REAL003 use `real_ct_scan_10` and `real_ct_scan_06`: normal head CT slices at orbit and skull-base level (one subject).
+With the current descriptive captions BiomedCLIP reads them as sinus abnormality (0.72, 0.89) and REAL001's differential lists sinusitis
+second. `real_ct_scan_14` (REAL002) reads as normal (0.65). With the bare labels (`IMAGING_FINDING_PROMPTS=label`) all three read as
+normal at 0.99 to 1.0. This is the captions' known specificity cost (see EXTENSION.md), now visible on the demo images. **Decision left
+to the team:** for the demo either set `IMAGING_FINDING_PROMPTS=label`, or use the REAL002 image for the CT walk-through and explain the
+others as a known limitation; the default was not changed because the captions' adoption was a pre-registered decision.
+
+### 5. Fusion step's reading of the raw image: measured on 88 images (`scripts/measure_fusion_image_read.py`)
+
+Asking the multimodal LLM (Gemini `gemini-3.5-flash-lite`) the same closed-set question BiomedCLIP is asked, with the true modality given:
+**68 of 88 right (77%, Wilson 67 to 85%) against BiomedCLIP's 50 of 88 (57%) on the same images; paired, the LLM alone was right 26
+times and BiomedCLIP alone 8 times (exact McNemar p = 0.003).** Abnormal films flagged 66/67, normal films called normal 20/21 (BiomedCLIP
+with captions, all 88: 63/67 and 12/21). By modality LLM / BiomedCLIP: MRI 17/23 vs 14, CT 23/28 vs 14, chest 28/37 vs 22; on the
+fresh extension sets 19/26 vs 15/26. **Caveats that matter:** the labels are the uploaders'; the images are public teaching examples a
+large model may have seen in training, so this is probably optimistic; the list is closed, which flatters the LLM; one model, one
+prompt, one pass. What it does show: the raw image attached to fusion carries more reliable information than the zero-shot labels, which
+supports sending it, and which is a reason to be careful about the labels-driven query. Raw output: `eval_run/fusion_image_read.json`.
+
+### 6. The 31 cases a second time, and the interface rehearsal
+
+**Repeat run (final code, no crash).** All 31 cases re-run through the real pipeline with the CASE004 rule, the extractor prompt fix and the
+single model thread, with `faulthandler` on: no crash, no quota error (the earlier long runs crashed after 8 to 23 cases). Against the first
+final run: mean |confidence difference| 0.023 (median 0.01, max 0.17; 27 of 31 within 0.05, 30 within 0.10); **review decision identical for 27 of
+31**, the 4 that flipped all sat at 0.58 to 0.69 (CASE001_with_image 0.65 to 0.65, CASE006 0.69 to 0.63, REAL001 0.65 to 0.58, REAL003 0.61 to
+0.66), so reviewed cases went 13 to 15; top diagnosis same (loose name match) 22 of 31; mean top-3 overlap 83%; optimizer rounds the same in 26
+of 31. The six gated cases were identical (0.50 / 0.60 / 0.00, review). CASE004 was the only inconclusive image read. Two passes give the
+size of the variation, not an interval. Details: `eval_run/variation.json`.
+
+**Rehearsal through the browser UI against the real backend and Gemini (the healthy async path).** (a) "Hypertension, headache" example:
+live steps with real timings (extraction 2.6 s, retrieval 12 s, live evidence 1.8 s), report at 76% above the threshold with cited evidence.
+(b) "Elderly, on warfarin" example: the optimizer's rounds appeared live ("Round 1 of 3: confidence 53% (paraphrase)", then round 2 refining),
+ending on the Review screen at 62% with chronic subdural hematoma first (model-stated 90%), supporting passages cited, and the
+"clinician review required" notice. Two cases, watched by the developer; not a usability study. The review submission itself was not
+repeated here (it is covered by the browser end-to-end tests).
