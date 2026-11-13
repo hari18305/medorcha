@@ -871,3 +871,29 @@ raw message in the fusion tool) fails the new test.
 error occurred" (never its own text); an unusual provider wording can land in the wrong category. Other steps (clinical,
 imaging, RAG, live evidence) only send fixed text to the report and progress stream; their exception text goes to the log
 only. Not exercised against the real provider: quota is still exhausted, which is itself the case this handles.
+
+---
+
+## Frontend component tests (2026-11-13)
+
+The frontend had only plain-JS helper tests (23, Node's runner); no React component was exercised. Added Vitest + React
+Testing Library + jsdom (dev dependencies), `npm run test:ui` (and `npm test` now runs both suites): **92 tests in 9 files**
+beside the 23 helper tests.
+
+Covered: the case form (age/sex required, nothing-to-analyse and history-only messages, half-filled lab row rejected, exactly
+what is put in the FormData, an unconfirmed history draft still sent, the image preview, the sparse-input hint, the example
+chips, restore after a failed submit), history chips and lab rows, the report (rank order, citation chips that link or stay
+inert, review notice, both input-note kinds kept out of "Conflicting evidence", evidence filters and precedents, live-evidence
+unavailable, imaging assessed / not assessed / no findings), the review screen (each validation, the exact payload for accept,
+override, annotate and rating, the confirmation and failure paths), the progress screen (step statuses, durations, skipped
+reasons, optimizer rounds, the elapsed clock), the error banner (kind-specific text, retry only for network and server) and
+the confidence gauge (tiers, clamping, the report's own review flag), plus the App flow with the API mocked (form to report,
+straight to review when required, queued polling, failure and retry with the form kept, route guards, new case).
+
+Mutation-checked: letting Enter submit the form (8 failures), dropping the unconfirmed history draft (1; found that an
+earlier test passed for the wrong reason because clicking the button blurs the box, so a second test now submits without a
+blur) and no longer recognising the non-specific note (2).
+
+**Not covered:** layout and styling (jsdom has none; the visual check was done in the browser earlier), the real backend
+(the API is mocked at `services/api.js`), drag-and-drop of an image, and the `Report` page's own wrapper beyond what `App`
+exercises. The polling test waits one real interval (1.2 s), so the UI suite takes about 25 s.

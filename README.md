@@ -385,8 +385,9 @@ optionally past medical history), watch it process, and view the
 report. History and lab values are sent as structured fields and merged
 into the clinical findings on the server; lab values count as clinical
 input, past history on its own does not (see the input-sufficiency gate
-above). `npm test` in `frontend/` runs the form-logic tests (Node's
-built-in runner, no extra dependencies). If confidence is below threshold, you'll be routed
+above). `npm test` in `frontend/` runs two suites: `npm run test:unit` (the
+form-logic and polling helpers, Node's built-in runner) and `npm run test:ui`
+(component tests: Vitest + React Testing Library in jsdom, installed by `npm install`). If confidence is below threshold, you'll be routed
 automatically to the review screen (also reachable manually via the
 "Review Case" button on any report).
 
