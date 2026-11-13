@@ -99,6 +99,30 @@ QUERIES = [
 
 RERANK_TOP_K = 5
 
+# --- Re-judged relevance (2026-11-13) -------------------------------------------------------------------------
+# The 14 relevant sets above were written for the 42-passage KB. After it grew to 67, new passages (fainting,
+# fatigue, concussion, ...) began to outrank the marked one, and it was unclear how much of the MRR drop was that
+# stale key. For each query the 20 dense candidates were listed ALPHABETICALLY (no ranks shown) and every one a
+# clinician would plausibly want as evidence for that presentation was added, written down BEFORE this was
+# re-scored. Original passages are never removed. Judged by one non-clinician (the developer, with an AI
+# assistant) on clinical plausibility alone; it is an audit of the key, not a clinical judgement.
+REJUDGED_EXTRA = {
+    "CASE001 headache+HTN": {"migraine_overview", "vestibular_migraine_diagnostic_criteria", "secondary_headache_red_flags_snnoop10",
+                             "orthostatic_hypotension_in_hypertension_aha_2024"},
+    "CASE009 elderly warfarin fall": {"subarachnoid_hemorrhage", "idiopathic_nph_guidelines_2021", "secondary_headache_red_flags_snnoop10"},
+    "CASE011 anemia dizzy standing": {"fatigue", "fainting", "dizziness_vertigo_overview"},
+    "CASE014 migraine": {"headache_overview", "headache_tension_type", "cluster_headache"},
+    "CASE015 BPPV": {"menieres_disease", "vestibular_migraine_diagnostic_criteria"},
+    "CASE018 head injury+anticoag": {"concussion", "secondary_headache_red_flags_snnoop10"},
+    "CASE020 cough smoker nodule": {"pneumothorax_collapsed_lung"},
+    "REAL005 chest pain, normal CXR": {"chest_pain", "chest_pain_guideline_2021", "musculoskeletal_chest_pain_prevalence"},
+}
+
+
+def rejudged_queries():
+    return [(label, q, wanted | REJUDGED_EXTRA.get(label, set())) for label, q, wanted in QUERIES]
+
+
 # --- Knowledge-base gap queries (written 2026-11-13, before the 25 gap passages were first retrieved) -------------
 # Queries phrased the way the agents build them (symptom phrases, imaging labels), for conditions the original
 # 42-passage KB had nothing on. Relevant sets include an existing passage where one is genuinely relevant. CAVEAT: the
