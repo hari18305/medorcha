@@ -246,3 +246,130 @@ def test_review_annotate_with_annotation_succeeds(mock_run_case):
 
     assert response.status_code == 200
     assert response.json()["annotation"] == "Consider MRI follow-up."
+
+
+# --------------------------------------------------------------------------
+# Async analysis: POST /diagnose?async=true + GET /diagnose/{case_id}/status
+# --------------------------------------------------------------------------
+
+import threading  # noqa: E402
+import time  # noqa: E402
+
+from backend.services import jobs as jobs_module  # noqa: E402
+from backend.services.jobs import JobRegistry  # noqa: E402
+
+
+@pytest.fixture
+def fresh_registry(monkeypatch):
+    reg = JobRegistry(workers=2)
+    monkeypatch.setattr(routes, "registry", reg)
+    monkeypatch.setattr(jobs_module, "log_event", lambda *a, **k: None)
+    return reg
+
+
+def _poll_status(case_id, want, timeout=5.0):
+    end = time.time() + timeout
+    body = None
+    while time.time() < end:
+        body = client.get(f"/diagnose/{case_id}/status").json()
+        if body["status"] == want:
+            return body
+        time.sleep(0.02)
+    raise AssertionError(f"never reached {want!r}; last status: {body}")
+
+
+def _progress_run_case(case, progress=None):
+    """A fake pipeline that reports progress the way the real orchestrator does."""
+    progress.planned(["clinical", "imaging", "rag", "evidence", "fusion"])
+    progress.step_started("clinical")
+    progress.step_finished("clinical", "done", "2 symptom(s)", 10)
+    progress.step_skipped("imaging", "no image attached")
+    for step in ("rag", "evidence", "fusion"):
+        progress.step_started(step)
+        progress.step_finished(step, "done", f"{step} ok", 5)
+    progress.step_skipped("optimizer", "not needed: confidence 80% is at or above the 65% threshold")
+    return SAMPLE_REPORT
+
+
+def test_async_diagnose_returns_202_immediately_and_status_reaches_completed_with_the_report(monkeypatch, fresh_registry):
+    release = threading.Event()
+
+    def slow(case, progress=None):
+        release.wait(5)
+        return _progress_run_case(case, progress)
+
+    monkeypatch.setattr(routes, "run_case", slow)
+    response = client.post("/diagnose?async=true", data={"case_id": "A1", "age": "45", "sex": "male", "clinical_text": "headache"})
+
+    assert response.status_code == 202
+    assert response.json() == {"case_id": "A1", "status": "queued", "status_url": "/diagnose/A1/status"}
+    assert client.get("/diagnose/A1/status").json()["report"] is None  # still running: no report yet
+    assert client.get("/diagnose/A1").status_code == 404                 # and none stored yet
+    release.set()
+
+    done = _poll_status("A1", "completed")
+    assert done["report"]["diagnoses"][0]["name"] == "Tension-type headache"
+    steps = {s["name"]: s for s in done["steps"]}
+    assert steps["clinical"]["detail"] == "2 symptom(s)" and steps["clinical"]["status"] == "done"
+    assert steps["imaging"]["status"] == "skipped" and steps["optimizer"]["status"] == "skipped"
+    assert client.get("/diagnose/A1").status_code == 200                 # persisted like the sync path
+
+
+def test_async_run_persists_case_report_and_breakdown_like_the_sync_path(monkeypatch, fresh_registry):
+    monkeypatch.setattr(routes, "run_case", _progress_run_case)
+    client.post("/diagnose?async=1", data={"case_id": "A2", "age": "30", "sex": "female", "clinical_text": "cough"})
+    _poll_status("A2", "completed")
+    assert storage.get_report("A2") is not None
+    assert storage.get_case("A2").clinical_text == "cough"
+
+
+def test_async_failure_is_reported_generically_and_marks_the_case_failed(monkeypatch, fresh_registry):
+    def boom(case, progress=None):
+        raise RuntimeError("secret provider detail: billing account 99")
+
+    monkeypatch.setattr(routes, "run_case", boom)
+    client.post("/diagnose?async=true", data={"case_id": "A3", "age": "30", "sex": "female", "clinical_text": "x"})
+    failed = _poll_status("A3", "failed")
+    assert "99" not in json.dumps(failed) and failed["error"]
+    assert failed["report"] is None
+
+
+def test_a_second_async_submission_of_a_running_case_is_a_409(monkeypatch, fresh_registry):
+    release = threading.Event()
+    monkeypatch.setattr(routes, "run_case", lambda case, progress=None: (release.wait(5), SAMPLE_REPORT)[1])
+    data = {"case_id": "A4", "age": "30", "sex": "female", "clinical_text": "x"}
+    assert client.post("/diagnose?async=true", data=data).status_code == 202
+    assert client.post("/diagnose?async=true", data=data).status_code == 409
+    release.set()
+    _poll_status("A4", "completed")
+
+
+def test_async_still_validates_the_request_synchronously(monkeypatch, fresh_registry):
+    monkeypatch.setattr(routes, "run_case", _progress_run_case)
+    assert client.post("/diagnose?async=true", data={"sex": "male"}).status_code == 422
+    assert client.post("/diagnose?async=true", data={"age": "5", "sex": "male", "labs": "{bad"}).status_code == 422
+
+
+def test_status_for_an_unknown_case_is_404():
+    assert client.get("/diagnose/never-submitted/status").status_code == 404
+
+
+def test_status_falls_back_to_the_stored_report_when_the_job_is_gone(mock_run_case, fresh_registry):
+    client.post("/diagnose", data={"case_id": "S1", "age": "45", "sex": "male", "clinical_text": "x"})  # sync run, no job
+    body = client.get("/diagnose/S1/status").json()
+    assert body["status"] == "completed" and body["report"]["case_id"] == "CASE001" and body["steps"] == []
+
+
+def test_status_reports_an_interrupted_run_when_the_case_exists_but_no_job_or_report(fresh_registry):
+    from backend.models.schemas import CaseInput, Patient
+
+    storage.save_case(CaseInput(case_id="S2", patient=Patient(age=40, sex="male"), clinical_text="x"), status="pending")
+    body = client.get("/diagnose/S2/status").json()
+    assert body["status"] == "failed" and "interrupted" in body["error"] and body["report"] is None
+
+
+def test_sync_diagnose_is_unchanged_when_async_is_false(mock_run_case):
+    response = client.post("/diagnose?async=false", data={"case_id": "Z1", "age": "45", "sex": "male", "clinical_text": "x"})
+    assert response.status_code == 200 and response.json()["case_id"] == "CASE001"
+    mock_run_case.assert_called_once()
+    assert "progress" not in mock_run_case.call_args.kwargs  # the sync path passes no sink

@@ -1,16 +1,6 @@
 import { useEffect, useState } from "react";
-import { CheckIcon, Spinner } from "../components/icons.jsx";
-
-const STAGES = [
-  { id: "clinical", title: "Clinical extraction", detail: "Structuring symptoms, history and labs" },
-  { id: "imaging", title: "Imaging read", detail: "BiomedCLIP zero-shot findings", needsImage: true },
-  { id: "rag", title: "Offline retrieval", detail: "BioBERT search, cross-encoder rerank, clinician precedents" },
-  { id: "live", title: "Live literature", detail: "PubMed · Europe PMC · ClinicalTrials.gov · MedlinePlus" },
-  { id: "fusion", title: "Fusion and confidence", detail: "Ranked differential with cited evidence" },
-];
-
-const STAGE_DURATION_MS = 1400;
-const MAX_OPTIMIZER_ITERATIONS = 3;
+import { AlertIcon, CheckIcon, Spinner } from "../components/icons.jsx";
+import { describeRound, formatDuration, STEP_HINTS, stepTitle, summarizeProgress } from "../utils/progress.js";
 
 function formatElapsed(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
@@ -19,40 +9,20 @@ function formatElapsed(totalSeconds) {
 }
 
 /**
- * Phase 9's /diagnose is fully synchronous -- there is no real
- * progress signal from the server while the request is in flight, so
- * the stage list is a purely client-side illustrative animation: it steps
- * through the named stages on a timer, and if the wait continues past
- * all of them, cycles an "adaptive optimizer" indicator so the screen
- * doesn't look stalled. It does not reflect what the backend is
- * actually doing at any given moment. The elapsed clock, by contrast, is
- * real. `hadImage` only decides whether the imaging stage is shown as
- * skipped.
+ * Live progress of one analysis. `progress` is the latest GET /diagnose/{id}/status body (or null while
+ * the case is still being sent): the steps, their results and timings, and the optimizer's refinement
+ * rounds are what the server's pipeline actually reported, not an animation. The elapsed clock is the
+ * browser's own.
  */
-export default function Processing({ hadImage = true }) {
-  const stages = STAGES.filter((stage) => hadImage || !stage.needsImage);
-  const [activeStageIndex, setActiveStageIndex] = useState(0);
-  const [optimizerIteration, setOptimizerIteration] = useState(null);
+export default function Processing({ progress = null }) {
   const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveStageIndex((current) => {
-        const next = current + 1;
-        if (next < stages.length) {
-          return next;
-        }
-        setOptimizerIteration((iter) => (iter === null || iter >= MAX_OPTIMIZER_ITERATIONS ? 1 : iter + 1));
-        return current;
-      });
-    }, STAGE_DURATION_MS);
-    return () => clearInterval(timer);
-  }, [stages.length]);
-
   useEffect(() => {
     const clock = setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
     return () => clearInterval(clock);
   }, []);
+
+  const summary = summarizeProgress(progress);
+  const steps = progress?.steps ?? [];
 
   return (
     <div className="mx-auto max-w-xl animate-rise">
@@ -70,78 +40,82 @@ export default function Processing({ hadImage = true }) {
           </div>
         </div>
 
-        <p className="mt-2 text-sm text-slate-600">
-          Each stage runs against real evidence, so this can take a minute or more. Cases that need refinement
-          take longer.
+        <p className="mt-2 flex items-center gap-2 text-sm text-slate-600" role="status" data-testid="progress-message">
+          {summary.phase !== "completed" && <Spinner className="h-3.5 w-3.5" />}
+          {summary.message}
         </p>
 
-        <ol className="mt-6 space-y-1" aria-live="polite">
-          {STAGES.map((stage) => {
-            if (stage.needsImage && !hadImage) {
-              return (
-                <li key={stage.id} className="flex items-start gap-3 px-3 py-2.5 text-slate-400">
-                  <span className="mt-0.5 h-5 w-5 flex-none rounded-full border-2 border-dashed border-slate-200" />
-                  <div>
-                    <p className="text-sm font-medium">{stage.title}</p>
-                    <p className="text-xs">Skipped: no image was attached</p>
-                  </div>
-                </li>
-              );
-            }
-            const index = stages.indexOf(stage);
-            const isDone = index < activeStageIndex;
-            const isActive = index === activeStageIndex;
-            return (
-              <li
-                key={stage.id}
-                className={`flex items-start gap-3 rounded-lg px-3 py-2.5 transition ${
-                  isActive ? "bg-brand-50 ring-1 ring-inset ring-brand-100" : ""
-                }`}
-              >
-                <StageIcon done={isDone} active={isActive} />
-                <div>
-                  <p className={`text-sm font-medium ${isDone || isActive ? "text-slate-900" : "text-slate-400"}`}>
-                    {stage.title}
-                  </p>
-                  <p className={`text-xs ${isActive ? "text-slate-600" : "text-slate-400"}`}>{stage.detail}</p>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-
-        {optimizerIteration !== null && (
-          <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-            <Spinner />
-            <div>
-              <p className="text-sm font-medium text-amber-900">Adaptive optimizer</p>
-              <p className="text-xs text-amber-800">
-                Still working; if confidence is under 65% the query is refined and retrieval repeated (up to{" "}
-                {MAX_OPTIMIZER_ITERATIONS} times).
-              </p>
-            </div>
-          </div>
+        {steps.length > 0 && (
+          <ol className="mt-5 space-y-1" aria-live="polite" data-testid="progress-steps">
+            {steps.map((step) => (
+              <StepRow key={step.name} step={step} />
+            ))}
+          </ol>
         )}
 
         <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
-          The stage list is illustrative: the server returns one result at the end rather than reporting
-          progress.
+          Live progress from the server. Cases that need refinement take longer; you can leave this page open.
         </p>
       </div>
     </div>
   );
 }
 
-function StageIcon({ done, active }) {
-  if (done) {
+function StepRow({ step }) {
+  const running = step.status === "running";
+  const muted = step.status === "pending" || step.status === "skipped";
+  return (
+    <li
+      data-step={step.name}
+      data-status={step.status}
+      className={`flex items-start gap-3 rounded-lg px-3 py-2.5 transition ${
+        running ? "bg-brand-50 ring-1 ring-inset ring-brand-100" : ""
+      }`}
+    >
+      <StepIcon status={step.status} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className={`text-sm font-medium ${muted ? "text-slate-400" : "text-slate-900"}`}>{stepTitle(step.name)}</p>
+          {step.duration_ms != null && step.status !== "skipped" && (
+            <span className="flex-none font-mono text-xs tabular-nums text-slate-400">{formatDuration(step.duration_ms)}</span>
+          )}
+        </div>
+        <p className={`text-xs ${step.status === "failed" ? "text-amber-800" : muted ? "text-slate-400" : "text-slate-600"}`}>
+          {step.status === "skipped"
+            ? `Skipped: ${step.detail ?? "not needed"}`
+            : step.detail || (step.status === "pending" || running ? STEP_HINTS[step.name] : "")}
+        </p>
+        {step.iterations?.length > 0 && (
+          <ul className="mt-1.5 space-y-0.5" data-testid="optimizer-rounds">
+            {step.iterations.map((round) => (
+              <li key={round.iteration} className="flex items-center gap-1.5 text-xs text-slate-600">
+                {round.status === "running" ? <Spinner className="h-3 w-3" /> : <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />}
+                {describeRound(round)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function StepIcon({ status }) {
+  if (status === "done") {
     return (
       <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-emerald-600 text-white">
         <CheckIcon className="h-3 w-3" strokeWidth="2.5" />
       </span>
     );
   }
-  if (active) {
-    return <Spinner className="mt-0.5 h-5 w-5" />;
+  if (status === "failed") {
+    return (
+      <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-500 text-white">
+        <AlertIcon className="h-3 w-3" strokeWidth="2.5" />
+      </span>
+    );
   }
+  if (status === "running") return <Spinner className="mt-0.5 h-5 w-5" />;
+  if (status === "skipped") return <span className="mt-0.5 h-5 w-5 flex-none rounded-full border-2 border-dashed border-slate-200" />;
   return <span className="mt-0.5 h-5 w-5 flex-none rounded-full border-2 border-slate-200" />;
 }

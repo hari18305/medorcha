@@ -8,7 +8,9 @@ agent needs to know about, like the human review decision below.
 
 from typing import Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
+
+from backend.models.schemas import FinalReport
 
 
 class ReviewRequest(BaseModel):
@@ -53,3 +55,46 @@ class ReviewResponse(BaseModel):
     rating: int | None = None
     timestamp: str
     recorded: bool
+
+
+# --------------------------------------------------------------------------
+# Async analysis: POST /diagnose?async=true and GET /diagnose/{case_id}/status
+# --------------------------------------------------------------------------
+
+
+class JobAccepted(BaseModel):
+    """202 body for POST /diagnose?async=true: the run has been queued, poll `status_url`."""
+
+    case_id: str
+    status: Literal["queued"] = "queued"
+    status_url: str
+
+
+class IterationStatus(BaseModel):
+    """One optimizer refinement round."""
+
+    iteration: int
+    max: int | None = None
+    status: Literal["running", "done", "failed"]
+    confidence: float | None = None
+    strategy: str | None = None
+
+
+class StepStatus(BaseModel):
+    """One pipeline step: clinical, imaging, rag, evidence, fusion, optimizer."""
+
+    name: str
+    status: Literal["pending", "running", "done", "failed", "skipped"]
+    detail: str | None = None
+    duration_ms: int | None = None
+    iterations: list[IterationStatus] = Field(default_factory=list)
+
+
+class JobStatusResponse(BaseModel):
+    case_id: str
+    status: Literal["queued", "running", "completed", "failed"]
+    queue_position: int = 0  # 1 = next to start; 0 when not queued
+    elapsed_s: float = 0.0
+    error: str | None = None
+    steps: list[StepStatus] = Field(default_factory=list)
+    report: FinalReport | None = None  # present once status == "completed"

@@ -3,7 +3,8 @@ import CaseSubmission from "./pages/CaseSubmission.jsx";
 import Processing from "./pages/Processing.jsx";
 import Report from "./pages/Report.jsx";
 import Review from "./pages/Review.jsx";
-import { diagnoseCase } from "./services/api.js";
+import { ApiError, getDiagnosisStatus, startDiagnosis } from "./services/api.js";
+import { followAnalysis } from "./utils/progress.js";
 import { BrandMark, CheckIcon, ShieldIcon } from "./components/icons.jsx";
 
 // Client-side routing (Phase 10) without a router dependency: each screen
@@ -57,7 +58,11 @@ export default function App() {
   const [report, setReport] = useState(null);
   const [submittedSummary, setSubmittedSummary] = useState(null);
   const [error, setError] = useState(null); // an ApiError (or Error) from the last submission
+  const [progress, setProgress] = useState(null); // latest /diagnose/{id}/status body while analysing
   const lastSubmission = useRef(null);
+  // Incremented whenever a run is started or abandoned, so a polling loop that outlived its screen
+  // (the user started a new case) stops instead of overwriting newer state.
+  const runToken = useRef(0);
 
   // Guards: /processing only makes sense mid-request; /report and /review
   // need a report in memory. Anything else falls back to the form.
@@ -72,13 +77,24 @@ export default function App() {
 
   const runSubmission = useCallback(
     async (submission) => {
+      const token = ++runToken.current;
       lastSubmission.current = submission;
       setError(null);
+      setProgress(null);
       setSubmittedSummary(submission.summary);
       setSubmitting(true);
       navigate(ROUTES.PROCESSING);
       try {
-        const result = await diagnoseCase(submission.formData);
+        const result = await followAnalysis({
+          start: () => startDiagnosis(submission.formData),
+          fetchStatus: getDiagnosisStatus,
+          onProgress: (status) => {
+            if (runToken.current === token) setProgress(status);
+          },
+          shouldStop: () => runToken.current !== token,
+          makeError: (message) => new ApiError(message, { kind: "server" }),
+        });
+        if (result === null || runToken.current !== token) return; // abandoned
         setReport(result);
         setSubmitting(false);
         // Reachable automatically when review is required, not just via
@@ -86,6 +102,7 @@ export default function App() {
         // so Back doesn't land on the (now meaningless) processing screen.
         navigate(result.review_required ? ROUTES.REVIEW : ROUTES.REPORT, { replace: true });
       } catch (err) {
+        if (runToken.current !== token) return;
         setError(err);
         setSubmitting(false);
         navigate(ROUTES.SUBMISSION, { replace: true });
@@ -103,6 +120,9 @@ export default function App() {
   }
 
   function handleNewCase() {
+    runToken.current += 1; // abandon any analysis still being followed
+    setSubmitting(false);
+    setProgress(null);
     lastSubmission.current = null;
     setReport(null);
     setSubmittedSummary(null);
@@ -150,7 +170,7 @@ export default function App() {
           />
         )}
 
-        {screen === ROUTES.PROCESSING && <Processing hadImage={Boolean(submittedSummary?.hadImage)} />}
+        {screen === ROUTES.PROCESSING && <Processing progress={progress} />}
 
         {screen === ROUTES.REPORT && report && (
           <Report

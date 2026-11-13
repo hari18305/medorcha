@@ -64,6 +64,10 @@ from backend.services import llm_client
 from backend.services.llm_client import get_crewai_model_string
 from backend.services.logging import log_event
 
+import logging  # noqa: E402
+
+logger = logging.getLogger(__name__)
+
 TOOL_PASSTHROUGH_EXPECTED_OUTPUT = (
     "The exact string returned by your tool call. Do not add commentary, "
     "analysis, or reformat it."
@@ -113,6 +117,11 @@ class _CaseContext:
     review_required: bool = False
     iterations: int = 0
     call_log: list[dict] = field(default_factory=list)
+    # Optional live-progress sink (see backend/services/jobs.py): duck-typed, may be None.
+    # Methods used: planned(names), step_started(name), step_finished(name, status, detail,
+    # duration_ms), step_skipped(name, detail), iteration(event). A faulty sink must never
+    # affect the pipeline, so every call goes through _emit().
+    progress: object | None = None
 
 
 def _log_agent_call(
@@ -353,8 +362,11 @@ class OptimizerTool(BaseTool):
         ctx = self._context
         start = time.perf_counter()
         try:
+            extra = {"on_iteration": ctx.progress.iteration} if ctx.progress is not None else {}
             result = _run_sync(
-                optimize(ctx.case, ctx.clinical, ctx.imaging, ctx.fusion, ctx.confidence, ctx.confidence_breakdown)
+                optimize(
+                    ctx.case, ctx.clinical, ctx.imaging, ctx.fusion, ctx.confidence, ctx.confidence_breakdown, **extra
+                )
             )
             ctx.fusion = result["final_fusion"]
             ctx.confidence = result["final_confidence"]
@@ -520,6 +532,49 @@ def _apply_degraded_defaults(context: _CaseContext, step: str, exc: Exception) -
         context.review_required = True
 
 
+def _emit(sink, method: str, *args, **kwargs) -> None:
+    """Call a progress-sink method; a faulty sink must never affect the pipeline."""
+    if sink is None:
+        return
+    try:
+        getattr(sink, method)(*args, **kwargs)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("progress sink %s failed: %s", method, exc)
+
+
+def _step_detail(context: _CaseContext, step: str) -> str | None:
+    """A short, human-readable result for a finished step, from the shared context. Never raises and
+    never includes raw error text (provider errors can carry account or billing details)."""
+    try:
+        if step == "clinical" and context.clinical is not None:
+            c = context.clinical
+            parts = [f"{len(c.symptoms)} symptom(s)", f"{len(c.history)} history item(s)"]
+            if c.labs:
+                parts.append(f"{len(c.labs)} lab value(s)")
+            return ", ".join(parts)
+        if step == "imaging" and context.imaging is not None:
+            im = context.imaging
+            if im.unsupported_modality:
+                return f"{im.modality}: not assessed (no findings model)"
+            return f"{im.modality}: {im.findings[0]}" if im.findings else im.modality
+        if step == "rag" and context.rag is not None:
+            return f"{len(context.rag.evidence)} offline passage(s)"
+        if step == "evidence" and context.live is not None:
+            if context.live.all_sources_failed:
+                return "every live source failed"
+            return f"{len(context.live.sources)} live item(s)"
+        if step == "fusion" and context.fusion is not None:
+            n = len(context.fusion.diagnoses)
+            return f"{n} diagnosis(es)" + (f", confidence {context.confidence:.0%}" if context.confidence is not None else "")
+        if step == "optimizer":
+            if context.confidence_breakdown and context.confidence_breakdown.get("input_sufficient") is False:
+                return "skipped: no clinical input to refine from"
+            return f"{context.iterations} round(s), confidence {context.confidence:.0%}" if context.confidence is not None else None
+    except Exception:  # noqa: BLE001
+        return None
+    return None
+
+
 def _run_step(context: _CaseContext, step: str, agent: Agent, task: Task) -> None:
     """Runs one pipeline step and NEVER raises.
 
@@ -529,8 +584,13 @@ def _run_step(context: _CaseContext, step: str, agent: Agent, task: Task) -> Non
     (429) during that call and the exception escaped run_case(), turning a
     degradable provider failure into an HTTP 500. The spec requires that one
     external failure never crash run_case() -- so it is logged here and the
-    run continues in degraded form."""
+    run continues in degraded form.
+
+    Also the single choke point every step passes through, so it is where live
+    progress is reported (see context.progress)."""
     start = time.perf_counter()
+    log_start = len(context.call_log)
+    _emit(context.progress, "step_started", step)
     try:
         _execute(agent, task)
     except Exception as exc:
@@ -539,6 +599,14 @@ def _run_step(context: _CaseContext, step: str, agent: Agent, task: Task) -> Non
             error=f"orchestration layer failed: {_short(exc, 300)}", layer="crewai",
         )
         _apply_degraded_defaults(context, step, exc)
+    own = [e for e in context.call_log[log_start:] if e.get("agent_name") == step and e.get("iteration") == 0]
+    failed = any(e.get("status") == "failure" for e in own)
+    _emit(
+        context.progress, "step_finished", step,
+        status="failed" if failed else "done",
+        detail="this step failed; the analysis continued with less" if failed else _step_detail(context, step),
+        duration_ms=(time.perf_counter() - start) * 1000,
+    )
 
 
 def _combine_evidence(rag: RAGEvidence | None, live: LiveEvidence | None) -> list[dict]:
@@ -574,8 +642,10 @@ def get_confidence_breakdown(case_id: str) -> dict | None:
     return _LAST_CONFIDENCE_BREAKDOWN.pop(case_id, None)
 
 
-def run_case(case: CaseInput) -> FinalReport:
-    context = _CaseContext(case=case)
+def run_case(case: CaseInput, progress=None) -> FinalReport:
+    """Run the whole pipeline for `case`. `progress` (optional) receives live step events; see _CaseContext."""
+    context = _CaseContext(case=case, progress=progress)
+    _emit(progress, "planned", ["clinical", "imaging", "rag", "evidence", "fusion"])
 
     # Step 1: Clinical (always) + Imaging (only if image_path is set).
     # extract_clinical_findings already handles clinical_text=None,
@@ -588,7 +658,9 @@ def run_case(case: CaseInput) -> FinalReport:
     if case.image_path:
         imaging_agent = _build_agent(ImagingTool(context), "imaging")
         _run_step(context, "imaging", imaging_agent, _build_task(imaging_agent))
-    # else: context.imaging stays None -- handled uniformly downstream.
+    else:
+        _emit(progress, "step_skipped", "imaging", "no image attached")
+    # (context.imaging stays None when skipped -- handled uniformly downstream.)
 
     # Step 2: the structured multimodal case at this point is exactly
     # (context.clinical, context.imaging) -- nothing further to build.
@@ -609,6 +681,11 @@ def run_case(case: CaseInput) -> FinalReport:
     if context.confidence is not None and context.confidence < THRESHOLD:
         optimizer_agent_instance = _build_agent(OptimizerTool(context), "optimizer")
         _run_step(context, "optimizer", optimizer_agent_instance, _build_task(optimizer_agent_instance))
+    elif context.confidence is not None:
+        _emit(
+            progress, "step_skipped", "optimizer",
+            f"not needed: confidence {context.confidence:.0%} is at or above the {THRESHOLD:.0%} threshold",
+        )
 
     # Step 6: assemble FinalReport.
     fusion = context.fusion or FusionResult(diagnoses=[], overall_confidence=0.0, conflicts=[])

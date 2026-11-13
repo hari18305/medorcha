@@ -214,6 +214,15 @@ async def _select_refinement_strategy(
             ) from second_error
 
 
+def _notify(callback, event: dict) -> None:
+    if callback is None:
+        return
+    try:
+        callback(event)
+    except Exception as exc:  # noqa: BLE001 - progress reporting must never affect the optimizer
+        logger.warning("optimizer progress callback failed: %s", exc)
+
+
 async def optimize(
     case: CaseInput,
     clinical: ClinicalFindings,
@@ -221,7 +230,12 @@ async def optimize(
     initial_fusion: FusionResult,
     initial_confidence: float,
     initial_breakdown: dict | None = None,
+    on_iteration=None,
 ) -> dict:
+    """`on_iteration(event: dict)` (optional) is told about each refinement round as it happens:
+    {"event": "iteration_started" | "iteration_done" | "iteration_failed", "iteration": i,
+    "max": MAX_ITERATIONS, ["confidence": c, "strategy": s]}. Used for live progress; a callback
+    that raises is ignored, it never affects the optimizer."""
     # Step 1: stop immediately if Phase 5's fusion already cleared the
     # bar -- this must hold regardless of what the caller already
     # checked (see module docstring).
@@ -267,6 +281,7 @@ async def optimize(
         iterations_run = i
         strategy = None
         refined_query = None
+        _notify(on_iteration, {"event": "iteration_started", "iteration": i, "max": MAX_ITERATIONS})
         try:
             refinement = await _select_refinement_strategy(
                 clinical, imaging, current_query, current_fusion, current_rag, current_live
@@ -293,6 +308,8 @@ async def optimize(
                 {"iteration": i, "strategy": strategy, "query": refined_query, "confidence": new_confidence}
             )
 
+            _notify(on_iteration, {"event": "iteration_done", "iteration": i, "max": MAX_ITERATIONS,
+                                   "confidence": new_confidence, "strategy": strategy})
             current_query = refined_query
             current_fusion = new_fusion
             current_rag = new_rag
@@ -318,6 +335,7 @@ async def optimize(
             # the whole optimizer -- log it, record it, and move on to
             # the next iteration attempt (still bounded by MAX_ITERATIONS).
             logger.warning("Optimizer iteration %d failed: %s", i, exc)
+            _notify(on_iteration, {"event": "iteration_failed", "iteration": i, "max": MAX_ITERATIONS})
             iteration_log.append(
                 {
                     "iteration": i,

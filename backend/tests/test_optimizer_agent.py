@@ -274,3 +274,39 @@ async def test_no_clinical_anchor_skips_the_loop_and_requires_review(mock_pipeli
     mock_pipeline["select_strategy"].assert_not_called()
     mock_pipeline["run_rag"].assert_not_called()
     mock_pipeline["fuse"].assert_not_called()
+
+
+# --------------------------------------------------------------------------
+# on_iteration: live progress for each refinement round
+# --------------------------------------------------------------------------
+
+
+async def test_on_iteration_reports_each_round_started_and_done(mock_pipeline, monkeypatch):
+    mock_pipeline["select_strategy"].return_value = _refinement("expand", "q")
+    mock_pipeline["run_rag"].return_value = _rag(0.5)
+    mock_pipeline["fuse"].return_value = _fusion(0.5)
+    confidences = iter([0.45, 0.8])
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: next(confidences))
+    events = []
+
+    await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3, on_iteration=events.append)
+
+    assert [(e["event"], e["iteration"]) for e in events] == [
+        ("iteration_started", 1), ("iteration_done", 1), ("iteration_started", 2), ("iteration_done", 2),
+    ]
+    assert events[1]["confidence"] == 0.45 and events[1]["strategy"] == "expand"
+    assert all(e["max"] == MAX_ITERATIONS for e in events)
+
+
+async def test_on_iteration_reports_a_failed_round_and_a_broken_callback_is_ignored(mock_pipeline):
+    mock_pipeline["select_strategy"].side_effect = RefinementError("no strategy")
+    events = []
+
+    def callback(event):
+        events.append(event["event"])
+        raise RuntimeError("callback exploded")
+
+    result = await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3, on_iteration=callback)
+
+    assert result["review_required"] is True and result["iterations"] == MAX_ITERATIONS
+    assert events == ["iteration_started", "iteration_failed"] * MAX_ITERATIONS

@@ -506,3 +506,111 @@ def test_labs_alone_count_as_a_clinical_anchor_through_the_pipeline(monkeypatch,
     report = run_case(case)
 
     assert INSUFFICIENT_INPUT_NOTE not in report.conflicts
+
+
+# --------------------------------------------------------------------------
+# Live progress sink (async /diagnose): real step events, never affecting the pipeline
+# --------------------------------------------------------------------------
+
+
+class _Sink:
+    """Records every progress call in order, as (method, *args)."""
+
+    def __init__(self):
+        self.events = []
+
+    def planned(self, names):
+        self.events.append(("planned", list(names)))
+
+    def step_started(self, name):
+        self.events.append(("started", name))
+
+    def step_finished(self, name, status="done", detail=None, duration_ms=None):
+        self.events.append(("finished", name, status, detail))
+
+    def step_skipped(self, name, detail=None):
+        self.events.append(("skipped", name, detail))
+
+    def iteration(self, event):
+        self.events.append(("iteration", event))
+
+    def of(self, kind):
+        return [e for e in self.events if e[0] == kind]
+
+
+def test_progress_reports_every_step_in_order_with_real_details(mock_agents):
+    sink = _Sink()
+    run_case(CASE_TEXT_AND_IMAGE, progress=sink)
+
+    assert sink.events[0] == ("planned", ["clinical", "imaging", "rag", "evidence", "fusion"])
+    started = [e[1] for e in sink.of("started")]
+    assert started == ["clinical", "imaging", "rag", "evidence", "fusion"]
+    for step in started:  # each step starts, then finishes, as done
+        assert sink.events.index(("started", step)) < next(i for i, e in enumerate(sink.events) if e[:2] == ("finished", step))
+    details = {e[1]: e[3] for e in sink.of("finished")}
+    assert details["clinical"] == "2 symptom(s), 1 history item(s)"
+    assert details["imaging"] == "MRI brain scan: white matter hyperintensity"
+    assert details["rag"] == "1 offline passage(s)"
+    assert details["evidence"] == "1 live item(s)"
+    assert details["fusion"] == "1 diagnosis(es), confidence 80%"
+    assert all(e[2] == "done" for e in sink.of("finished"))
+
+
+def test_progress_marks_imaging_skipped_without_an_image_and_optimizer_skipped_when_confident(mock_agents):
+    sink = _Sink()
+    run_case(CASE_TEXT_ONLY, progress=sink)
+
+    assert ("skipped", "imaging", "no image attached") in sink.events
+    assert not any(e[:2] == ("started", "imaging") for e in sink.events)
+    (skip,) = [e for e in sink.of("skipped") if e[1] == "optimizer"]
+    assert "not needed" in skip[2] and "80%" in skip[2] and "65%" in skip[2]
+
+
+def test_progress_reports_the_optimizer_and_hands_it_the_iteration_callback(mock_agents):
+    mock_agents["confidence_holder"]["value"] = 0.2
+    mock_agents["fuse"].return_value = LOW_CONFIDENCE_FUSION
+    mock_agents["optimize"].return_value = {
+        "final_fusion": LOW_CONFIDENCE_FUSION, "final_confidence": 0.5, "final_breakdown": None,
+        "iterations": 3, "review_required": True, "iteration_log": [],
+    }
+    sink = _Sink()
+    run_case(CASE_TEXT_ONLY, progress=sink)
+
+    assert ("started", "optimizer") in sink.events
+    (opt,) = [e for e in sink.of("finished") if e[1] == "optimizer"]
+    assert opt[2] == "done" and opt[3] == "3 round(s), confidence 50%"
+    # the optimizer was given the sink's iteration method so rounds are reported as they happen
+    assert mock_agents["optimize"].call_args.kwargs["on_iteration"] == sink.iteration
+
+
+def test_without_a_sink_the_optimizer_is_called_exactly_as_before(mock_agents):
+    mock_agents["confidence_holder"]["value"] = 0.2
+    mock_agents["fuse"].return_value = LOW_CONFIDENCE_FUSION
+    mock_agents["optimize"].return_value = {
+        "final_fusion": LOW_CONFIDENCE_FUSION, "final_confidence": 0.5, "final_breakdown": None,
+        "iterations": 1, "review_required": True, "iteration_log": [],
+    }
+    run_case(CASE_TEXT_ONLY)
+    assert mock_agents["optimize"].call_args.kwargs == {}
+
+
+def test_a_failed_step_is_reported_failed_without_leaking_the_raw_error(mock_agents):
+    secret = "429 RESOURCE_EXHAUSTED quota for billing account 0123456789"
+    mock_agents["extract_clinical_findings"].side_effect = RuntimeError(secret)
+    sink = _Sink()
+    run_case(CASE_TEXT_ONLY, progress=sink)
+
+    (clinical,) = [e for e in sink.of("finished") if e[1] == "clinical"]
+    assert clinical[2] == "failed"
+    assert secret not in str(sink.events)
+
+
+def test_a_faulty_progress_sink_never_breaks_the_pipeline(mock_agents):
+    class _Broken:
+        def __getattr__(self, name):
+            def boom(*a, **k):
+                raise RuntimeError("sink exploded")
+            return boom
+
+    report = run_case(CASE_TEXT_ONLY, progress=_Broken())
+    assert report.confidence == 0.8

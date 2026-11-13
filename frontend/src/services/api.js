@@ -88,6 +88,23 @@ export function diagnoseCase(formData) {
   });
 }
 
+/**
+ * POST /diagnose?async=true -- queue the analysis and return at once ({case_id, status: "queued", status_url}).
+ * Follow it with getDiagnosisStatus (see utils/progress.js followAnalysis). A backend that predates async mode
+ * ignores the flag and answers with the finished report instead; followAnalysis accepts that too.
+ */
+export function startDiagnosis(formData) {
+  return safeFetch(`${API_BASE_URL}/diagnose?async=true`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+/** GET /diagnose/{case_id}/status -- live step-by-step progress; includes the report once completed. */
+export function getDiagnosisStatus(caseId) {
+  return safeFetch(`${API_BASE_URL}/diagnose/${encodeURIComponent(caseId)}/status`);
+}
+
 /** GET /diagnose/{case_id} */
 export function getDiagnosis(caseId) {
   return safeFetch(`${API_BASE_URL}/diagnose/${encodeURIComponent(caseId)}`);

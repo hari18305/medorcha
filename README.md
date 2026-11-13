@@ -145,6 +145,28 @@ reviews. Don't recalibrate from the Mode 2 benchmark: its fusion step is a
 placeholder, so the agreement signal is constant and the "after" score only
 matches an always-trust baseline (the harness now prints that caveat).
 
+### Async analysis API (live progress)
+
+A case takes from about 10 seconds to several minutes, so the web app no longer holds one request open:
+
+```text
+POST /diagnose?async=true        -> 202 {"case_id", "status": "queued", "status_url"}
+GET  /diagnose/{case_id}/status  -> {"status": queued|running|completed|failed, "queue_position",
+                                     "elapsed_s", "error", "steps": [...], "report": {...} (when completed)}
+GET  /diagnose/{case_id}         -> the stored report (unchanged)
+```
+
+`steps` is what the pipeline actually reported: `clinical`, `imaging`, `rag`, `evidence`, `fusion`, and an
+`optimizer` step (with per-round `iterations`) only when the first answer was below the confidence threshold. Each
+has a status (`pending|running|done|failed|skipped`), a short result such as "9 live item(s)", and a duration. A
+failed step never carries the raw provider error. The plain `POST /diagnose` is unchanged (synchronous, returns the
+report), and the scripts under `scripts/` use it.
+
+Limits: job state is in this process's memory, so run **one** server process (the Docker image does; `--reload` or a
+restart drops running jobs, and the status endpoint then says the run was interrupted). Concurrency is capped by
+`DIAGNOSE_WORKERS` (default 2); further cases wait in a queue and report their position. Finished jobs are pruned
+after an hour or beyond 200; the report itself stays in the database.
+
 ### Evaluation (`backend/tests/run_evaluation.py`)
 
 ```bash

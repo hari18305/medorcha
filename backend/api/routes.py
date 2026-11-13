@@ -1,12 +1,10 @@
 """API routes.
 
-POST /diagnose calls orchestrator.run_case() SYNCHRONOUSLY and returns
-the FinalReport directly in the response body (not a
-{"status": "processing"} placeholder) -- this is the simplest version
-that proves the pipeline works end to end over HTTP. Async
-polling (kick off run_case() in a background task/worker, let clients
-poll GET /diagnose/{case_id} until it's ready) is a natural fast-follow
-once this works, not implemented here.
+POST /diagnose calls orchestrator.run_case() SYNCHRONOUSLY and returns the FinalReport directly in
+the response body. With ?async=true it instead queues the run in a background worker, answers 202
+immediately, and the client polls GET /diagnose/{case_id}/status for REAL step-by-step progress
+(see backend/services/jobs.py for the limits: in-process state, capped concurrency). The
+synchronous form is unchanged, so scripts and tests that rely on it keep working.
 """
 
 import asyncio
@@ -14,15 +12,17 @@ import json
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from backend.agents.clinical_agent import extract_clinical_findings
 from backend.agents.imaging_agent import ALLOWED_EXTENSIONS, analyze_image
-from backend.api.schemas import ReviewRequest, ReviewResponse
+from backend.api.schemas import JobAccepted, JobStatusResponse, ReviewRequest, ReviewResponse
 from backend.models.schemas import CaseInput, ClinicalFindings, FinalReport, Patient
 from backend.rag import case_memory, visual_memory
 from backend.services import orchestrator, storage
+from backend.services.jobs import JobConflict, registry
 from backend.services.logging import log_event
 from backend.services.orchestrator import run_case
 
@@ -50,7 +50,25 @@ def _save_uploaded_image(case_id: str, image: UploadFile) -> str:
     return str(dest)
 
 
-@router.post("/diagnose", response_model=FinalReport)
+def _execute_and_persist(case: CaseInput, progress=None) -> FinalReport:
+    """Run the pipeline for `case` and persist the result; shared by the sync route and the async worker.
+    Raises on pipeline failure (after marking the case failed and logging it)."""
+    try:
+        report = run_case(case) if progress is None else run_case(case, progress=progress)
+    except Exception as exc:
+        storage.save_case(case, status="failed")
+        log_event("api_error", endpoint="/diagnose", case_id=case.case_id, error=str(exc))
+        raise
+    storage.save_case(case, status="completed")
+    # Phase 14: persist the confidence breakdown alongside the report so
+    # weight_tuner.py can later recalibrate w1/w2/w3 from real
+    # accept/override outcomes joined against these exact numbers.
+    breakdown = orchestrator.get_confidence_breakdown(case.case_id)
+    storage.save_report(case.case_id, report, confidence_breakdown=breakdown)
+    return report
+
+
+@router.post("/diagnose", response_model=FinalReport, responses={202: {"model": JobAccepted}})
 def diagnose(
     case_id: str | None = Form(None),
     age: int = Form(...),
@@ -60,7 +78,8 @@ def diagnose(
     labs: str | None = Form(None),
     history: str | None = Form(None),
     image: UploadFile | None = File(None),
-) -> FinalReport:
+    async_mode: bool = Query(False, alias="async", description="Queue the run and return 202; poll /diagnose/{case_id}/status."),
+):
     """multipart/form-data so an optional image file can travel alongside
     the JSON-ish case fields in one request. `labs` and `history` are
     JSON-encoded strings (a dict and a list of strings respectively) --
@@ -121,37 +140,51 @@ def diagnose(
 
     storage.save_case(case, status="pending")
 
+    if async_mode:
+        try:
+            registry.submit(resolved_case_id, lambda job: _execute_and_persist(case, progress=job))
+        except JobConflict:
+            raise HTTPException(status_code=409, detail=f"An analysis for case_id '{resolved_case_id}' is already running")
+        return JSONResponse(
+            status_code=202,
+            content=JobAccepted(case_id=resolved_case_id, status_url=f"/diagnose/{resolved_case_id}/status").model_dump(),
+        )
+
     try:
-        report = run_case(case)
+        return _execute_and_persist(case)
     except Exception as exc:
-        # Never leak internals to the client -- log server-side, return a
-        # generic 500. run_case() already degrades gracefully internally
-        # (see orchestrator.py), so reaching here means something truly
-        # unexpected happened.
-        storage.save_case(case, status="failed")
-        log_event("api_error", endpoint="/diagnose", case_id=resolved_case_id, error=str(exc))
+        # Never leak internals to the client -- already logged server-side by _execute_and_persist.
+        # run_case() degrades gracefully internally (see orchestrator.py), so reaching here means
+        # something truly unexpected happened.
         raise HTTPException(status_code=500, detail="Internal server error while processing the case") from exc
 
-    storage.save_case(case, status="completed")
-    # Phase 14: persist the confidence breakdown alongside the report so
-    # weight_tuner.py can later recalibrate w1/w2/w3 from real
-    # accept/override outcomes joined against these exact numbers.
-    breakdown = orchestrator.get_confidence_breakdown(resolved_case_id)
-    storage.save_report(resolved_case_id, report, confidence_breakdown=breakdown)
-    return report
+
+@router.get("/diagnose/{case_id}/status", response_model=JobStatusResponse)
+def get_diagnosis_status(case_id: str) -> dict:
+    """Live progress of an async analysis. Falls back to the database when the in-memory job is gone
+    (pruned after an hour, or the server restarted): a stored report -> completed; a known case with
+    no report -> failed/interrupted; otherwise 404."""
+    snap = registry.snapshot(case_id)
+    if snap is not None:
+        return snap
+    report = storage.get_report(case_id)
+    if report is not None:
+        return {"case_id": case_id, "status": "completed", "report": report}
+    if storage.get_case(case_id) is not None:
+        return {
+            "case_id": case_id, "status": "failed",
+            "error": "No result is available for this case: the analysis failed or was interrupted "
+                     "(for example by a server restart). Please resubmit it.",
+        }
+    raise HTTPException(status_code=404, detail=f"No analysis found for case_id '{case_id}'")
 
 
 @router.get("/diagnose/{case_id}", response_model=FinalReport)
 def get_diagnosis(case_id: str) -> FinalReport:
     report = storage.get_report(case_id)
     if report is None:
-        # In this synchronous-only first version /diagnose only returns
-        # once run_case() has fully finished, so a missing report here
-        # always means "no such case_id was ever submitted" (or a typo)
-        # -- not "still processing". storage.get_case(case_id).status
-        # ("pending"/"completed"/"failed") now exists and could
-        # distinguish those states for a future async version; not
-        # wired in here since this endpoint doesn't need it yet.
+        # No stored report: never submitted, or (for an async run) still processing or failed.
+        # GET /diagnose/{case_id}/status distinguishes those; this endpoint only serves finished reports.
         raise HTTPException(status_code=404, detail=f"No report found for case_id '{case_id}'")
     return report
 

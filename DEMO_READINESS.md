@@ -700,9 +700,46 @@ are informed by them (never tuned against a run); the descriptions are a non-rad
 labels are the uploader's; ~25 test images; the descriptions must not be edited to chase this
 benchmark now that the test half has been used.
 
+## Update 2026-11-13 (later): async /diagnose with real progress
+
+A case can take minutes (REAL004 took ~500 s with three optimizer rounds), and the old processing screen was a
+timer-driven animation that could not tell you what was actually happening. Now:
+
+- `POST /diagnose?async=true` returns 202 at once and runs the case in a worker thread
+  (`backend/services/jobs.py`); `GET /diagnose/{id}/status` returns live progress. The plain `POST /diagnose` is
+  unchanged, so `scripts/run_cases_live.py` and every existing test keep working.
+- The progress is real: the orchestrator reports each step from `_run_step` (the one place every step passes
+  through) and the optimizer reports each refinement round. Each step carries its actual result ("5 offline
+  passage(s)", "3 diagnosis(es), confidence 52%"), its measured duration, and, if it failed, a generic "failed, the
+  analysis continued with less" with no raw provider error. Imaging shows as skipped when no image was attached; the
+  optimizer shows as skipped with its reason when confidence already cleared the threshold or there was no clinical
+  input to refine from.
+- The processing screen shows exactly that, plus a queue message when workers are busy, and polls every 1.2 s. It
+  tolerates up to 5 consecutive failed polls (a blip does not discard a run that is still going), and starting a new
+  case stops the old polling loop (checked: 0 requests in the 5 s after abandoning).
+
+**Verified:** 563 backend tests (registry, the async routes with the pipeline faked, the orchestrator's progress
+events, the optimizer callback; mutation-checked) and 23 frontend tests (`npm test`: the polling logic with injected
+fakes). **Run for real** against the real backend (isolated store): 202 in 0 s, then the steps moved in real time
+with genuine timings (clinical 4.2 s, retrieval 18.5 s, ...) and the UI followed them to the review screen. Because
+Gemini was over quota, every LLM-dependent step ended `failed`, so that run exercised failure reporting, not a
+healthy end-to-end analysis. The healthy path (green steps with details, optimizer rounds, queue message, hand-over to
+the report) was checked in the browser against a scripted mock that replays a realistic run, not against the live
+pipeline. **A healthy live run is still to do once Gemini quota returns.**
+
+**Limits:** state is in this process's memory (one server process; a restart or `--reload` drops running jobs and
+the status endpoint reports them as interrupted); concurrency is capped (`DIAGNOSE_WORKERS`, default 2) and extra
+cases queue; there is no cancel button (leaving the page stops following the run, the server finishes it).
+
+**Noticed, not changed:** when fusion fails, the report's "Conflicting evidence" still shows the provider's raw error
+text (e.g. "429 RESOURCE_EXHAUSTED ... check your plan and billing details"). That is deliberate and tested today
+(`test_orchestrator.py` asserts it) so quota failures are diagnosable, but it is provider detail on a clinician-facing
+screen; worth replacing with a generic message before a demo if the quota problem could recur.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
-- `/diagnose` is fully synchronous — no async polling yet.
+- ~~`/diagnose` is fully synchronous~~ — done 2026-11-13: `POST /diagnose?async=true` + `GET /diagnose/{id}/status`
+  give real step-by-step progress (see the update above); the plain `POST /diagnose` is still synchronous.
 - The optimizer's later-iteration RAG/live evidence isn't exposed back
   into `FinalReport.evidence` (only first-pass retrieval is shown,
   even if a later iteration is what actually cleared the threshold).
