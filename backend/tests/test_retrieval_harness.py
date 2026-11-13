@@ -33,3 +33,13 @@ def test_excluding_passages_drops_them_from_the_retrieval_order_without_reorderi
     kept = E._retrieve("q", 3, frozenset({"new1", "new2"}))
     assert [r["doc_id"] for r in kept] == ["a", "b", "c"]
     assert [r["doc_id"] for r in E._retrieve("q", 2)] == ["a", "new1"]  # nothing excluded: plain top-k
+
+
+def test_rejudged_sets_only_add_to_the_original_ones_and_name_real_passages():
+    ids = _ids()
+    labels = {label for label, _q, _w in E.QUERIES}
+    assert set(E.REJUDGED_EXTRA) <= labels  # a typo in a query label would silently drop its additions
+    original = {label: wanted for label, _q, wanted in E.QUERIES}
+    for label, _q, wanted in E.rejudged_queries():
+        assert original[label] <= wanted  # never removes a passage the original key marked relevant
+        assert wanted <= ids, f"{label}: {sorted(wanted - ids)}"

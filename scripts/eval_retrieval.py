@@ -236,6 +236,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage1-k", type=int, default=RETRIEVE_TOP_K)
     ap.add_argument("--json", help="write the result to this path")
+    ap.add_argument("--rejudged", action="store_true", help="score the 14 queries against the re-judged relevance sets as well as the original ones")
     ap.add_argument("--gap", action="store_true", help="run the knowledge-base gap queries (with and without the new passages)")
     args = ap.parse_args()
     build_index()
@@ -252,5 +253,10 @@ if __name__ == "__main__":
         raise SystemExit(0)
     res = evaluate(stage1_k=args.stage1_k)
     print_report(res)
+    if args.rejudged:
+        rj = evaluate(rejudged_queries(), stage1_k=args.stage1_k)
+        print("\n=== same ranking, re-judged relevance sets ===")
+        print_report(rj)
+        res = {"original_key": res, "rejudged_key": rj}
     if args.json:
         Path(args.json).write_text(json.dumps(res, indent=2), encoding="utf-8")

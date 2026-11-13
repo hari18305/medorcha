@@ -87,3 +87,20 @@ who added the passages (so they measure coverage, not independent retrieval qual
 in 18 of 21 cases, against 3 of 21 on the original 42 passages. Misses: mediastinal widening, vertebrobasilar
 insufficiency and musculoskeletal chest pain.
 
+
+### Was the MRR drop a stale answer key? Partly (re-judged 2026-11-13)
+
+The 14 relevance sets were written for the 42-passage KB. To see how much of the drop (MRR@5 0.863 to 0.764) was just that, the 20
+dense candidates of each query were listed alphabetically with their ranks hidden and every passage a clinician would plausibly
+want for that presentation was added (`REJUDGED_EXTRA` in `scripts/eval_retrieval.py`, committed before it was re-scored; nothing
+was removed). Judged by one non-clinician, on clinical plausibility only. Result (`python -m scripts.eval_retrieval --rejudged`):
+
+| relevance key | 42 passages, pool 10 | 67 passages, pool 20 |
+|---|---|---|
+| original | hit@1 11, MRR@5 0.863 | hit@1 9, MRR@5 0.764 |
+| re-judged | hit@1 11, MRR@5 0.881 | hit@1 10, MRR@5 0.821 |
+
+So about 40% of the drop (0.099 to 0.060) was the stale key; the rest is real: related passages that the cross-encoder places
+above the relevant one (for example long-COVID headache and giant-cell arteritis for plain headache queries, the PRES review and a
+head-CT overview above dementia for the memory-and-gait case). hit@5 is 14/14 under both keys. The re-judged key was written by
+the person who built the system and was not checked by a clinician, so it is an audit of the key, not a better ground truth.
