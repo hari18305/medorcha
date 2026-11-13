@@ -1,7 +1,9 @@
 """Cross-encoder reranking of retrieved evidence for answer relevance.
 
-Design choice: (a) a cross-encoder model (cross-encoder/ms-marco-MiniLM-
-L-6-v2), not (b) an Anthropic Claude scoring call.
+Design choice: (a) a local cross-encoder model, not (b) an Anthropic Claude
+scoring call. The model is chosen by RERANK_MODEL: ncbi/MedCPT-Cross-Encoder
+(default; biomedical, trained on PubMed search logs, ~440 MB) or
+cross-encoder/ms-marco-MiniLM-L-6-v2 (general-domain, ~90 MB, the original).
 
 Why: reranking runs on every retrieval -- including the fallback retry
 in rag_agent.py -- so it needs to be fast, free of per-call API
@@ -12,10 +14,14 @@ pairs, so it scores actual query-passage relevance rather than just
 re-sorting by the same embedding similarity used for retrieval -- this
 is a real second-stage relevance signal, not a no-op.
 
-Caveat: MS MARCO cross-encoders are general-domain, not medically
-fine-tuned. Swapping in a biomedical cross-encoder (once one is
-selected and evaluated) is a natural future upgrade; the rerank()
-interface would not need to change.
+Why MedCPT is the default (2026-11-13): on 14 real agent queries
+(scripts/eval_retrieval.py) it beat the general-domain MS MARCO model --
+MRR@5 0.827 -> 0.863, hit@1 10 -> 11/14 (vs. MS MARCO with its cross-encoder
+order: 0.768 / 8) -- and stopped it putting off-topic
+passages first (pulmonary tuberculosis topped a child's headache + cold).
+It costs a ~440 MB download and is NOT strictly better: the subdural-hematoma
+passage for the anticoagulated-fall case (CASE009) is 3rd rather than 2nd.
+n=14, developer-judged relevance: a regression check, not a benchmark.
 
 Score scale (calibrated, NOT a plain sigmoid): the confidence formula uses
 these scores directly as S_rag, so they have to span a useful 0-1 range.
@@ -30,20 +36,35 @@ passage ranks first:
 
     score = sigmoid((logit - SCORE_CENTER) / SCORE_SCALE)
 
-with SCORE_CENTER=-7, SCORE_SCALE=2 (on-topic ~0.16-0.80, mean ~0.56;
-off-topic ~0.15-0.29). These two numbers were set BY HAND from a small
-sample on the current 30-passage knowledge base -- a prototype calibration,
-not a validated one. Re-fit them with `python -m backend.rag.calibrate_reranker`
-whenever the knowledge base or the reranker model changes. Override with
-RERANK_SCORE_CENTER / RERANK_SCORE_SCALE.
+with a per-model (center, scale) -- MS MARCO: -7 / 2 (on-topic ~0.16-0.80,
+mean ~0.56; off-topic ~0.15-0.29); MedCPT: -12.5 / 3.5. MedCPT's raw logits sit on
+a very different range (on-topic top-5 mean about -8, off-topic about -15.7), so
+its constants were fitted by hand to leave average confidence where it was:
+the pair (-12.5, 3.5) reproduces the MS MARCO pipeline's mean S_rag over the 14
+real agent queries (0.659 -> 0.659) and over 6 off-topic queries (0.284 -> 0.288).
+They are a prototype calibration on a small sample, not a validated one: only the
+AVERAGE is matched, per-query S_rag still differs between the models (up to about
+0.3, i.e. 0.12 of confidence, on the 14 queries). Re-fit with
+`python -m backend.rag.calibrate_reranker` whenever the knowledge base or the
+reranker model changes. Override with RERANK_SCORE_CENTER / RERANK_SCORE_SCALE.
 """
 
 import math
 import os
 
+import torch
 from sentence_transformers import CrossEncoder
 
-MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+MS_MARCO_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+MEDCPT_MODEL = "ncbi/MedCPT-Cross-Encoder"
+MODEL_NAME = os.getenv("RERANK_MODEL", MEDCPT_MODEL).strip() or MEDCPT_MODEL
+
+# (center, scale) of the logit -> 0-1 rescale, per model. An unlisted model falls
+# back to the MS MARCO values and should be re-fit with calibrate_reranker.
+CALIBRATION_BY_MODEL = {
+    MS_MARCO_MODEL: (-7.0, 2.0),
+    MEDCPT_MODEL: (-12.5, 3.5),
+}
 
 
 def _float_from_env(name: str, default: float) -> float:
@@ -53,24 +74,23 @@ def _float_from_env(name: str, default: float) -> float:
         return default
 
 
-SCORE_CENTER = _float_from_env("RERANK_SCORE_CENTER", -7.0)
-SCORE_SCALE = _float_from_env("RERANK_SCORE_SCALE", 2.0)
+_DEFAULT_CENTER, _DEFAULT_SCALE = CALIBRATION_BY_MODEL.get(MODEL_NAME, CALIBRATION_BY_MODEL[MS_MARCO_MODEL])
+SCORE_CENTER = _float_from_env("RERANK_SCORE_CENTER", _DEFAULT_CENTER)
+SCORE_SCALE = _float_from_env("RERANK_SCORE_SCALE", _DEFAULT_SCALE)
 
 # How the final top-k is ORDERED (which passages make the top-k is always the
 # cross-encoder's call, so S_rag - the mean of those scores - never depends on
 # this setting):
-#   "rrf" (default) - reciprocal rank fusion of the dense (BioBERT) rank and the
+#   "ce"  (default) - cross-encoder order only.
+#   "rrf"           - reciprocal rank fusion of the dense (BioBERT) rank and the
 #                     cross-encoder rank, k=60 (the standard constant, not tuned).
-#   "ce"            - cross-encoder order only (the behaviour before 2026-11-13).
-# Why: the MS MARCO cross-encoder is general-domain and sometimes puts an
-# off-topic passage first (a subarachnoid-haemorrhage passage topped plain
-# "headache, dizziness; history of hypertension"; pleural effusion and TB made
-# the top 3 for a child's headache) where BioBERT had the right one at rank 1.
-# Measured with scripts/eval_retrieval.py on 14 real agent queries: MRR@5
-# 0.768 -> 0.827, hit@1 8 -> 10, hit@5 unchanged at 14/14. Helped 3 queries and
-# hurt 1 (the CASE009 subdural passage moved from 2nd to 4th). n=14, developer-
-# judged relevance: a regression check, not proof.
-RERANK_ORDER = os.getenv("RERANK_ORDER", "rrf").strip().lower()
+# RRF was the default for one day, to compensate for the general-domain MS MARCO
+# model (MRR@5 0.768 -> 0.827). With MedCPT the gain is smaller (0.863 -> 0.895,
+# hit@1 11 -> 12) and it pushes the CASE009 subdural passage from 3rd to 5th,
+# the edge of the top 5, so it is off by default. Set RERANK_ORDER=rrf to use it
+# (it still helps the MS MARCO model). Measured with scripts/eval_retrieval.py on
+# 14 real agent queries, developer-judged relevance; n=14, not a benchmark.
+RERANK_ORDER = os.getenv("RERANK_ORDER", "ce").strip().lower()
 RRF_K = 60
 
 _model: CrossEncoder | None = None
@@ -80,7 +100,10 @@ def _get_model() -> CrossEncoder:
     """Lazily load and cache the cross-encoder model at module level."""
     global _model
     if _model is None:
-        _model = CrossEncoder(MODEL_NAME)
+        # Raw logits, whatever the model's own default: MS MARCO's config sets an
+        # identity activation but MedCPT's does not, so sentence-transformers would
+        # sigmoid it (scores of ~1e-5) and the calibration below would be nonsense.
+        _model = CrossEncoder(MODEL_NAME, activation_fn=torch.nn.Identity(), max_length=512)
     return _model
 
 

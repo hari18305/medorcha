@@ -533,6 +533,48 @@ URTI (CASE010) pulmonary tuberculosis is still ranked first and the relevant
 headache passage third. A biomedical cross-encoder (e.g. NCBI's MedCPT) is the
 obvious next step; it needs a ~440 MB model download, so it has not been tried.
 
+### Follow-up: MedCPT biomedical cross-encoder (now the default reranker)
+
+Downloaded `ncbi/MedCPT-Cross-Encoder` from Hugging Face (439 MB, into the HF cache)
+and compared it to the MS MARCO model on the same 14 real queries (hit@5 / hit@1 /
+MRR@5):
+
+| reranker | order | hit@5 | hit@1 | MRR@5 |
+|---|---|---|---|---|
+| MS MARCO | cross-encoder | 14/14 | 8 | 0.768 |
+| MS MARCO | RRF (the previous default) | 14/14 | 10 | 0.827 |
+| **MedCPT (new default)** | cross-encoder | 14/14 | 11 | 0.863 |
+| MedCPT | RRF (`RERANK_ORDER=rrf`) | 14/14 | 12 | 0.895 |
+
+MedCPT fixes the off-topic-first failure (CASE010: the headache passage is now
+1st; pulmonary tuberculosis no longer tops a child's headache). RRF is now OFF by
+default: with MedCPT it adds only +0.032 MRR and pushes the CASE009 subdural passage
+from 3rd to 5th, the edge of the top 5.
+
+**Costs, not hidden.** (1) ~440 MB more to download on first run (Docker has no
+model cache, so every fresh container downloads it; the Docker build has not been
+re-run). (2) CASE009's subdural passage is 3rd, not 2nd as with MS MARCO; CASE020
+(cough, smoker) also dropped 1st -> 4th with MedCPT alone. (3) n=14, relevance
+judged by the developer: a regression check, not a benchmark.
+
+**Calibration changed with the model, and S_rag feeds confidence.** MedCPT's raw
+logits span -16..+13 (off-topic top-5 around -15.7, on-topic around -8), nothing like
+MS MARCO's range, so the old center/scale (-7 / 2) would have been wrong. MedCPT now
+uses (-12.5, 3.5), fitted by hand so the MEAN S_rag over the 14 real queries (0.659)
+and 6 off-topic queries (0.284) matches the old pipeline (0.659 / 0.288). Only the
+average is matched: per query S_rag moves by up to ~0.3 (CASE009 0.26 -> 0.55, which
+is a better reflection of the subdural passage now being retrieved well; REAL006
+0.82 -> 0.69), i.e. confidence by up to ~0.12 (mean 0). **Cases near the 0.65
+threshold can flip either way, so the 31-case run must be repeated with this model
+before any threshold or accuracy number is quoted.** The 0.65 threshold itself is
+still unvalidated. sentence-transformers applies a sigmoid to MedCPT by default, which
+would have turned every logit into ~1e-5; the model is now loaded with an identity
+activation (tested). If your `.env` was copied from the OLD `.env.example`, delete
+its `RERANK_SCORE_CENTER` / `RERANK_SCORE_SCALE` lines or they will override the
+MedCPT calibration with MS MARCO's (the real `.env` here has none).
+`RERANK_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2` restores the old behaviour
+(with its own calibration).
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

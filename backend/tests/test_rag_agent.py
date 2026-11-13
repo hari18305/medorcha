@@ -197,11 +197,11 @@ async def test_run_rag_empty_findings_short_circuits_without_calling_pipeline(mo
 
 
 async def test_run_rag_retries_with_fallback_query_when_all_scores_low(fake_qdrant, monkeypatch):
-    # First call: all raw logits very negative (-14 -> calibrated score ~0.03),
+    # First call: all raw logits very negative (-20: low under either model's calibration),
     # all below LOW_SCORE_THRESHOLD. Second call (fallback): high scores.
     fake_model = _patch_cross_encoder(
         monkeypatch,
-        [[-14.0, -14.0, -14.0], [4.0, 3.0, 2.0]],
+        [[-20.0, -20.0, -20.0], [4.0, 3.0, 2.0]],
     )
 
     result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING)
@@ -221,7 +221,7 @@ async def test_run_rag_gives_up_after_one_retry_if_still_low(fake_qdrant, monkey
     # Both attempts score low -- should NOT retry a third time.
     fake_model = _patch_cross_encoder(
         monkeypatch,
-        [[-14.0, -14.0, -14.0], [-13.0, -13.0, -13.0]],
+        [[-20.0, -20.0, -20.0], [-19.0, -19.0, -19.0]],
     )
 
     result = await run_rag(CASE001_FINDINGS, CASE001_IMAGING)

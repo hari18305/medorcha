@@ -260,13 +260,13 @@ HIGH_SCORE_CROSS_ENCODER_MAP = {
     "Chronic hypertension is a major risk factor for cerebral small vessel disease.": 6.0,
 }
 
-# Low-relevance-scoring RAG payload (cross-encoder logit -14.0 -> calibrated score
-# ~0.03), used by "low confidence" scenarios.
+# Low-relevance-scoring RAG payload (cross-encoder logit -20.0: below the
+# low-score threshold under either model's calibration), used by "low confidence" scenarios.
 LOW_SCORE_RAG_PAYLOAD = [
     (0.3, {"text": "Some tangentially related reference passage.", "source": "synthetic", "doc_id": "d2", "page": 1, "chunk_length": 50}),
 ]
 LOW_SCORE_CROSS_ENCODER_MAP = {
-    "Some tangentially related reference passage.": -14.0,
+    "Some tangentially related reference passage.": -20.0,
 }
 
 
@@ -1134,7 +1134,7 @@ def test_weight_recalibration_noop_then_real_refit_changes_the_pipelines_confide
     for i in range(1, 3):
         _diagnose_then_review(client, monkeypatch, f"WR-HIGH-{i}", rag_logit=6.0, decision="accept")
     for i in range(3):
-        _diagnose_then_review(client, monkeypatch, f"WR-LOW-{i}", rag_logit=-14.0, decision="override")
+        _diagnose_then_review(client, monkeypatch, f"WR-LOW-{i}", rag_logit=-20.0, decision="override")
 
     # 6 reviewed cases < 10 -> a no-op: nothing changes, nothing is logged as a recalibration
     assert recalibrate_weights(min_reviews=10) is None
@@ -1144,7 +1144,7 @@ def test_weight_recalibration_noop_then_real_refit_changes_the_pipelines_confide
     for i in range(3, 6):
         _diagnose_then_review(client, monkeypatch, f"WR-HIGH-{i}", rag_logit=6.0, decision="accept")
     for i in range(3, 6):
-        _diagnose_then_review(client, monkeypatch, f"WR-LOW-{i}", rag_logit=-14.0, decision="override")
+        _diagnose_then_review(client, monkeypatch, f"WR-LOW-{i}", rag_logit=-20.0, decision="override")
 
     result = recalibrate_weights(min_reviews=10)
 
