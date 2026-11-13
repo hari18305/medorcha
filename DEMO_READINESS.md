@@ -575,6 +575,66 @@ MedCPT calibration with MS MARCO's (the real `.env` here has none).
 `RERANK_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2` restores the old behaviour
 (with its own calibration).
 
+## Update 2026-11-13 (later): real-image imaging benchmark
+
+**What was wrong.** The Mode 3 imaging benchmark scored BiomedCLIP on programmatically
+generated gradient-and-ellipse pictures whose "intended label" was arbitrary, so
+"near chance" was the expected result and it measured nothing. It is deleted (code, tests
+and the committed images) and replaced.
+
+**What it is now.** 62 real images (32 chest X-ray, 18 head CT, 12 brain MRI) in 60
+groups, each with a finding label: 56 downloaded from Wikimedia Commons (CC0 / CC BY /
+CC BY-SA / public domain; each file's licence read from its own page; downscaled to
+<= 768 px and credited in `data/benchmarks/imaging_real/ATTRIBUTION.md`) plus the 6
+already in `data/images/real/`. `python -m scripts.build_imaging_benchmark` rebuilds it
+from an explicit list of titles; `python -m backend.tests.imaging_benchmark` scores the
+**production** classifier (`imaging_agent.rank_image`, not a reimplementation) and writes
+`RESULTS.md` / `results.json`. I looked at every image on a contact sheet and replaced or
+dropped about two dozen: arrows, circles and boxes drawn on the film (these would hand over the
+answer), composite multi-panel figures, viewer screenshots, and films showing what look like
+patient-identification strings. One annotated film remains (the existing pneumothorax
+figure) and is flagged, not hidden.
+
+**Results (Wilson 95% intervals; chance in brackets).**
+
+| | images | modality detected | top-1 finding | top-3 | normal-vs-abnormal sens. / spec. |
+|---|---|---|---|---|---|
+| all | 62 | 94% (85-97) | **42%** (30-54) [chance 10%, always-commonest 21%] | 65% (52-75) [28%] | 91% / 78% |
+| chest X-ray | 32 | 100% | 53% (36-69) | 72% | 96% / 75% (3/4) |
+| head CT | 18 | 78% (55-91) | 33% (16-56) | 56% | 73% / 100% (3/3, one subject) |
+| brain MRI | 12 | 100% | 25% (9-53) | 58% | 100% / 50% (1/2) |
+
+Top-1/top-3 give the model the TRUE modality (isolating the findings model); end-to-end
+(modality must also be right) is 40% overall. The zero-shot model is clearly better than
+chance and not good: roughly one in two chest films and one in three CTs get the right top
+label. The pipeline passes the truth downstream in 45% of images and passes at least one
+WRONG finding in 63%.
+
+**The failure that matters.** Hemorrhage on head CT is called "acute infarct" in 4 of 5
+images, with scores 0.74-0.99 (three of them 0.95 or higher), and "normal" in the fifth (0/5 top-1).
+Hemorrhage versus infarct is the most consequential split in head CT, and the zero-shot
+labels do not make it. Related: 4 of 18 CTs are detected as MRI (including 2 infarcts, 1
+hemorrhage), consolidation is called pulmonary edema 3/3, brain tumours are called infarct
+in all 4 MRIs (3 acute, 1 chronic), and 5 abnormal images (a CT hemorrhage, a mass, a rib fracture, hydrocephalus,
+sinusitis) are called normal. This supports what the agent's docstring already says: the
+imaging read is a coarse pre-filter, not a diagnostic result, and it should not be shown to
+anyone as one. The fusion step's raw-image path is the real read and is NOT measured here.
+
+**Limits, all recorded at the top of `RESULTS.md`:** small (1-5 images per finding; CT
+midline shift and MRI atrophy had no usable image, MRI white-matter hyperintensity has
+one); labels are the uploader's, not a radiologist's, and the selector is not a radiologist;
+Commons holds clear teaching examples, so these numbers are optimistic; possible overlap
+with BiomedCLIP's PubMed Central training data (a keyword heuristic flagged only 3 images,
+so it probably misses some; excluding them changes top-1 by under a point); one normal
+head-CT subject, so CT specificity is close to meaningless. It characterises one model on
+a hand-picked set; it is not a clinical validation and says nothing about the whole
+system's diagnostic accuracy.
+
+**Not done.** The labels are plain phrases ("hemorrhage"); BiomedCLIP is sensitive to
+prompt wording ("a CT of the head showing a subdural hemorrhage"), which might lift these
+numbers. That is an experiment this benchmark can now judge, but with 62 images it needs a
+held-out split or it will just fit the set. I did not do it.
+
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 
 - `/diagnose` is fully synchronous — no async polling yet.

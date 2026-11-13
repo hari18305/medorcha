@@ -212,10 +212,17 @@ def _zero_shot_scores(
     return sorted(zip(labels, scores), key=lambda pair: pair[1], reverse=True)
 
 
-def _run_zero_shot_classification(
-    path: Path, modality_hint: str | None
-) -> tuple[str, list[str], float, bool]:
-    """Synchronous, CPU/GPU-bound BiomedCLIP inference. Run via an executor."""
+def rank_image(path: Path, modality_hint: str | None = None) -> dict:
+    """Synchronous BiomedCLIP inference returning the FULL zero-shot rankings.
+
+    {"modality": str,                       # the hint if given, else the top modality label
+     "modality_scores": [(label, p), ...] | None,   # None when a hint skipped detection
+     "finding_scores":  [(label, p), ...] | None}   # None when the modality has no findings model
+
+    The production path (_run_zero_shot_classification) and the imaging benchmark
+    (backend/tests/imaging_benchmark.py) both call this, so the benchmark measures
+    exactly what the pipeline runs rather than a reimplementation of it.
+    """
     try:
         image = Image.open(path).convert("RGB")
     except UnidentifiedImageError as exc:
@@ -230,6 +237,7 @@ def _run_zero_shot_classification(
         image_features = model.encode_image(image_input)
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
 
+        modality_scores = None
         if modality_hint is None:
             modality_scores = _zero_shot_scores(model, tokenizer, image_features, MODALITY_LABELS)
             modality = modality_scores[0][0]
@@ -237,25 +245,40 @@ def _run_zero_shot_classification(
             modality = modality_hint
 
         finding_labels = FINDING_LABELS_BY_MODALITY.get(modality)
-        if finding_labels is None:
-            # No findings model for this modality -- do NOT classify
-            # against some other modality's labels (that's exactly what
-            # silently produced brain-related "findings" for a chest
-            # X-ray before this check existed). Be honest instead.
-            return modality, [UNSUPPORTED_MODALITY_MESSAGE], 0.0, True
+        finding_scores = None
+        if finding_labels is not None:
+            finding_scores = _zero_shot_scores(model, tokenizer, image_features, finding_labels)
 
-        finding_scores = _zero_shot_scores(model, tokenizer, image_features, finding_labels)
+    return {"modality": modality, "modality_scores": modality_scores, "finding_scores": finding_scores}
 
+
+def select_findings(finding_scores: list[tuple[str, float]]) -> list[str]:
+    """Which ranked findings the pipeline reports: the top label always, plus any other
+    that clears both FINDING_SCORE_THRESHOLD and FINDING_RELATIVE_THRESHOLD x the top."""
     top_label, top_score = finding_scores[0]
     findings = [
         label
         for label, score in finding_scores
         if score > FINDING_SCORE_THRESHOLD and score >= FINDING_RELATIVE_THRESHOLD * top_score
     ]
-    if not findings:
-        findings = [top_label]
+    return findings or [top_label]
 
-    return modality, findings, float(top_score), False
+
+def _run_zero_shot_classification(
+    path: Path, modality_hint: str | None
+) -> tuple[str, list[str], float, bool]:
+    """Synchronous, CPU/GPU-bound BiomedCLIP inference. Run via an executor."""
+    ranked = rank_image(path, modality_hint)
+    modality, finding_scores = ranked["modality"], ranked["finding_scores"]
+
+    if finding_scores is None:
+        # No findings model for this modality -- do NOT classify
+        # against some other modality's labels (that's exactly what
+        # silently produced brain-related "findings" for a chest
+        # X-ray before this check existed). Be honest instead.
+        return modality, [UNSUPPORTED_MODALITY_MESSAGE], 0.0, True
+
+    return modality, select_findings(finding_scores), float(finding_scores[0][1]), False
 
 
 async def analyze_image(image_path: str, modality_hint: str | None = None) -> ImagingFindings:

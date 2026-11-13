@@ -8,7 +8,7 @@ optionally real BiomedCLIP inference). Run it directly:
     python -m backend.tests.run_evaluation
     python -m backend.tests.run_evaluation --ablation   # stretch goal, see below
     python -m backend.tests.run_evaluation --mode2      # Phase 17 Mode 2: MedQA/PubMedQA
-    python -m backend.tests.run_evaluation --mode3      # Phase 17 Mode 3: imaging mini-benchmark
+    python -m backend.tests.run_evaluation --mode3      # Phase 17 Mode 3: real-image imaging benchmark
     python -m backend.tests.run_evaluation --case-memory-ablation  # Phase 17 required ablation
     python -m backend.tests.run_evaluation --full       # everything above, in one run
 
@@ -63,7 +63,6 @@ from backend.agents.clinical_agent import extract_clinical_findings
 from backend.agents.evidence_agent import gather_live_evidence
 from backend.agents.fusion_agent import fuse
 from backend.agents.imaging_agent import analyze_image
-from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY
 from backend.agents.rag_agent import _build_query, run_rag
 from backend.models.schemas import CaseInput, ClinicalFindings, ImagingFindings, LiveEvidence, Patient, RAGEvidence
 from backend.services.confidence import compute_confidence
@@ -72,8 +71,6 @@ from backend.services.orchestrator import run_case
 TEST_CASES_DIR = Path("data/test_cases")
 DEFAULT_MD_REPORT = Path("backend/tests/evaluation_report.md")
 DEFAULT_CSV_REPORT = Path("backend/tests/evaluation_report.csv")
-IMAGING_EVAL_DIR = Path("data/benchmarks/imaging_eval")
-IMAGING_EVAL_MANIFEST = IMAGING_EVAL_DIR / "manifest.json"
 
 
 # --------------------------------------------------------------------------
@@ -848,82 +845,37 @@ def write_mode2_items_csv(result: dict, path: Path) -> None:
 
 
 # ==========================================================================
-# Phase 17 Mode 3 (required): imaging mini-benchmark + the raw-image-
+# Phase 17 Mode 3 (required): imaging benchmark + the raw-image-
 # attached vs. text-labels-only fuse() comparison.
 #
-# All three imaging modalities (MRI brain scan, CT scan, chest X-ray --
-# see backend/agents/imaging_labels.py's FINDING_LABELS_BY_MODALITY)
-# have a real findings model and are covered here. Written generically
-# against FINDING_LABELS_BY_MODALITY (not a hardcoded 3-item list), so a
-# future modality added there is picked up automatically with no code
-# change needed in this file.
+# The imaging benchmark itself lives in backend/tests/imaging_benchmark.py and runs
+# on REAL images (data/benchmarks/imaging_real, built by
+# scripts/build_imaging_benchmark.py). It replaced an earlier benchmark that scored
+# BiomedCLIP on generated gradient-and-ellipse pictures with an arbitrary "intended
+# label" (near chance by construction, so it measured nothing). Mode 3 here runs that
+# benchmark and then the fusion comparison below on one real image per modality.
 # ==========================================================================
 
 
-def generate_imaging_eval_set(images_per_label: int = 1) -> list[dict]:
-    """Generates small synthetic placeholder images (simple, clearly-
-    labeled-synthetic gradients/shapes -- same spirit as
-    data/images/README.md's existing demo images), one per
-    (modality, label) pair currently in FINDING_LABELS_BY_MODALITY, and
-    writes a manifest (image path -> intended modality -> intended
-    label) to IMAGING_EVAL_MANIFEST. Deterministic (seeded per label) so
-    repeated runs regenerate the same images.
-    """
-    from PIL import Image, ImageDraw
+def load_imaging_eval_set() -> list[dict]:
+    """The real-image manifest, adapted to the {image_path, modality, intended_label}
+    shape the fusion comparison uses."""
+    from backend.tests import imaging_benchmark
 
-    IMAGING_EVAL_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = []
-
-    for modality, labels in FINDING_LABELS_BY_MODALITY.items():
-        modality_slug = modality.lower().replace(" ", "_")
-        for label_idx, label in enumerate(labels):
-            for img_idx in range(images_per_label):
-                seed = abs(hash((modality, label, img_idx))) % (2**32)
-                # A distinct, deterministic color/shape per label -- not
-                # a real scan, just a visually-distinguishable synthetic
-                # stand-in so classification isn't pure noise.
-                r, g, b = seed % 256, (seed // 256) % 256, (seed // 65536) % 256
-                image = Image.new("RGB", (224, 224), color=(r, g, b))
-                draw = ImageDraw.Draw(image)
-                draw.ellipse(
-                    [40 + (seed % 30), 40 + (seed % 20), 180 - (seed % 30), 180 - (seed % 20)],
-                    outline=(255 - r, 255 - g, 255 - b), width=4,
-                )
-                filename = f"{modality_slug}_{label_idx:02d}_{img_idx}.png"
-                path = IMAGING_EVAL_DIR / filename
-                image.save(path)
-                manifest.append({"image_path": path.as_posix(), "modality": modality, "intended_label": label})
-
-    IMAGING_EVAL_MANIFEST.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    return manifest
+    return [
+        {"image_path": e["file"], "modality": e["modality"], "intended_label": e["labels"][0]}
+        for e in imaging_benchmark.load_manifest()
+    ]
 
 
-def load_or_generate_imaging_eval_set() -> list[dict]:
-    if IMAGING_EVAL_MANIFEST.exists():
-        return json.loads(IMAGING_EVAL_MANIFEST.read_text(encoding="utf-8"))
-    return generate_imaging_eval_set()
-
-
-def run_imaging_benchmark(manifest: list[dict]) -> dict:
-    """Runs the real analyze_image() (real BiomedCLIP inference, no
-    mocking) against every manifest entry and scores top-1 accuracy per
-    modality: does the top-scoring returned finding match the label the
-    image was generated for?"""
-    per_modality_correct: dict[str, int] = {}
-    per_modality_total: dict[str, int] = {}
-
-    for entry in manifest:
-        result = asyncio.run(analyze_image(entry["image_path"], modality_hint=entry["modality"]))
-        per_modality_total[entry["modality"]] = per_modality_total.get(entry["modality"], 0) + 1
-        top_finding = result.findings[0] if result.findings else None
-        if top_finding == entry["intended_label"]:
-            per_modality_correct[entry["modality"]] = per_modality_correct.get(entry["modality"], 0) + 1
-
-    accuracy_by_modality = {
-        modality: round(per_modality_correct.get(modality, 0) / total, 4)
-        for modality, total in per_modality_total.items()
-    }
-    return {"accuracy_by_modality": accuracy_by_modality, "n_by_modality": per_modality_total}
+def fusion_sample(entries: list[dict]) -> list[dict]:
+    """One image per modality (the first in manifest order), so the comparison covers all three."""
+    seen, out = set(), []
+    for e in entries:
+        if e["modality"] not in seen:
+            seen.add(e["modality"])
+            out.append(e)
+    return out
 
 
 def run_image_fusion_comparison(manifest: list[dict], sample_size: int = 3) -> list[dict]:
@@ -994,12 +946,18 @@ def run_image_fusion_comparison(manifest: list[dict], sample_size: int = 3) -> l
 
 
 def print_mode3_result(benchmark: dict, fusion_rows: list[dict]) -> None:
-    print("\n=== Phase 17 Mode 3: Imaging mini-benchmark ===")
-    print("  CAVEAT: synthetic placeholder images -- a construction-validity check, not real diagnostic accuracy.")
-    print("  Covers all three modalities with a real findings model: MRI brain scan, CT scan, chest X-ray.")
-    for modality, acc in benchmark["accuracy_by_modality"].items():
-        n = benchmark["n_by_modality"][modality]
-        print(f"    {modality:<20} top-1 accuracy: {acc:.1%}  (n={n})")
+    from backend.tests import imaging_benchmark
+
+    print("\n=== Phase 17 Mode 3: Imaging benchmark (real images) ===")
+    print("  CAVEAT: a few dozen hand-picked open-licence images, labels from the uploader (not a radiologist), clear")
+    print("  teaching examples (optimistic), possible overlap with BiomedCLIP's training data. Not a clinical validation.")
+    print("  Full report with intervals and baselines: " + str(imaging_benchmark.RESULTS_MD))
+    o = benchmark["overall"]
+    fmt = imaging_benchmark._fmt
+    print(f"  {o['n_images']} images / {o['n_groups']} groups: modality detected {fmt(o['modality_detection'])}; "
+          f"top-1 finding {fmt(o['top1'])} (chance {o['chance_top1']:.0%}); top-3 {fmt(o['top3'])}")
+    for modality, s in benchmark["by_modality"].items():
+        print(f"    {modality:<16} n={s['n_images']:<3} top-1 {fmt(s['top1'])}   top-3 {fmt(s['top3'])}")
     print("\n  With-raw-image vs. text-labels-only fusion comparison:")
     for row in fusion_rows:
         print(f"    {row['modality']:<20} differs={row['differs']}  "
@@ -1127,7 +1085,7 @@ def main():
     parser.add_argument("--mode2-n", type=int, default=50, help="Questions per benchmark for --mode2.")
     parser.add_argument(
         "--mode3", action="store_true",
-        help="Phase 17 Mode 3 (required): imaging mini-benchmark + with/without-raw-image fusion comparison.",
+        help="Phase 17 Mode 3 (required): real-image imaging benchmark + with/without-raw-image fusion comparison.",
     )
     parser.add_argument(
         "--case-memory-ablation", action="store_true",
@@ -1162,9 +1120,10 @@ def main():
         print_case_memory_ablation(run_case_memory_ablation(cases[0][1]))
 
     if args.mode3:
-        manifest = load_or_generate_imaging_eval_set()
-        benchmark = run_imaging_benchmark(manifest)
-        fusion_rows = run_image_fusion_comparison(manifest)
+        from backend.tests import imaging_benchmark
+
+        benchmark = imaging_benchmark.run(imaging_benchmark.load_manifest())
+        fusion_rows = run_image_fusion_comparison(fusion_sample(load_imaging_eval_set()), sample_size=3)
         print_mode3_result(benchmark, fusion_rows)
 
     if args.mode2:

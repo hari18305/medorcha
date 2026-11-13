@@ -35,8 +35,8 @@ images is a side-effect of that equalisation.
 **What a passing `--check` does and does not mean:** it shows these
 *fixtures* route through their intended code path (the right label set, the
 right retrieval filters). It says nothing about BiomedCLIP's accuracy on real
-scans, which is unmeasured here. Real public-dataset images would be needed
-for that.
+scans. That is measured separately, on real images, by
+`python -m backend.tests.imaging_benchmark` (see `data/benchmarks/imaging_real/RESULTS.md`).
 
 ## Real images (`real/`)
 

@@ -1,0 +1,1215 @@
+{
+  "_provenance": {
+    "labels": "taken from each file's Commons category/description; NOT radiologist-verified for this project",
+    "selection": "explicit list in scripts/build_imaging_benchmark.py (clear teaching examples: optimistic vs. real practice)",
+    "overlap": "possible_pretraining_overlap is a keyword heuristic on the file's own description; it can miss",
+    "built": "2026-11-13"
+  },
+  "images": [
+    {
+      "file": "data/benchmarks/imaging_real/images/01_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest X-ray 2346.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest X-ray 2346.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest_X-ray_2346.jpg",
+      "license": "CC0",
+      "artist": "Doctoroftcm",
+      "description": "The chest X-ray photo of a 30-years-old healthy man.",
+      "original_size": [
+        2026,
+        2743
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/02_chest_x_ray_normal_chest_x_ray_no_acute_findings.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest Xray PA 3-8-2010.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest Xray PA 3-8-2010.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest_Xray_PA_3-8-2010.png",
+      "license": "CC0",
+      "artist": "Stillwaterising",
+      "description": "Chest X-ray PA",
+      "original_size": [
+        2412,
+        1956
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/03_chest_x_ray_normal_chest_x_ray_no_acute_findings.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "No machine-readable author provided. Chikumaya assumed (based on copyright claims).",
+      "description": "An X-ray photo of my chest. A sample of normal heart and lung. Screenshot of DICOM image.",
+      "original_size": [
+        927,
+        755
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/04_chest_x_ray_pneumothorax.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pneumothorax"
+      ],
+      "group": "05-Spontanpneumothorax.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "05-Spontanpneumothorax.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:05-Spontanpneumothorax.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Pneumothorax in a young man with chest pain. Notice the air-fluid-level in the lateral left recessus.",
+      "original_size": [
+        1060,
+        1227
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/05_chest_x_ray_pneumothorax.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "pneumothorax"
+      ],
+      "group": "09-01-Pneumothorax.png",
+      "source": "wikimedia_commons",
+      "commons_title": "09-01-Pneumothorax.png",
+      "page": "https://commons.wikimedia.org/wiki/File:09-01-Pneumothorax.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Pneumothorax on chest x-ray (right side)",
+      "original_size": [
+        952,
+        956
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/06_chest_x_ray_pneumothorax.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pneumothorax"
+      ],
+      "group": "Deep sulcus sign 59jm - Roe - 001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Deep sulcus sign 59jm - Roe - 001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Deep_sulcus_sign_59jm_-_Roe_-_001.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Pneumothorax in der Intensivlunge (Röntgen Thorax im Liegen a.p.) auf der linken Seite (rechte Bildseite): man erkennt deutlich die Betonung des lateralen Rezessus: Deep sulcus sign. Auf beiden Seiten liegen schon Thoraxdrainagen.",
+      "original_size": [
+        1932,
+        2428
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/07_chest_x_ray_pleural_effusion.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "pleural effusion"
+      ],
+      "group": "Effusion.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Effusion.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Effusion.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "James Heilman, MD",
+      "description": "Right sided effusion",
+      "original_size": [
+        1022,
+        1098
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/08_chest_x_ray_pleural_effusion.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "pleural effusion"
+      ],
+      "group": "Effusionhalf.PNG",
+      "source": "wikimedia_commons",
+      "commons_title": "Effusionhalf.PNG",
+      "page": "https://commons.wikimedia.org/wiki/File:Effusionhalf.PNG",
+      "license": "CC BY-SA 3.0",
+      "artist": "James Heilman, MD",
+      "description": "A large left sided pleural effusion as seen on an upright chest X-ray",
+      "original_size": [
+        1030,
+        871
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/09_chest_x_ray_pleural_effusion.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pleural effusion"
+      ],
+      "group": "Bilateral Pleural Effusion.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Bilateral Pleural Effusion.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Bilateral_Pleural_Effusion.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Sara Nabih",
+      "description": "Bilateral Pleural Effusion",
+      "original_size": [
+        1972,
+        1460
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/10_chest_x_ray_cardiomegaly.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "cardiomegaly"
+      ],
+      "group": "Cardiomegalia.JPG",
+      "source": "wikimedia_commons",
+      "commons_title": "Cardiomegalia.JPG",
+      "page": "https://commons.wikimedia.org/wiki/File:Cardiomegalia.JPG",
+      "license": "CC BY-SA 3.0",
+      "artist": "SCiardullo",
+      "description": "Rx digital de tórax PA que muestra un aumento del ICT.",
+      "original_size": [
+        1414,
+        1771
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/11_chest_x_ray_cardiomegaly.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "cardiomegaly"
+      ],
+      "group": "Cardiomegally.PNG",
+      "source": "wikimedia_commons",
+      "commons_title": "Cardiomegally.PNG",
+      "page": "https://commons.wikimedia.org/wiki/File:Cardiomegally.PNG",
+      "license": "CC BY-SA 3.0",
+      "artist": "James Heilman, MD",
+      "description": "A very large heart on CXR and a pacemaker",
+      "original_size": [
+        1060,
+        960
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/12_chest_x_ray_cardiomegaly.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "cardiomegaly"
+      ],
+      "group": "Enfermedad Mitral.JPG",
+      "source": "wikimedia_commons",
+      "commons_title": "Enfermedad Mitral.JPG",
+      "page": "https://commons.wikimedia.org/wiki/File:Enfermedad_Mitral.JPG",
+      "license": "CC BY-SA 3.0",
+      "artist": "SCiardullo",
+      "description": "Rx de tórax PA, paciente con enfermedad de la válvula mitral, aumento del ICT y crecimiento de la AI.",
+      "original_size": [
+        1822,
+        1524
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/13_chest_x_ray_consolidation.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "consolidation"
+      ],
+      "group": "Aspiration pneumonia201711-3264.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Aspiration pneumonia201711-3264.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Aspiration_pneumonia201711-3264.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "melvil",
+      "description": "Aspiration pneumonia. 83y.o. male. Right side lower lobe.",
+      "original_size": [
+        2926,
+        2706
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/14_chest_x_ray_consolidation.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "consolidation"
+      ],
+      "group": "Chest radiograph in influensa and H influenzae, posteroanterior.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest radiograph in influensa and H influenzae, posteroanterior.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest_radiograph_in_influensa_and_H_influenzae,_posteroanterior.jpg",
+      "license": "CC0",
+      "artist": "Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D.Consent note: Wri",
+      "description": "Chest radiograph of an 88 year old man, about one week after onset of fever, fatigue and mild coughing. Lab tests detected both Influenza A virus and Haemophilus influenzae. It shows multifocal, patchy consolidation, mainly in the right upper lobe.",
+      "original_size": [
+        1163,
+        1010
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/15_chest_x_ray_consolidation.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "consolidation"
+      ],
+      "group": "Chest X-ray in influenza and Haemophilus influenzae.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest X-ray in influenza and Haemophilus influenzae.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest_X-ray_in_influenza_and_Haemophilus_influenzae.jpg",
+      "license": "CC0",
+      "artist": "Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D.Consent note: Wri",
+      "description": "edit AP chest X-ray of a 76 year old woman, who developed cough and labored breathing. First testing showed influenza B virus, and later a nasopharyngeal swab detected Haemophilus influenzae. The H influenzae presumably developed as an opportunistic infection secondary to the flu. This X-ray was tak",
+      "original_size": [
+        2765,
+        2505
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/16_chest_x_ray_pulmonary_edema.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "pulmonary edema"
+      ],
+      "group": "16-01-Lungenoedem.png",
+      "source": "wikimedia_commons",
+      "commons_title": "16-01-Lungenoedem.png",
+      "page": "https://commons.wikimedia.org/wiki/File:16-01-Lungenoedem.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Pulmonary edema",
+      "original_size": [
+        950,
+        862
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/17_chest_x_ray_pulmonary_edema.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pulmonary edema"
+      ],
+      "group": "AP portable CXR of a patient in acute pulmonary oedema.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "AP portable CXR of a patient in acute pulmonary oedema.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:AP_portable_CXR_of_a_patient_in_acute_pulmonary_oedema.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Frank Gaillard, Jeremy Jones",
+      "description": "AP portable CXR of a patient in acute pulmonary oedema. Image from Radiopaedia.org case here. Image courtesy of Dr Jeremy Jones",
+      "original_size": [
+        1600,
+        1600
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/18_chest_x_ray_pulmonary_edema.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pulmonary edema"
+      ],
+      "group": "Lungenoedem nach NSTEMI 73W - CR ap - 001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Lungenoedem nach NSTEMI 73W - CR ap - 001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Lungenoedem_nach_NSTEMI_73W_-_CR_ap_-_001.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Hellerhoff",
+      "description": "Lungenödem nach NSTEMI",
+      "original_size": [
+        1216,
+        1031
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/19_chest_x_ray_pulmonary_nodule_or_mass.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "pulmonary nodule or mass"
+      ],
+      "group": "LungCa.png",
+      "source": "wikimedia_commons",
+      "commons_title": "LungCa.png",
+      "page": "https://commons.wikimedia.org/wiki/File:LungCa.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Lung cancer",
+      "original_size": [
+        887,
+        817
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/20_chest_x_ray_pulmonary_nodule_or_mass.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pulmonary nodule or mass"
+      ],
+      "group": "LungCancer-Xray-01.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "LungCancer-Xray-01.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:LungCancer-Xray-01.jpg",
+      "license": "Public domain",
+      "artist": "For the original image: unknown.For this edited version: Doruk Salancı.",
+      "description": "An x-ray image of a chest. Both sides of the lungs are visible with a growth on the left side of the lung, which could possibly be lung cancer.This is the edited version of the original one.Edited with Photoshop for some tonal correction via the Shadow/Highlight and Auto levels functions.",
+      "original_size": [
+        1800,
+        1800
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/21_chest_x_ray_pulmonary_nodule_or_mass.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "pulmonary nodule or mass"
+      ],
+      "group": "Plattenepithelkarzinom der Lunge rechter Oberlappen 76W - CR pa - 001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Plattenepithelkarzinom der Lunge rechter Oberlappen 76W - CR pa - 001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Plattenepithelkarzinom_der_Lunge_rechter_Oberlappen_76W_-_CR_pa_-_001.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Hellerhoff",
+      "description": "Plattenepithelkarzinom der Lunge rechter Oberlappen",
+      "original_size": [
+        1535,
+        1673
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/22_chest_x_ray_hyperinflation_consistent_with_emphysema.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "hyperinflation consistent with emphysema"
+      ],
+      "group": "Emphysema2008.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Emphysema2008.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Emphysema2008.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "James Heilman, MD",
+      "description": "Patient with severe emphysema.",
+      "original_size": [
+        2240,
+        2598
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/23_chest_x_ray_hyperinflation_consistent_with_emphysema.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "hyperinflation consistent with emphysema"
+      ],
+      "group": "BullousEmphysema.png",
+      "source": "wikimedia_commons",
+      "commons_title": "BullousEmphysema.png",
+      "page": "https://commons.wikimedia.org/wiki/File:BullousEmphysema.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Bullous emphysema",
+      "original_size": [
+        914,
+        738
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/24_chest_x_ray_atelectasis.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "atelectasis"
+      ],
+      "group": "Unterlappenatelektase rechts pa.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Unterlappenatelektase rechts pa.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Unterlappenatelektase_rechts_pa.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Atelektase des rechten Unterlappen in der pa-Übersichtsaufnahme des Thorax.",
+      "original_size": [
+        928,
+        956
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/25_chest_x_ray_atelectasis.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "atelectasis"
+      ],
+      "group": "Oberlappenatelektase links pa.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Oberlappenatelektase links pa.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Oberlappenatelektase_links_pa.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Atelektase des linken Oberlappens in der Thorax-Röntgenaufnahme. Es zeigt sich eine flächige Verschattung der linken Thoraxhälfte und ein Mediastinalshift nach links. Die Lappengrenzen sind in dieser Projektion nicht erkennbar.",
+      "original_size": [
+        1040,
+        960
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/26_chest_x_ray_atelectasis.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "atelectasis"
+      ],
+      "group": "Atelectasia.JPG",
+      "source": "wikimedia_commons",
+      "commons_title": "Atelectasia.JPG",
+      "page": "https://commons.wikimedia.org/wiki/File:Atelectasia.JPG",
+      "license": "CC BY-SA 4.0",
+      "artist": "Joseaperez",
+      "description": "Atelectasia completa de pulmón derecho",
+      "original_size": [
+        1280,
+        960
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/27_chest_x_ray_rib_fracture.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "rib fracture"
+      ],
+      "group": "Rib fracture 2347.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Rib fracture 2347.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg",
+      "license": "CC0",
+      "artist": "Doctoroftcm",
+      "description": "The chest X-ray photo of a 54-years-old man with fracture ribs.",
+      "original_size": [
+        2376,
+        3126
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/28_chest_x_ray_rib_fracture.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "rib fracture",
+        "pleural effusion"
+      ],
+      "group": "Гемоторакс, переломы рёбер.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Гемоторакс, переломы рёбер.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Гемоторакс,_переломы_рёбер.jpg",
+      "license": "CC0",
+      "artist": "Клеткин Максим Евгеньевич",
+      "description": "Закрытые переломы VI, VII, VIII, IX рёбер справа. Правосторонний гемоторакс.",
+      "original_size": [
+        3066,
+        2271
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/29_chest_x_ray_rib_fracture.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "rib fracture"
+      ],
+      "group": "Rippenserienfraktur Röntgen Thorax.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Rippenserienfraktur Röntgen Thorax.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Rippenserienfraktur_Röntgen_Thorax.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Sjoehest",
+      "description": "Röntgenbild Rippenserienfraktur links mit Beteiligung der 2. - 10. Rippe. Besonders auffällig sind die stark verschobenen (dislozierten) Frakturen der 5. - 7. Rippe",
+      "original_size": [
+        756,
+        603
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/30_chest_x_ray_hilar_or_mediastinal_widening.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "hilar or mediastinal widening"
+      ],
+      "group": "HilarAdenopathyNo.png",
+      "source": "wikimedia_commons",
+      "commons_title": "HilarAdenopathyNo.png",
+      "page": "https://commons.wikimedia.org/wiki/File:HilarAdenopathyNo.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Hilar adenopathy especially on the person's left due to sarcoidosis",
+      "original_size": [
+        799,
+        699
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/31_ct_scan_hemorrhage.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "Trauma subdural.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Trauma subdural.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Trauma_subdural.jpg",
+      "license": "Public domain",
+      "artist": "Glitzy queen00 at English Wikipedia",
+      "description": "This CT scan is an example of Subdural haemorrhage caused by trauma.",
+      "original_size": [
+        1159,
+        1415
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/32_ct_scan_hemorrhage.png",
+      "modality": "CT scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "BilateralSubDur.png",
+      "source": "wikimedia_commons",
+      "commons_title": "BilateralSubDur.png",
+      "page": "https://commons.wikimedia.org/wiki/File:BilateralSubDur.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "A bilateral subdural bleed",
+      "original_size": [
+        821,
+        882
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/33_ct_scan_hemorrhage.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "Intra Parenchymal Bleed with Edema.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Intra Parenchymal Bleed with Edema.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Intra_Parenchymal_Bleed_with_Edema.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "An intra parenchymal bleed with surrounding edema. This is an edited version of the source image used in the \"Anatomist\" app and shared here under the terms of the source image's Share Alike Creative Commons license.",
+      "original_size": [
+        831,
+        977
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/34_ct_scan_hemorrhage.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "Intracerebral hemorrage (CT scan).jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Intracerebral hemorrage (CT scan).jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Intracerebral_hemorrage_(CT_scan).jpg",
+      "license": "Public domain",
+      "artist": "Glitzy queen00 at English Wikipedia",
+      "description": "This image shows an Intracerebral and Intraventricular haemorrhage of a young woman. The woman was one week post partum, with no known trauma involved.",
+      "original_size": [
+        1200,
+        1484
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/35_ct_scan_hemorrhage.png",
+      "modality": "CT scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "Frontale Kontusionsblutung als Contre coup 01.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Frontale Kontusionsblutung als Contre coup 01.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Frontale_Kontusionsblutung_als_Contre_coup_01.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "CT-scan of a frontal intracerebral hemorrhage on the right (left image side) as a contre coup. There is dens suture material visible left occipital in the skin.",
+      "original_size": [
+        854,
+        1062
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/36_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "CT Brain MCA Infarct.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "CT Brain MCA Infarct.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:CT_Brain_MCA_Infarct.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Lucien Monfils",
+      "description": "CT scan of the brain with an MCA infarct. This is an edited version of the source image used in the \"Anatomist\" app and shared here under the terms of the source image's Share Alike Creative Commons license.",
+      "original_size": [
+        2000,
+        2502
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/37_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "Right MCA and PCA territories infarct.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Right MCA and PCA territories infarct.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Right_MCA_and_PCA_territories_infarct.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Cerevisae",
+      "description": "Right middle cerebral artery (MCA) and posterior cerebral artery (PCA) territories infarcts",
+      "original_size": [
+        512,
+        512
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/38_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "POCITKWojder.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "POCITKWojder.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:POCITKWojder.jpg",
+      "license": "CC BY 3.0",
+      "artist": "Wojder",
+      "description": "POCI- posterior circulation cerebral infarct",
+      "original_size": [
+        503,
+        565
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/39_ct_scan_ventricular_enlargement.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "ventricular enlargement"
+      ],
+      "group": "Hydrocephalus.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Hydrocephalus.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Hydrocephalus.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Lucien Monfils",
+      "description": "Ct-scan of the brain with hydrocephalus",
+      "original_size": [
+        512,
+        512
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/40_ct_scan_ventricular_enlargement.png",
+      "modality": "CT scan",
+      "labels": [
+        "ventricular enlargement"
+      ],
+      "group": "dilmen_nph_ct",
+      "source": "wikimedia_commons",
+      "commons_title": "NPH CT 20.png",
+      "page": "https://commons.wikimedia.org/wiki/File:NPH_CT_20.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Nevit Dilmen (talk)",
+      "description": "This image is part of a series which can be scrolled interactively with the mousewheel or mouse dragging. This is done by using Template:Imagestack. The series is found in the category Computed tomography images of normal pressure hydrocephalus. Images from a patient with normal pressure hydrocephal",
+      "original_size": [
+        583,
+        488
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/41_ct_scan_mass_lesion.png",
+      "modality": "CT scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "BrainCa.png",
+      "source": "wikimedia_commons",
+      "commons_title": "BrainCa.png",
+      "page": "https://commons.wikimedia.org/wiki/File:BrainCa.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Brain cancer in the frontal right lobe",
+      "original_size": [
+        724,
+        961
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/42_ct_scan_mass_lesion.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "Medulloblastom CT.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Medulloblastom CT.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Medulloblastom_CT.jpg",
+      "license": "Public domain",
+      "artist": "User:Reytan",
+      "description": "Medulloblastom im Schädel-CT nach Kontrastmittelgabe.",
+      "original_size": [
+        1003,
+        1011
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/43_ct_scan_mass_lesion.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "Tectal plate glioma CT.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Tectal plate glioma CT.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Tectal_plate_glioma_CT.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Jto410",
+      "description": "Axial non-contrast CT in a nine-year-old girl showing a slightly hypodense mass in the tectum of the brainstem, compressing the aqueduct of Sylvius and causing obstructive hydrocephalus.",
+      "original_size": [
+        512,
+        512
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/44_ct_scan_sinus_abnormality.png",
+      "modality": "CT scan",
+      "labels": [
+        "sinus abnormality"
+      ],
+      "group": "FrontalSinusitis.png",
+      "source": "wikimedia_commons",
+      "commons_title": "FrontalSinusitis.png",
+      "page": "https://commons.wikimedia.org/wiki/File:FrontalSinusitis.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Frontal sinusitis",
+      "original_size": [
+        736,
+        875
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/45_ct_scan_sinus_abnormality.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "sinus abnormality"
+      ],
+      "group": "Chronische Sinusitis maxillaris mit Ebonisierung des Knochens 92W - 001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Chronische Sinusitis maxillaris mit Ebonisierung des Knochens 92W - 001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Chronische_Sinusitis_maxillaris_mit_Ebonisierung_des_Knochens_92W_-_001.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Hellerhoff",
+      "description": "Chronische Sinusitis maxillaris mit Ebonisierung des Knochens",
+      "original_size": [
+        949,
+        1124
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/46_mri_brain_scan_normal_brain_mri_no_acute_findings.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "Brain MRI t2 142301.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Brain MRI t2 142301.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Brain_MRI_t2_142301.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Nevit Dilmen (talk)",
+      "description": "Brain & Cerebellum T2",
+      "original_size": [
+        440,
+        448
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/47_mri_brain_scan_acute_infarct.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "acute infarct"
+      ],
+      "group": "DWI MRI of a cerebral infarction.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "DWI MRI of a cerebral infarction.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:DWI_MRI_of_a_cerebral_infarction.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff, isolation of DWI image by Mikael Häggström",
+      "description": "DWI of a few days old right superiofrontal cortical cerebral infarction, showing a clear diffusion disturbance (shown as brighter) in the area.",
+      "original_size": [
+        551,
+        707
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/48_mri_brain_scan_acute_infarct.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "acute infarct",
+        "chronic infarct"
+      ],
+      "group": "LACIMRIflairWojder.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "LACIMRIflairWojder.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:LACIMRIflairWojder.jpg",
+      "license": "CC BY 3.0",
+      "artist": "Wojder",
+      "description": "LACI lacunar cerebral infarct",
+      "original_size": [
+        407,
+        451
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/49_mri_brain_scan_hemorrhage.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "MRI Cerebellum Hemorrhage.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "MRI Cerebellum Hemorrhage.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:MRI_Cerebellum_Hemorrhage.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Bobjgalindo",
+      "description": "Head MRI showing deep intracerebral hemorrhage (cerebellum). This is an edited version of the source image used in the \"Anatomist\" app and shared here under the terms of the source image's Share Alike Creative Commons license.",
+      "original_size": [
+        2118,
+        1957
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/50_mri_brain_scan_hemorrhage.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "hemorrhage"
+      ],
+      "group": "Frontale Kontusionsblutung MRT T1 01.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Frontale Kontusionsblutung MRT T1 01.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Frontale_Kontusionsblutung_MRT_T1_01.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "MRI-scan (T1) of a frontal intracerebral hemorrhage on the right (left image side) as a contre coup.",
+      "original_size": [
+        728,
+        802
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/51_mri_brain_scan_mass_lesion.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "Glioblastoma - MR coronal with contrast.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Glioblastoma - MR coronal with contrast.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Glioblastoma_-_MR_coronal_with_contrast.jpg",
+      "license": "CC BY 2.5",
+      "artist": "",
+      "description": "Glioblastoma (astrocytoma) WHO grade IV - MRI coronal view, post contrast. This is the tumor found on a scan of a 15 year old boy",
+      "original_size": [
+        974,
+        947
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/52_mri_brain_scan_mass_lesion.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "Glioblastoma multiforme - MRT T1 ax.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Glioblastoma multiforme - MRT T1 ax.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Glioblastoma_multiforme_-_MRT_T1_ax.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Glioblastoma multiforme - MRT T1 axial nativ. Histologie bioptisch gesichert.",
+      "original_size": [
+        513,
+        545
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/53_mri_brain_scan_mass_lesion.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "Huge Meningioma.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Huge Meningioma.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Huge_Meningioma.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Fowle",
+      "description": "An MRI scan of a large meningioma tumour that took 8 hours to remove.",
+      "original_size": [
+        438,
+        424
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/54_mri_brain_scan_mass_lesion.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "mass lesion"
+      ],
+      "group": "Butterfly glioblastoma.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Butterfly glioblastoma.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Butterfly_glioblastoma.png",
+      "license": "CC BY 4.0",
+      "artist": "John H. Rossmeisl, Kemba Clapp, Theresa E. Pancotto, Samantha Emch, John L. Robertson, Waldemar Debinski",
+      "description": "Coronal, post-contrast T1 image of a posterior human butterfly GBM.",
+      "original_size": [
+        650,
+        650
+      ],
+      "possible_pretraining_overlap": true,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/55_mri_brain_scan_white_matter_hyperintensity.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "white matter hyperintensity"
+      ],
+      "group": "MSMRI.png",
+      "source": "wikimedia_commons",
+      "commons_title": "MSMRI.png",
+      "page": "https://commons.wikimedia.org/wiki/File:MSMRI.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Multiple sclerosis as see on MRI",
+      "original_size": [
+        756,
+        942
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/56_mri_brain_scan_ventricular_enlargement.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "ventricular enlargement"
+      ],
+      "group": "dilmen_nph_mri",
+      "source": "wikimedia_commons",
+      "commons_title": "NPH MRI 010.png",
+      "page": "https://commons.wikimedia.org/wiki/File:NPH_MRI_010.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Nevit Dilmen (talk)",
+      "description": "Images from a patient with normal pressure hydrocephalus (NPH)",
+      "original_size": [
+        448,
+        512
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
+    },
+    {
+      "file": "data/images/real/real_chest_xray_normal_pa.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "data/images/real/real_chest_xray_normal_pa.jpg",
+      "source": "data/images/real (see its ATTRIBUTION.md)",
+      "license": "CC0 1.0",
+      "possible_pretraining_overlap": false,
+      "overlap_note": "",
+      "has_annotation": false
+    },
+    {
+      "file": "data/images/real/real_chest_xray_pneumothorax.png",
+      "modality": "chest X-ray",
+      "labels": [
+        "pneumothorax"
+      ],
+      "group": "data/images/real/real_chest_xray_pneumothorax.png",
+      "source": "data/images/real (see its ATTRIBUTION.md)",
+      "license": "CC BY 4.0",
+      "possible_pretraining_overlap": true,
+      "overlap_note": "from an open-access PubMed Central article",
+      "has_annotation": true
+    },
+    {
+      "file": "data/images/real/real_ct_scan_06.png",
+      "modality": "CT scan",
+      "labels": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "source": "data/images/real (see its ATTRIBUTION.md)",
+      "license": "CC0 1.0",
+      "possible_pretraining_overlap": false,
+      "overlap_note": "",
+      "has_annotation": false
+    },
+    {
+      "file": "data/images/real/real_ct_scan_10.png",
+      "modality": "CT scan",
+      "labels": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "source": "data/images/real (see its ATTRIBUTION.md)",
+      "license": "CC0 1.0",
+      "possible_pretraining_overlap": false,
+      "overlap_note": "",
+      "has_annotation": false
+    },
+    {
+      "file": "data/images/real/real_ct_scan_14.png",
+      "modality": "CT scan",
+      "labels": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "source": "data/images/real (see its ATTRIBUTION.md)",
+      "license": "CC0 1.0",
+      "possible_pretraining_overlap": false,
+      "overlap_note": "",
+      "has_annotation": false
+    },
+    {
+      "file": "data/images/real/real_brain_mri_t1.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "data/images/real/real_brain_mri_t1.png",
+      "source": "data/images/real (see its ATTRIBUTION.md)",
+      "license": "Public domain",
+      "possible_pretraining_overlap": false,
+      "overlap_note": "",
+      "has_annotation": false
+    }
+  ]
+}

@@ -209,7 +209,7 @@ def test_print_mode2_result_warns_when_recalibration_only_matches_the_always_tru
 
 
 # --------------------------------------------------------------------------
-# Mode 3: imaging mini-benchmark (BiomedCLIP mocked -- same convention as
+# Mode 3: real-image manifest adapter + fusion comparison (BiomedCLIP mocked -- same convention as
 # test_imaging_agent.py, no real weights downloaded).
 # --------------------------------------------------------------------------
 
@@ -242,89 +242,43 @@ def _fake_preprocess(image):
     return torch.zeros(3, 224, 224)
 
 
-@pytest.fixture
-def imaging_eval_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr(ev, "IMAGING_EVAL_DIR", tmp_path / "imaging_eval")
-    monkeypatch.setattr(ev, "IMAGING_EVAL_MANIFEST", tmp_path / "imaging_eval" / "manifest.json")
-    return tmp_path / "imaging_eval"
+def test_load_imaging_eval_set_adapts_the_real_manifest():
+    entries = ev.load_imaging_eval_set()
+
+    assert entries and all(set(e) == {"image_path", "modality", "intended_label"} for e in entries)
+    assert {e["modality"] for e in entries} == set(FINDING_LABELS_BY_MODALITY)
+    from pathlib import Path
+
+    assert all(Path(e["image_path"]).exists() for e in entries)
+    assert not any("synthetic" in e["image_path"].lower() for e in entries)  # real images only
 
 
-def test_generate_imaging_eval_set_covers_every_supported_label(imaging_eval_dir):
-    manifest = ev.generate_imaging_eval_set()
+def test_fusion_sample_takes_one_image_per_modality():
+    entries = ev.load_imaging_eval_set()
+    sample = ev.fusion_sample(entries)
 
-    total_labels = sum(len(labels) for labels in FINDING_LABELS_BY_MODALITY.values())
-    assert len(manifest) == total_labels
-    assert set(FINDING_LABELS_BY_MODALITY) <= {entry["modality"] for entry in manifest}
-    for entry in manifest:
-        from pathlib import Path
-
-        assert Path(entry["image_path"]).exists()
-    assert json.loads((imaging_eval_dir / "manifest.json").read_text())
+    assert [e["modality"] for e in sample] == list(dict.fromkeys(e["modality"] for e in entries))
+    assert len(sample) == len({e["modality"] for e in entries})
 
 
-def test_run_imaging_benchmark_scores_top1_accuracy(imaging_eval_dir, monkeypatch):
-    manifest = ev.generate_imaging_eval_set(images_per_label=1)
-    # Force every MRI image to classify as the FIRST MRI label correctly,
-    # and every chest X-ray image to also land on the correct label --
-    # i.e. a deterministic, per-image "correct" model bundle.
-    mri_first_label = FINDING_LABELS_BY_MODALITY["MRI brain scan"][0]
+def test_the_old_synthetic_benchmark_is_gone():
+    # It scored BiomedCLIP on generated gradient pictures with an arbitrary "intended
+    # label" (chance by construction); see backend/tests/imaging_benchmark.py.
+    for name in ("generate_imaging_eval_set", "run_imaging_benchmark", "load_or_generate_imaging_eval_set", "IMAGING_EVAL_DIR"):
+        assert not hasattr(ev, name), name
+    from pathlib import Path
 
-    call_count = {"n": 0}
-
-    def _bundle_for_call():
-        # Every entry in this test's manifest is scored against a model
-        # that always picks the label the image was actually generated
-        # for -- proven per-entry below via a fresh bundle per image.
-        return None
-
-    def _per_image_bundle(entry):
-        model = _DeterministicModel(entry["intended_label"])
-        return model, _fake_preprocess, _RecordingTokenizer()
-
-    # analyze_image() calls _get_model_bundle() once per call -- patch it
-    # to return a bundle keyed to whichever image is being processed by
-    # tracking call order against the manifest.
-    manifest_iter = iter(manifest)
-    current = {"entry": None}
-
-    def _get_model_bundle():
-        return _per_image_bundle(current["entry"])
-
-    monkeypatch.setattr(imaging_agent, "_get_model_bundle", _get_model_bundle)
-
-    correct = 0
-    for entry in manifest:
-        current["entry"] = entry
-        import asyncio
-
-        result = asyncio.run(imaging_agent.analyze_image(entry["image_path"], modality_hint=entry["modality"]))
-        if result.findings[0] == entry["intended_label"]:
-            correct += 1
-
-    assert correct == len(manifest)  # every image correctly classified by construction
-
-    # Now exercise run_imaging_benchmark() itself with a bundle that
-    # always gets the MRI modality's first label right (deterministic,
-    # single bundle -- some images "wrong" by construction, which is
-    # fine, this just checks the accuracy bookkeeping is correct).
-    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: (_DeterministicModel(mri_first_label), _fake_preprocess, _RecordingTokenizer()))
-
-    benchmark = ev.run_imaging_benchmark(manifest)
-
-    assert set(benchmark["accuracy_by_modality"]) == set(FINDING_LABELS_BY_MODALITY)
-    mri_labels = FINDING_LABELS_BY_MODALITY["MRI brain scan"]
-    expected_mri_accuracy = sum(1 for e in manifest if e["modality"] == "MRI brain scan" and e["intended_label"] == mri_first_label) / len(mri_labels)
-    assert benchmark["accuracy_by_modality"]["MRI brain scan"] == pytest.approx(expected_mri_accuracy, abs=1e-3)
+    assert not Path("data/benchmarks/imaging_eval").exists()
 
 
-def test_run_image_fusion_comparison_demonstrates_the_code_path_differs(imaging_eval_dir, monkeypatch):
-    manifest = ev.generate_imaging_eval_set(images_per_label=1)
+def test_run_image_fusion_comparison_demonstrates_the_code_path_differs(monkeypatch):
+    entries = ev.fusion_sample(ev.load_imaging_eval_set())
     monkeypatch.setattr(
         imaging_agent, "_get_model_bundle",
-        lambda: (_DeterministicModel(manifest[0]["intended_label"]), _fake_preprocess, _RecordingTokenizer()),
+        lambda: (_DeterministicModel(FINDING_LABELS_BY_MODALITY[entries[0]["modality"]][0]), _fake_preprocess, _RecordingTokenizer()),
     )
 
-    rows = ev.run_image_fusion_comparison(manifest, sample_size=2)
+    rows = ev.run_image_fusion_comparison(entries, sample_size=2)
 
     assert len(rows) == 2
     for row in rows:
