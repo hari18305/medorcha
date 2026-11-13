@@ -1,0 +1,61 @@
+{
+  "split": {
+    "seed": 20261113,
+    "dev_images": 37,
+    "test_images": 25,
+    "dev_groups": 35,
+    "test_groups": 25
+  },
+  "findings_dev": {
+    "T0_raw_label": {
+      "n": 37,
+      "top1": 19,
+      "top3": 25,
+      "mrr": 0.6318
+    },
+    "T1_showing": {
+      "n": 37,
+      "top1": 23,
+      "top3": 32,
+      "mrr": 0.7571
+    },
+    "T2_this_is": {
+      "n": 37,
+      "top1": 15,
+      "top3": 32,
+      "mrr": 0.6424
+    },
+    "T3_description_only": {
+      "n": 37,
+      "top1": 17,
+      "top3": 28,
+      "mrr": 0.6374
+    },
+    "T4_ensemble": {
+      "n": 37,
+      "top1": 21,
+      "top3": 33,
+      "mrr": 0.7298
+    }
+  },
+  "modality_dev": {
+    "M0_raw_label": {
+      "n": 37,
+      "correct": 34
+    },
+    "M1_descriptive": {
+      "n": 37,
+      "correct": 36
+    },
+    "M2_this_is": {
+      "n": 37,
+      "correct": 37
+    },
+    "M3_ensemble": {
+      "n": 37,
+      "correct": 37
+    }
+  },
+  "chosen_findings": "T1_showing",
+  "chosen_modality": "M2_this_is"
+}
