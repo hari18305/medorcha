@@ -4,13 +4,14 @@ import { PlusIcon, UserCheckIcon } from "../components/icons.jsx";
 /**
  * report: the FinalReport JSON from POST/GET /diagnose (includes the
  * imaging findings, if any, as report.imaging).
- * submittedSummary: { age, sex, clinicalText, medicalReport, hadImage }
+ * submittedSummary: { age, sex, clinicalText, medicalReport, history, labs, hadImage }
  * echoed from what was submitted on the Case Submission screen --
  * FinalReport doesn't include patient details, so this app remembers what
  * was submitted rather than inventing data that isn't in the API response.
  * onNewCase / onReviewCase: navigation callbacks from App.jsx.
  */
 export default function Report({ report, submittedSummary, onNewCase, onReviewCase }) {
+  const labEntries = Object.entries(submittedSummary?.labs ?? {});
   const patient = submittedSummary && (
     <section className="card card-pad">
       <h3 className="text-sm font-semibold text-slate-900">Patient summary</h3>
@@ -28,6 +29,31 @@ export default function Report({ report, submittedSummary, onNewCase, onReviewCa
         <div className="mt-3 border-t border-slate-100 pt-3">
           <p className="eyebrow">Presenting complaint</p>
           <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{submittedSummary.clinicalText}</p>
+        </div>
+      )}
+      {submittedSummary.history?.length > 0 && (
+        <div className="mt-3 border-t border-slate-100 pt-3" data-summary="history">
+          <p className="eyebrow">Past history</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {submittedSummary.history.map((item) => (
+              <li key={item} className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm text-slate-700">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {labEntries.length > 0 && (
+        <div className="mt-3 border-t border-slate-100 pt-3" data-summary="labs">
+          <p className="eyebrow">Laboratory values</p>
+          <dl className="mt-1.5 divide-y divide-slate-100 text-sm">
+            {labEntries.map(([name, value]) => (
+              <div key={name} className="flex items-baseline justify-between gap-4 py-1">
+                <dt className="text-slate-500">{name}</dt>
+                <dd className="text-right font-medium tabular-nums text-slate-900">{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       )}
       {submittedSummary.medicalReport && (

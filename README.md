@@ -349,8 +349,13 @@ npm run dev
   default ports.
 
 Open `http://localhost:5173` in a browser to use the app: submit a
-case (age/sex + clinical text and/or an image), watch it process, and
-view the report. If confidence is below threshold, you'll be routed
+case (age/sex + clinical text, a report, lab values and/or an image;
+optionally past medical history), watch it process, and view the
+report. History and lab values are sent as structured fields and merged
+into the clinical findings on the server; lab values count as clinical
+input, past history on its own does not (see the input-sufficiency gate
+above). `npm test` in `frontend/` runs the form-logic tests (Node's
+built-in runner, no extra dependencies). If confidence is below threshold, you'll be routed
 automatically to the review screen (also reachable manually via the
 "Review Case" button on any report).
 

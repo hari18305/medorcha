@@ -1,5 +1,8 @@
 import { useRef, useState } from "react";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import HistoryInput from "../components/HistoryInput.jsx";
+import LabRows, { newLabRow } from "../components/LabRows.jsx";
+import { buildLabs, finalizeHistory, labsToRows } from "../utils/caseFields.js";
 import {
   AlertIcon,
   ArrowRightIcon,
@@ -22,19 +25,29 @@ const EXAMPLES = [
     age: "45",
     sex: "male",
     clinicalText: "headache and dizziness, history of hypertension",
+    history: ["hypertension"],
   },
   {
     label: "Elderly, on warfarin",
     age: "81",
     sex: "male",
-    clinicalText:
-      "gradual gait unsteadiness and mild headache over several weeks, on warfarin, history of a fall two months ago; history of hypertension and atrial fibrillation",
+    clinicalText: "gradual gait unsteadiness and mild headache over several weeks, on warfarin, history of a fall two months ago",
+    history: ["hypertension", "atrial fibrillation", "on anticoagulation"],
   },
   {
     label: "Positional vertigo",
     age: "57",
     sex: "male",
     clinicalText: "brief episodes of spinning vertigo triggered by rolling over in bed, lasting under a minute, no headache",
+    history: [],
+  },
+  {
+    label: "Anemia, with labs",
+    age: "39",
+    sex: "female",
+    clinicalText: "fatigue and dizziness, especially on standing, mild headache",
+    history: ["iron deficiency anemia"],
+    labs: { hemoglobin: "10.2 g/dL", hematocrit: "31%" },
   },
 ];
 
@@ -52,7 +65,7 @@ const PIPELINE = [
 /**
  * onSubmit(formData, submittedSummary) -- formData is ready to POST to
  * /diagnose as multipart/form-data; submittedSummary is a plain object
- * ({age, sex, clinicalText, medicalReport, hadImage, imageFile}) the
+ * ({age, sex, clinicalText, medicalReport, history, labs, hadImage, imageFile}) the
  * parent keeps in React state so the Report screen can show a patient
  * summary, and so this form can be re-populated after a failed
  * submission. FinalReport itself doesn't echo back patient details, so
@@ -73,6 +86,9 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
   const [imagePreviewUrl, setImagePreviewUrl] = useState(() =>
     initialValues?.imageFile ? URL.createObjectURL(initialValues.imageFile) : null
   );
+  const [history, setHistory] = useState(initialValues?.history ?? []);
+  const [historyDraft, setHistoryDraft] = useState("");
+  const [labRows, setLabRows] = useState(() => labsToRows(initialValues?.labs));
   const [formError, setFormError] = useState(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -104,6 +120,9 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
     setSex(example.sex);
     setClinicalText(example.clinicalText);
     setMedicalReport("");
+    setHistory(example.history ?? []);
+    setHistoryDraft("");
+    setLabRows(Object.entries(example.labs ?? {}).map(([name, value]) => newLabRow(name, value)));
     setFormError(null);
   }
 
@@ -115,8 +134,23 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
       setFormError("Age and sex are required.");
       return;
     }
-    if (!clinicalText.trim() && !medicalReport.trim() && !imageFile) {
-      setFormError("Provide at least clinical text, a medical report, or an image.");
+    const labResult = buildLabs(labRows);
+    if (labResult.error) {
+      setFormError(labResult.error);
+      return;
+    }
+    const historyResult = finalizeHistory(history, historyDraft);
+    if (historyResult.error) {
+      setFormError(historyResult.error);
+      return;
+    }
+    const hasLabs = Object.keys(labResult.labs).length > 0;
+    if (!clinicalText.trim() && !medicalReport.trim() && !imageFile && !hasLabs) {
+      setFormError(
+        historyResult.history.length
+          ? "Past history alone is not enough: add clinical text, a medical report, lab values or an image."
+          : "Provide at least clinical text, a medical report, lab values or an image."
+      );
       return;
     }
 
@@ -125,6 +159,8 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
     formData.append("sex", sex);
     if (clinicalText.trim()) formData.append("clinical_text", clinicalText.trim());
     if (medicalReport.trim()) formData.append("medical_report", medicalReport.trim());
+    if (historyResult.history.length) formData.append("history", JSON.stringify(historyResult.history));
+    if (hasLabs) formData.append("labs", JSON.stringify(labResult.labs));
     if (imageFile) formData.append("image", imageFile);
 
     onSubmit(formData, {
@@ -132,6 +168,8 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
       sex,
       clinicalText: clinicalText.trim(),
       medicalReport: medicalReport.trim(),
+      history: historyResult.history,
+      labs: labResult.labs,
       hadImage: Boolean(imageFile),
       imageFile,
     });
@@ -141,10 +179,13 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
   // server error until the user submits again.
   const displayedError = formError || error;
 
-  // Mirrors the backend's input-sufficiency gate (confidence.py): with no
-  // clinical text and no report there is nothing to extract symptoms or
-  // findings from, so confidence is capped at 50% and review is required.
-  const mayBeInsufficient = Boolean(imageFile) && !clinicalText.trim() && !medicalReport.trim();
+  // Mirrors the backend's input-sufficiency gate (confidence.py): confidence is capped at 50% and review
+  // is required unless the case has a symptom, a lab value or a finding extracted from a report. Clinical
+  // text or a report supplies those (the server extracts them); a lab row supplies one directly. An image or
+  // past history alone does not.
+  const hasAnchor =
+    clinicalText.trim() !== "" || medicalReport.trim() !== "" || labRows.some((r) => r.name.trim() && r.value.trim());
+  const mayBeInsufficient = !hasAnchor && (Boolean(imageFile) || history.length > 0 || historyDraft.trim() !== "");
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -244,6 +285,21 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
             </div>
           </section>
 
+          <section className="card card-pad" data-section="history-labs">
+            <h3 className="text-sm font-semibold text-slate-900">
+              History and labs <span className="font-normal text-slate-500">(optional)</span>
+            </h3>
+            <div className="mt-4 grid gap-5 sm:grid-cols-2">
+              <HistoryInput
+                items={history}
+                onItemsChange={setHistory}
+                draft={historyDraft}
+                onDraftChange={setHistoryDraft}
+              />
+              <LabRows rows={labRows} onRowsChange={setLabRows} />
+            </div>
+          </section>
+
           <section className="card card-pad">
             <h3 className="text-sm font-semibold text-slate-900">
               Medical image <span className="font-normal text-slate-500">(optional)</span>
@@ -306,8 +362,9 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
             >
               <AlertIcon className="mt-0.5 h-4 w-4 text-amber-700" />
               <p className="text-sm text-amber-900">
-                <span className="font-semibold">Image only.</span> With no symptoms or report findings to reason
-                from, confidence is capped at 50% and this case will be sent for clinician review.
+                <span className="font-semibold">No symptoms, report or lab values yet.</span> An image or past history
+                alone gives the analysis nothing to reason from, so confidence would be capped at 50% and the case
+                sent for clinician review.
               </p>
             </div>
           )}
