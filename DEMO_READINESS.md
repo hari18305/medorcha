@@ -939,3 +939,24 @@ film), plan committed before scoring. Captions 5/9 top-1 against 3/9 for bare la
 specificity 7/12 against 10/12. Still thin: one atrophy image and no CT atrophy (no clean images; the CT label set has no
 atrophy label), and the second normal head CT is a single slice through the orbits (read as sinus abnormality at 0.98).
 
+
+---
+
+## Live check of the gate and the general-symptom cap (2026-11-13, 4 cases)
+
+Gemini answered again (a 9-token test call, then 4 real cases, about 140 s in total, no 429 anywhere, no tracebacks), on an
+isolated store (`eval_run/qdrant_live4`: KB = 67 passages, case memory emptied; `eval_run/live4.db`).
+
+| Case | Before (31-case run) | Now, live |
+|---|---|---|
+| CASE013, empty input | 0.79, no diagnosis, **skipped review** | 0.00, no diagnosis, review required, no optimizer, input note shown |
+| CASE008, "generally unwell, mild fatigue, occasional lightheadedness" | 0.68, no review | **0.60**, review required, optimizer skipped, non-specific-input note shown; two diagnoses still listed |
+| CASE003, image only (MRI) | 0.67 to 0.79 band, skipped review | **0.50**, review required, input note shown; fusion even flagged the picture as a graphic and not a scan |
+| CASE002, ordinary text case | 0.656 | 0.679, no review, 0 optimizer rounds, 5 offline + 11 live evidence items |
+
+So the input-sufficiency gate and the general-symptom cap work on the real pipeline for these four, and the extractor's wording for
+CASE008 did match the lexicon. **Not shown by this run:** no case entered the optimizer, so the new "return the winning round's
+evidence" path is still only tested with fakes; four cases are not the 31 and say nothing about calibration or the threshold; one small
+wording flaw, fixed afterwards: the empty-case note ended "Any diagnosis shown rests on the image and retrieved literature alone"
+although there was no diagnosis and no image; it now says "(there may be none) rests only on the image, if one was given, and on
+retrieved literature".

@@ -95,8 +95,8 @@ INSUFFICIENT_INPUT_CAP = 0.5
 INSUFFICIENT_INPUT_NOTE = (
     "Insufficient clinical input: no symptoms, laboratory values or report findings "
     f"were provided, so confidence is capped at {INSUFFICIENT_INPUT_CAP:.2f} and "
-    "clinician review is required. Any diagnosis shown rests on the image and "
-    "retrieved literature alone."
+    "clinician review is required. Any diagnosis shown (there may be none) rests "
+    "only on the image, if one was given, and on retrieved literature."
 )
 
 
