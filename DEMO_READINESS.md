@@ -991,3 +991,20 @@ What it does not show: correctness. 7 of the 31 went through three optimizer rou
 pneumothorax case with no text (REAL007) is now sent for review at 0.50 (the intended trade-off of the gate). The answer key is
 AI-drafted, so no accuracy figure is quoted here; the LLM-judge scoring is the next step and is not done. 13/31 reviewed is a
 behaviour of the current threshold and weights, which are still unvalidated.
+
+---
+
+## LLM-judge run over the 31 final reports (2026-11-14)
+
+Judge `gemini-3.5-flash-lite` (the same family that wrote the reports, so a consistency check only), 0 judge errors, ~150 calls.
+Diagnosis correct 0.903 (28/31; the 6 abstention cases scored by rule, all correct because flagged for review), faithfulness 0.453
+(30 scored), context precision 0.616 (30), unsupported claims in 1 case (3 claims). Output: `eval_run/judge_final.{md,csv,json}`.
+
+The 3 diagnoses marked wrong, inspected: **CASE004 is a real failure** (a generated picture; BiomedCLIP returned "edema, cerebral
+atrophy, chronic infarct", the differential followed it - TIA / vertebrobasilar insufficiency / PRES - at 0.73 with no review,
+although the key says the text decides); REAL005 is defensible (normal film, no lung disease named, but not the musculoskeletal
+cause the key expects); CASE007 looks like a judge error (the second diagnosis matches the key). Low faithfulness, most of all on
+image-only cases, was not checked against a clinician. An independent (non-Gemini) judge and a clinician spot-check are still open.
+
+Possible follow-up from CASE004: an image that carries no clinical signal still steers the differential; consider a plausibility
+check on very low-confidence image findings, or lowering the weight of the image when the text conflicts.
