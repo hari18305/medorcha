@@ -4,6 +4,7 @@ import Processing from "./pages/Processing.jsx";
 import Report from "./pages/Report.jsx";
 import Review from "./pages/Review.jsx";
 import { diagnoseCase } from "./services/api.js";
+import { BrandMark, CheckIcon, ShieldIcon } from "./components/icons.jsx";
 
 // Client-side routing (Phase 10) without a router dependency: each screen
 // has a hash URL (#/, #/processing, #/report, #/review), so the browser's
@@ -110,15 +111,34 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-5xl px-6 py-4">
-          <h1 className="text-xl font-semibold tracking-tight text-slate-800">MedOrchestrate</h1>
-          <p className="text-sm text-slate-500">Clinical decision-support prototype — for clinician review only</p>
+    <div className="flex min-h-screen flex-col bg-canvas text-slate-900">
+      <header className="bg-ink-900 text-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-3.5 sm:px-8">
+          <button
+            type="button"
+            onClick={handleNewCase}
+            className="flex items-center gap-3 rounded-lg text-left focus-visible:ring-offset-ink-900"
+            aria-label="MedOrchestrate, start a new case"
+          >
+            <BrandMark className="h-9 w-9" />
+            <span>
+              <span className="block text-base font-semibold leading-tight tracking-tight">MedOrchestrate</span>
+              <span className="block text-xs leading-tight text-slate-400">
+                Evidence-grounded multimodal decision support
+              </span>
+            </span>
+          </button>
+          <Stepper screen={screen} hasReport={Boolean(report)} />
+        </div>
+        <div className="border-t border-white/10 bg-ink-800">
+          <p className="mx-auto flex max-w-6xl items-center gap-2 px-5 py-1.5 text-xs text-slate-300 sm:px-8">
+            <ShieldIcon className="h-3.5 w-3.5 text-brand-300" />
+            Research prototype — supports, never replaces, clinician judgement. Not a medical device.
+          </p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-10">
         {screen === ROUTES.SUBMISSION && (
           <CaseSubmission
             onSubmit={handleSubmit}
@@ -130,7 +150,7 @@ export default function App() {
           />
         )}
 
-        {screen === ROUTES.PROCESSING && <Processing />}
+        {screen === ROUTES.PROCESSING && <Processing hadImage={Boolean(submittedSummary?.hadImage)} />}
 
         {screen === ROUTES.REPORT && report && (
           <Report
@@ -150,6 +170,61 @@ export default function App() {
           />
         )}
       </main>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <p className="mx-auto max-w-6xl px-5 py-4 text-xs text-slate-500 sm:px-8">
+          Confidence is a heuristic blend of retrieval strength, live-evidence level and source agreement. It is
+          not a probability that a diagnosis is correct. In the browser, case data lives only in this tab's memory and is not saved
+          to local storage.
+        </p>
+      </footer>
     </div>
+  );
+}
+
+// Progress through the four screens. Purely presentational: it mirrors the
+// current route and never navigates (the guards above own navigation).
+const STEPS = [
+  { key: ROUTES.SUBMISSION, label: "Case" },
+  { key: ROUTES.PROCESSING, label: "Analysis" },
+  { key: ROUTES.REPORT, label: "Report" },
+  { key: ROUTES.REVIEW, label: "Review" },
+];
+
+function Stepper({ screen, hasReport }) {
+  const current = STEPS.findIndex((step) => step.key === screen);
+  return (
+    <nav aria-label="Progress">
+      <ol className="flex items-center gap-1 text-xs font-medium">
+        {STEPS.map((step, index) => {
+          const done = index < current || (hasReport && index < 2 && index !== current);
+          const active = index === current;
+          return (
+            <li key={step.key} className="flex items-center gap-1" aria-current={active ? "step" : undefined}>
+              <span
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
+                  active
+                    ? "bg-white text-ink-900"
+                    : done
+                      ? "text-brand-200"
+                      : "text-slate-500"
+                }`}
+              >
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
+                    active ? "bg-brand-700 text-white" : done ? "bg-brand-700/60 text-white" : "bg-white/10"
+                  }`}
+                >
+                  {done && !active ? <CheckIcon className="h-2.5 w-2.5" /> : index + 1}
+                </span>
+                {/* labels of inactive steps collapse on phones so the header fits */}
+                <span className={active ? "" : "hidden sm:inline"}>{step.label}</span>
+              </span>
+              {index < STEPS.length - 1 && <span className="h-px w-3 bg-white/15" aria-hidden="true" />}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }

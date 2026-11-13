@@ -1,4 +1,5 @@
 import ConfidenceBar from "./ConfidenceBar.jsx";
+import { ImageIcon, InfoIcon } from "./icons.jsx";
 
 /**
  * Imaging findings block of the clinician report (Phase 10).
@@ -19,9 +20,12 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
   if (!imaging && !imageSubmitted) return null;
 
   return (
-    <section className="mt-6" data-section="imaging">
-      <h3 className="text-sm font-semibold text-slate-700">Imaging findings</h3>
-      <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4">
+    <section className="card card-pad" data-section="imaging">
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-4 w-4 text-brand-700" />
+        <h3 className="text-sm font-semibold text-slate-900">Imaging findings</h3>
+      </div>
+      <div className="mt-3">
         {!imaging ? (
           <p className="text-sm italic text-slate-500">
             An image was submitted, but no imaging findings were recorded for this case (the imaging
@@ -32,10 +36,13 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
             <p className="text-sm text-slate-700">
               <span className="font-medium">Modality:</span> {imaging.modality}
             </p>
-            <p className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              <span className="font-semibold">Not assessed.</span> This prototype has no findings model
-              for this modality. Treat this case as if no imaging had been provided — nothing from the
-              image was used in the differential or the evidence search.
+            <p className="mt-2 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+              <InfoIcon className="mt-0.5 h-4 w-4 text-slate-500" />
+              <span>
+                <span className="font-semibold">Not assessed.</span> This prototype has no findings model
+                for this modality. Treat this case as if no imaging had been provided — nothing from the
+                image was used in the differential or the evidence search.
+              </span>
             </p>
           </div>
         ) : (
@@ -44,16 +51,21 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
               <span className="font-medium">Modality:</span> {imaging.modality}
             </p>
             {imaging.findings?.length > 0 && (
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              <ul className="mt-2 flex flex-wrap gap-1.5">
                 {imaging.findings.map((finding, index) => (
-                  <li key={index}>{finding}</li>
+                  <li
+                    key={index}
+                    className="rounded-md bg-brand-50 px-2.5 py-1 text-sm text-brand-900 ring-1 ring-inset ring-brand-100"
+                  >
+                    {finding}
+                  </li>
                 ))}
               </ul>
             )}
-            <div className="mt-3 max-w-xs">
+            <div className="mt-4 max-w-xs">
               <ConfidenceBar confidence={imaging.confidence} size="sm" label="BiomedCLIP confidence" />
             </div>
-            <p className="mt-3 text-xs text-slate-400">
+            <p className="mt-3 text-xs text-slate-500">
               A fast zero-shot pre-filter over a small fixed label set for this modality — a sanity
               check, not a diagnostic read of the image.
             </p>

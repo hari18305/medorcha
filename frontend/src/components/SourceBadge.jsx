@@ -26,17 +26,17 @@ const BADGE_STYLES = {
   live: {
     label: "Live evidence",
     hint: "Fetched live from a public literature / trial source",
-    className: "bg-sky-50 text-sky-700 ring-sky-600/20",
+    className: "bg-sky-50 text-sky-800 ring-sky-600/20",
   },
   "clinician-verified": {
     label: "Clinician-verified precedent",
     hint: "A past clinician override on a similar-sounding case — a precedent, not guaranteed correct",
-    className: "bg-violet-50 text-violet-700 ring-violet-600/20",
+    className: "bg-violet-50 text-violet-800 ring-violet-600/20",
   },
   "visual-precedent": {
     label: "Visual precedent",
     hint: "A past clinician override on a similar-looking image — a precedent, not guaranteed correct",
-    className: "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-600/20",
+    className: "bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-600/20",
   },
 };
 
@@ -47,7 +47,7 @@ export default function SourceBadge({ item }) {
     <span
       data-source-kind={kind}
       title={hint}
-      className={`inline-flex flex-none items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${className}`}
+      className={`inline-flex flex-none items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${className}`}
     >
       {label}
     </span>

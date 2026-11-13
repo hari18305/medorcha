@@ -1,4 +1,5 @@
 import ReportSummary from "../components/ReportSummary.jsx";
+import { PlusIcon, UserCheckIcon } from "../components/icons.jsx";
 
 /**
  * report: the FinalReport JSON from POST/GET /diagnose (includes the
@@ -10,54 +11,56 @@ import ReportSummary from "../components/ReportSummary.jsx";
  * onNewCase / onReviewCase: navigation callbacks from App.jsx.
  */
 export default function Report({ report, submittedSummary, onNewCase, onReviewCase }) {
-  return (
-    <div className="mx-auto max-w-3xl">
-      <div className="flex items-start justify-between">
+  const patient = submittedSummary && (
+    <section className="card card-pad">
+      <h3 className="text-sm font-semibold text-slate-900">Patient summary</h3>
+      <dl className="mt-3 grid grid-cols-2 gap-x-4 text-sm">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Clinician report</h2>
-          <p className="mt-1 text-sm text-slate-500">Case {report.case_id}</p>
+          <dt className="text-xs text-slate-500">Age</dt>
+          <dd className="font-medium text-slate-900">{submittedSummary.age || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-slate-500">Sex</dt>
+          <dd className="font-medium capitalize text-slate-900">{submittedSummary.sex || "—"}</dd>
+        </div>
+      </dl>
+      {submittedSummary.clinicalText && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <p className="eyebrow">Presenting complaint</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{submittedSummary.clinicalText}</p>
+        </div>
+      )}
+      {submittedSummary.medicalReport && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <p className="eyebrow">Reported medical text</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{submittedSummary.medicalReport}</p>
+        </div>
+      )}
+    </section>
+  );
+
+  return (
+    <div className="animate-rise">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Clinician report</p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Decision-support report</h2>
+          <p className="mt-1 font-mono text-xs text-slate-500">Case {report.case_id}</p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onReviewCase}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Review Case
+          <button type="button" onClick={onReviewCase} className="btn-primary">
+            <UserCheckIcon className="h-4 w-4" />
+            Review case
           </button>
-          <button
-            type="button"
-            onClick={onNewCase}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <button type="button" onClick={onNewCase} className="btn-secondary">
+            <PlusIcon className="h-4 w-4" />
             New case
           </button>
         </div>
       </div>
 
-      {submittedSummary && (
-        <section className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-slate-700">Patient summary</h3>
-          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <dt className="text-slate-500">Age</dt>
-            <dd className="text-slate-800">{submittedSummary.age || "—"}</dd>
-            <dt className="text-slate-500">Sex</dt>
-            <dd className="text-slate-800">{submittedSummary.sex || "—"}</dd>
-          </dl>
-          {submittedSummary.clinicalText && (
-            <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{submittedSummary.clinicalText}</p>
-          )}
-          {submittedSummary.medicalReport && (
-            <div className="mt-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Reported medical text</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{submittedSummary.medicalReport}</p>
-            </div>
-          )}
-        </section>
-      )}
-
       <div className="mt-6">
-        <ReportSummary report={report} imageSubmitted={Boolean(submittedSummary?.hadImage)} />
+        <ReportSummary report={report} imageSubmitted={Boolean(submittedSummary?.hadImage)} aside={patient} />
       </div>
     </div>
   );

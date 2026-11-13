@@ -1,3 +1,5 @@
+import { AlertIcon } from "./icons.jsx";
+
 /**
  * Renders a visible, distinct message per failure type (Phase 10: "visible
  * error states for network/422/500 failures").
@@ -52,18 +54,25 @@ export default function ErrorBanner({ error, onRetry }) {
   const { title, description, kind } = describe(error);
 
   return (
-    <div role="alert" data-error-kind={kind} className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
-      <p className="text-sm font-semibold text-red-800">{title}</p>
-      <p className="mt-1 text-sm text-red-700">{description}</p>
-      {onRetry && RETRYABLE_KINDS.has(kind) && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 text-sm font-medium text-red-800 underline underline-offset-2 hover:text-red-900"
-        >
-          Try again
-        </button>
-      )}
+    <div
+      role="alert"
+      data-error-kind={kind}
+      className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3"
+    >
+      <AlertIcon className="mt-0.5 h-4 w-4 text-rose-700" />
+      <div>
+        <p className="text-sm font-semibold text-rose-900">{title}</p>
+        <p className="mt-0.5 text-sm text-rose-800">{description}</p>
+        {onRetry && RETRYABLE_KINDS.has(kind) && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-2 text-sm font-semibold text-rose-900 underline underline-offset-2 hover:text-rose-950"
+          >
+            Try again
+          </button>
+        )}
+      </div>
     </div>
   );
 }

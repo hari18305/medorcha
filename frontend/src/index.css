@@ -1,3 +1,62 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas font-sans text-slate-900 antialiased;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-canvas;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-card;
+  }
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500;
+  }
+  .field-label {
+    @apply block text-sm font-medium text-slate-800;
+  }
+  .field-hint {
+    @apply mt-1 text-xs text-slate-500;
+  }
+  .field {
+    @apply mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900
+      placeholder:text-slate-400 transition focus:border-brand-500 focus:outline-none focus:ring-2
+      focus:ring-brand-500/25;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-brand-700 text-white shadow-sm hover:bg-brand-800 active:bg-brand-900;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50;
+  }
+  .btn-ghost {
+    @apply btn px-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
