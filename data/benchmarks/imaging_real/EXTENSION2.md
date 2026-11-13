@@ -24,3 +24,33 @@ paired bare-label comparison (images gained / lost). Secondary: specificity on t
 calcification film gets "calcification" as top-1 or top-3. No decision depends on it and nothing is re-tuned; with n = 9
 an interval is about +-30 points wide. Prior expectation (a guess, stated so it can be wrong): calcification is a small
 bright-spot finding that a whole-image zero-shot model often misses, so most of the 4 will not be top-1.
+
+---
+
+# Result (written after scoring; the plan above was committed first, in 5c1e5c6)
+
+Scored with the unchanged system; nothing re-tuned.
+
+| 9 extension-2 images | current captions | bare labels |
+|---|---|---|
+| top-1 | 5/9 | 3/9 |
+| top-3 | 8/9 | 5/9 |
+| CT calcification (4 films) top-1 | 3/4 | 0/4 |
+| cerebral atrophy (1 film) top-1 | 1/1 | 1/1 |
+| normal films called normal (4) | 1/4 | 2/4 |
+| abnormal films flagged (5) | 4/5 | 3/5 |
+
+Paired, the captions gained 3 images and lost 1 (exact McNemar p = 0.63; not significant at n = 9). My stated expectation
+was that most calcification films would NOT be top-1; it was wrong, with captions three of the four were (the bare labels
+got none). One image of calcification-by-caption is a real signal worth a larger set, not a result: 4 films, two of them
+from one 80+-year-old pattern.
+
+The normals went badly again, the same way as before: the normal head-CT slice through the orbits and sinuses was read as
+"sinus abnormality" at 0.98, a normal sagittal MRI as cerebral atrophy, and the lateral chest film (a view the label set was
+never written for) as pneumothorax, with the truth ranked 10th.
+
+**Pooled over the two fresh sets (26 images):** captions 15/26 top-1 against 14/26 for bare labels (6 gained, 5 lost, p = 1.0);
+sensitivity 12/14 against 9/14; specificity 7/12 against 10/12. So the pattern in EXTENSION.md holds: the captions flag more
+abnormal films and also call more normal films abnormal, and a net top-1 advantage is still not shown on images that took
+no part in choosing them. Still missing: more than one atrophy film, any CT atrophy, and a second normal head-CT subject
+who is not a slice through the orbits.

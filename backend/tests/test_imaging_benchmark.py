@@ -260,11 +260,11 @@ def test_results_json_matches_the_manifest_size(manifest):
 
 def test_manifest_sets_are_disjoint_and_cover_everything():
     everything = ib.load_manifest()
-    original = ib.load_manifest(only="original")
-    extension = ib.load_manifest(only="extension")
-    assert len(original) + len(extension) == len(everything)
-    assert not {e["file"] for e in original} & {e["file"] for e in extension}
-    assert original and extension
+    parts = {name: ib.load_manifest(only=name) for name in ("original", "extension", "extension2")}
+    assert sum(len(p) for p in parts.values()) == len(everything)
+    files = [e["file"] for p in parts.values() for e in p]
+    assert len(files) == len(set(files))  # no image in two sets
+    assert all(parts.values())
 
 
 def test_dev_and_test_subsets_never_include_extension_images():

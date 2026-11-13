@@ -740,9 +740,8 @@ screen; worth replacing with a generic message before a demo if the quota proble
 
 - ~~`/diagnose` is fully synchronous~~ — done 2026-11-13: `POST /diagnose?async=true` + `GET /diagnose/{id}/status`
   give real step-by-step progress (see the update above); the plain `POST /diagnose` is still synchronous.
-- The optimizer's later-iteration RAG/live evidence isn't exposed back
-  into `FinalReport.evidence` (only first-pass retrieval is shown,
-  even if a later iteration is what actually cleared the threshold).
+- ~~The optimizer's later-iteration RAG/live evidence isn't exposed back into `FinalReport.evidence`~~ - done
+  2026-11-13: `optimize()` now returns `final_rag` / `final_live` and the orchestrator puts them in the report (see below).
 - ~~`CASE001.json` and `CASE001_with_image.json` share a `case_id`~~ — fixed
   2026-11-12 (the image variant is now `CASE001_with_image`).
 - A fresh clone/environment needs `python -m backend.rag.ingest` run
@@ -897,3 +896,46 @@ blur) and no longer recognising the non-specific note (2).
 **Not covered:** layout and styling (jsdom has none; the visual check was done in the browser earlier), the real backend
 (the API is mocked at `services/api.js`), drag-and-drop of an image, and the `Report` page's own wrapper beyond what `App`
 exercises. The polling test waits one real interval (1.2 s), so the UI suite takes about 25 s.
+
+---
+
+## Three gaps closed (2026-11-13)
+
+### 1. The report now carries the evidence of the optimizer round that won
+
+A later optimizer round re-retrieves and re-fuses, and its fusion cites `[RAG1]`, `[LIVE2]` numbered over *that round's*
+lists. The report used to carry only the first pass's evidence, so those citations pointed at the wrong item or at nothing.
+`optimize()` now returns `final_rag` / `final_live` (the evidence the returned fusion was written from; `None` when the
+first pass is still the best) and `run_case` uses them. The confidence breakdown already followed the best round.
+Tests: 4 in `test_optimizer_agent.py` (the winning round's evidence is returned, the best of several rounds supplies it and not
+the last, none when the first pass wins, none from the short-circuits) and 2 in `test_orchestrator.py` (the report holds the
+round's evidence and not the first pass's; the first pass's stays when the optimizer returns none); a mutation check (not
+applying `final_rag`) fails the first. **Not verified live** (Gemini quota): the optimizer path has only been run with faked
+providers since this change.
+
+### 2. Knowledge base: 42 to 67 passages (details: `data/knowledge_base/README.md`)
+
+25 passages for conditions the answer key and the live reports reached for, and for findings the imaging models can name
+(pulmonary edema, atelectasis, mediastinal widening, mass lesion, vascular malformation, midline shift, calcification),
+fetched and checked by the existing build tool. Two PubMed candidates were swapped before the commit because their abstracts
+were under the 100-word band the ingest test enforces.
+
+**Measured, including the cost.** On the 14 real agent queries hit@5 stays 14/14 but MRR@5 falls from 0.863 to 0.764
+(hit@1 11 to 9): new, plausibly related passages now sit above the developer's marked-relevant one (those sets were not
+changed). At the old top-10 candidate pool the anticoagulated-fall case lost its subdural-hematoma passage entirely, so the
+pool is now 20 (`RETRIEVE_TOP_K`), and the reranker's score centre was refit from -12.5 to -10.4 so the mean S_rag of those 14
+queries is 0.659 again (off-topic queries 0.209; it was 0.288). Confidence values of earlier runs therefore are not directly
+comparable with new ones beyond that average. For the new conditions, 21 queries I wrote for this (so a coverage check, not an
+independent test) reach a relevant passage in the top 5 for 18, against 3 on the original 42; the three misses are
+mediastinal widening, vertebrobasilar insufficiency and musculoskeletal chest pain. **To use it you must re-ingest**
+(`python -m backend.rag.ingest`); the Docker image needs a rebuild too.
+
+### 3. Imaging benchmark: 88 images (EXTENSION2.md)
+
+9 more images (CT calcification x4, one atrophy MRI, a second normal head CT, two normal brain MRIs, one lateral normal chest
+film), plan committed before scoring. Captions 5/9 top-1 against 3/9 for bare labels (3 gained, 1 lost, p = 0.63); calcification
+3/4 with captions against 0/4 (my stated expectation was the opposite). The normals again went the wrong way (1/4 against
+2/4). Over both fresh sets (26 images): 15/26 against 14/26 top-1 (6 gained, 5 lost, p = 1.0), sensitivity 12/14 against 9/14,
+specificity 7/12 against 10/12. Still thin: one atrophy image and no CT atrophy (no clean images; the CT label set has no
+atrophy label), and the second normal head CT is a single slice through the orbits (read as sinus abnormality at 0.98).
+

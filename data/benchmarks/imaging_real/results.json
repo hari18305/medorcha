@@ -1,307 +1,307 @@
 {
   "overall": {
-    "n_images": 79,
-    "n_groups": 73,
+    "n_images": 88,
+    "n_groups": 81,
     "modality_detection": {
-      "k": 74,
-      "n": 79,
-      "rate": 0.9367088607594937,
+      "k": 83,
+      "n": 88,
+      "rate": 0.9431818181818182,
       "ci": [
-        0.8602493258443956,
-        0.9726655381852706
+        0.8737990064572213,
+        0.9754893334671705
       ]
     },
     "top1": {
-      "k": 45,
-      "n": 79,
-      "rate": 0.569620253164557,
+      "k": 50,
+      "n": 88,
+      "rate": 0.5681818181818182,
       "ci": [
-        0.4597200056030372,
-        0.6730635234451705
+        0.46398482983322936,
+        0.6666749147705233
       ]
     },
     "top3": {
-      "k": 64,
-      "n": 79,
-      "rate": 0.810126582278481,
+      "k": 72,
+      "n": 88,
+      "rate": 0.8181818181818182,
       "ci": [
-        0.7100715339970886,
-        0.8814187317631091
+        0.7248754936722209,
+        0.884869981145291
       ]
     },
-    "top1_group_collapsed": 0.5853881278538813,
+    "top1_group_collapsed": 0.5893004115226338,
     "end_to_end_top1": {
-      "k": 42,
-      "n": 79,
-      "rate": 0.5316455696202531,
+      "k": 47,
+      "n": 88,
+      "rate": 0.5340909090909091,
       "ci": [
-        0.42271215907094595,
-        0.6376439904964211
+        0.43063280602477044,
+        0.6346970662771058
       ]
     },
     "returned_contains_truth": {
-      "k": 48,
-      "n": 79,
-      "rate": 0.6075949367088608,
+      "k": 54,
+      "n": 88,
+      "rate": 0.6136363636363636,
       "ci": [
-        0.4973378852028524,
-        0.707873023326196
+        0.5091856433622111,
+        0.7085805976440431
       ]
     },
     "returned_has_wrong_finding": {
-      "k": 39,
-      "n": 79,
-      "rate": 0.4936708860759494,
+      "k": 44,
+      "n": 88,
+      "rate": 0.5,
       "ci": [
-        0.38630084542959936,
-        0.6016279246569272
+        0.3977398665504473,
+        0.6022601334495528
       ]
     },
-    "mean_findings_returned": 1.2531645569620253,
+    "mean_findings_returned": 1.2613636363636365,
     "sensitivity_abnormal": {
-      "k": 59,
-      "n": 62,
-      "rate": 0.9516129032258065,
+      "k": 63,
+      "n": 67,
+      "rate": 0.9402985074626866,
       "ci": [
-        0.8671174961524586,
-        0.9834086149991539
+        0.8563029501122377,
+        0.9765410285669565
       ]
     },
     "specificity_normal": {
-      "k": 11,
-      "n": 17,
-      "rate": 0.6470588235294118,
+      "k": 12,
+      "n": 21,
+      "rate": 0.5714285714285714,
       "ci": [
-        0.4129996672121182,
-        0.826905138560951
+        0.3654621629703244,
+        0.7553030051347894
       ]
     },
-    "chance_top1": 0.10008114248620578,
-    "chance_top3": 0.292170487740108,
-    "majority_top1": 0.22784810126582278
+    "chance_top1": 0.10171911421911423,
+    "chance_top3": 0.2965988556897648,
+    "majority_top1": 0.23863636363636365
   },
   "by_modality": {
     "MRI brain scan": {
-      "n_images": 20,
-      "n_groups": 18,
+      "n_images": 23,
+      "n_groups": 21,
       "modality_detection": {
-        "k": 20,
-        "n": 20,
+        "k": 23,
+        "n": 23,
         "rate": 1.0,
         "ci": [
-          0.8388698745050667,
+          0.8568788745827374,
           1.0
         ]
       },
       "top1": {
-        "k": 12,
-        "n": 20,
-        "rate": 0.6,
+        "k": 14,
+        "n": 23,
+        "rate": 0.6086956521739131,
         "ci": [
-          0.3865779423152061,
-          0.7811960325858074
+          0.4078517960374599,
+          0.7784262201761787
         ]
       },
       "top3": {
-        "k": 17,
-        "n": 20,
-        "rate": 0.85,
+        "k": 20,
+        "n": 23,
+        "rate": 0.8695652173913043,
         "ci": [
-          0.6395767041130426,
-          0.9476322080405041
+          0.678721020269818,
+          0.954624234856553
         ]
       },
-      "top1_group_collapsed": 0.6296296296296297,
+      "top1_group_collapsed": 0.634920634920635,
       "end_to_end_top1": {
-        "k": 12,
-        "n": 20,
-        "rate": 0.6,
+        "k": 14,
+        "n": 23,
+        "rate": 0.6086956521739131,
         "ci": [
-          0.3865779423152061,
-          0.7811960325858074
+          0.4078517960374599,
+          0.7784262201761787
         ]
       },
       "returned_contains_truth": {
-        "k": 14,
-        "n": 20,
-        "rate": 0.7,
+        "k": 16,
+        "n": 23,
+        "rate": 0.6956521739130435,
         "ci": [
-          0.4810232237710206,
-          0.854524726031006
+          0.49133870939427393,
+          0.8439617197902755
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 10,
-        "n": 20,
-        "rate": 0.5,
+        "k": 11,
+        "n": 23,
+        "rate": 0.4782608695652174,
         "ci": [
-          0.2992949144298199,
-          0.7007050855701801
+          0.2923686953994572,
+          0.6703757013578151
         ]
       },
-      "mean_findings_returned": 1.45,
+      "mean_findings_returned": 1.391304347826087,
       "sensitivity_abnormal": {
-        "k": 15,
-        "n": 16,
-        "rate": 0.9375,
+        "k": 16,
+        "n": 17,
+        "rate": 0.9411764705882353,
         "ci": [
-          0.7167073163197013,
-          0.9888809426916687
+          0.730174547964372,
+          0.9895398693548358
         ]
       },
       "specificity_normal": {
-        "k": 2,
-        "n": 4,
+        "k": 3,
+        "n": 6,
         "rate": 0.5,
         "ci": [
-          0.15003570882017148,
-          0.8499642911798285
+          0.18761280689940868,
+          0.8123871931005913
         ]
       },
-      "chance_top1": 0.09615384615384616,
-      "chance_top3": 0.27884615384615385,
-      "majority_top1": 0.2
+      "chance_top1": 0.10367892976588629,
+      "chance_top3": 0.29765886287625415,
+      "majority_top1": 0.2608695652173913
     },
     "CT scan": {
-      "n_images": 23,
-      "n_groups": 19,
+      "n_images": 28,
+      "n_groups": 24,
       "modality_detection": {
-        "k": 18,
-        "n": 23,
-        "rate": 0.782608695652174,
+        "k": 23,
+        "n": 28,
+        "rate": 0.8214285714285714,
         "ci": [
-          0.5809611981726508,
-          0.9033616439828094
+          0.644082084514089,
+          0.9212161417056989
         ]
       },
       "top1": {
-        "k": 11,
-        "n": 23,
-        "rate": 0.4782608695652174,
+        "k": 14,
+        "n": 28,
+        "rate": 0.5,
         "ci": [
-          0.2923686953994572,
-          0.6703757013578151
+          0.3263284683244634,
+          0.6736715316755366
         ]
       },
       "top3": {
-        "k": 19,
-        "n": 23,
-        "rate": 0.8260869565217391,
+        "k": 24,
+        "n": 28,
+        "rate": 0.8571428571428571,
         "ci": [
-          0.6286194521470433,
-          0.9302145964938723
+          0.6850982695512267,
+          0.9430108706929821
         ]
       },
-      "top1_group_collapsed": 0.4947368421052632,
+      "top1_group_collapsed": 0.5166666666666667,
       "end_to_end_top1": {
-        "k": 8,
-        "n": 23,
-        "rate": 0.34782608695652173,
+        "k": 11,
+        "n": 28,
+        "rate": 0.39285714285714285,
         "ci": [
-          0.18811054636982238,
-          0.5511002309310836
+          0.23565451827580033,
+          0.575912739650937
         ]
       },
       "returned_contains_truth": {
-        "k": 11,
-        "n": 23,
-        "rate": 0.4782608695652174,
+        "k": 15,
+        "n": 28,
+        "rate": 0.5357142857142857,
         "ci": [
-          0.2923686953994572,
-          0.6703757013578151
+          0.3581239514210167,
+          0.7046869626034041
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 12,
-        "n": 23,
-        "rate": 0.5217391304347826,
+        "k": 15,
+        "n": 28,
+        "rate": 0.5357142857142857,
         "ci": [
-          0.3296242986421849,
-          0.7076313046005427
+          0.3581239514210167,
+          0.7046869626034041
         ]
       },
-      "mean_findings_returned": 1.173913043478261,
+      "mean_findings_returned": 1.25,
       "sensitivity_abnormal": {
-        "k": 16,
-        "n": 18,
-        "rate": 0.8888888888888888,
+        "k": 19,
+        "n": 22,
+        "rate": 0.8636363636363636,
         "ci": [
-          0.6719975513339578,
-          0.9689811315464172
+          0.6666458812053,
+          0.9525108273576373
         ]
       },
       "specificity_normal": {
         "k": 2,
-        "n": 5,
-        "rate": 0.4,
+        "n": 6,
+        "rate": 0.3333333333333333,
         "ci": [
-          0.1176182311592533,
-          0.769280067791163
+          0.09676933255921683,
+          0.7000116786584712
         ]
       },
-      "chance_top1": 0.12608695652173915,
-      "chance_top3": 0.36086956521739133,
-      "majority_top1": 0.2608695652173913
+      "chance_top1": 0.12142857142857144,
+      "chance_top3": 0.35000000000000003,
+      "majority_top1": 0.21428571428571427
     },
     "chest X-ray": {
-      "n_images": 36,
+      "n_images": 37,
       "n_groups": 36,
       "modality_detection": {
-        "k": 36,
-        "n": 36,
+        "k": 37,
+        "n": 37,
         "rate": 1.0,
         "ci": [
-          0.9035781695514236,
+          0.9059390425448564,
           1.0
         ]
       },
       "top1": {
         "k": 22,
-        "n": 36,
-        "rate": 0.6111111111111112,
+        "n": 37,
+        "rate": 0.5945945945945946,
         "ci": [
-          0.4486417029674347,
-          0.7521534458217705
+          0.4348568313132931,
+          0.7365370416005986
         ]
       },
       "top3": {
         "k": 28,
-        "n": 36,
-        "rate": 0.7777777777777778,
+        "n": 37,
+        "rate": 0.7567567567567568,
         "ci": [
-          0.6191498017214091,
-          0.882838070251604
+          0.5988239750929105,
+          0.8663879656733671
         ]
       },
       "top1_group_collapsed": 0.6111111111111112,
       "end_to_end_top1": {
         "k": 22,
-        "n": 36,
-        "rate": 0.6111111111111112,
+        "n": 37,
+        "rate": 0.5945945945945946,
         "ci": [
-          0.4486417029674347,
-          0.7521534458217705
+          0.4348568313132931,
+          0.7365370416005986
         ]
       },
       "returned_contains_truth": {
         "k": 23,
-        "n": 36,
-        "rate": 0.6388888888888888,
+        "n": 37,
+        "rate": 0.6216216216216216,
         "ci": [
-          0.4757478039083198,
-          0.7752461320781867
+          0.4610014255281996,
+          0.7593621253610898
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 17,
-        "n": 36,
-        "rate": 0.4722222222222222,
+        "k": 18,
+        "n": 37,
+        "rate": 0.4864864864864865,
         "ci": [
-          0.31985792907209337,
-          0.6299432837306054
+          0.33446153327211037,
+          0.6410536277401908
         ]
       },
-      "mean_findings_returned": 1.1944444444444444,
+      "mean_findings_returned": 1.1891891891891893,
       "sensitivity_abnormal": {
         "k": 28,
         "n": 28,
@@ -313,261 +313,261 @@
       },
       "specificity_normal": {
         "k": 7,
-        "n": 8,
-        "rate": 0.875,
+        "n": 9,
+        "rate": 0.7777777777777778,
         "ci": [
-          0.5291051942301386,
-          0.9775830911367038
+          0.4525833436728054,
+          0.9367762376877727
         ]
       },
-      "chance_top1": 0.08564814814814814,
-      "chance_top3": 0.2556818181818182,
-      "majority_top1": 0.2222222222222222
+      "chance_top1": 0.08558558558558559,
+      "chance_top3": 0.25552825552825553,
+      "majority_top1": 0.24324324324324326
     }
   },
   "subsets": {
     "excluding possible pretraining overlap": {
-      "n_images": 76,
-      "n_groups": 70,
+      "n_images": 85,
+      "n_groups": 78,
       "modality_detection": {
-        "k": 71,
-        "n": 76,
-        "rate": 0.9342105263157895,
+        "k": 80,
+        "n": 85,
+        "rate": 0.9411764705882353,
         "ci": [
-          0.8550628538100542,
-          0.9715738869366242
+          0.8695838996357215,
+          0.9746152142928886
         ]
       },
       "top1": {
-        "k": 42,
-        "n": 76,
-        "rate": 0.5526315789473685,
+        "k": 47,
+        "n": 85,
+        "rate": 0.5529411764705883,
         "ci": [
-          0.4410031528161144,
-          0.6591952400016647
+          0.4472387121130747,
+          0.6540651815583585
         ]
       },
       "top3": {
-        "k": 61,
-        "n": 76,
-        "rate": 0.8026315789473685,
+        "k": 69,
+        "n": 85,
+        "rate": 0.8117647058823529,
         "ci": [
-          0.6995595508255928,
-          0.8765812078766376
+          0.7158877949459186,
+          0.8806795788969659
         ]
       },
-      "top1_group_collapsed": 0.5676190476190476,
+      "top1_group_collapsed": 0.5735042735042735,
       "end_to_end_top1": {
-        "k": 39,
-        "n": 76,
-        "rate": 0.5131578947368421,
+        "k": 44,
+        "n": 85,
+        "rate": 0.5176470588235295,
         "ci": [
-          0.4028849903549509,
-          0.622164607849494
+          0.41297360126349636,
+          0.6207943632936481
         ]
       },
       "returned_contains_truth": {
-        "k": 45,
-        "n": 76,
-        "rate": 0.5921052631578947,
+        "k": 51,
+        "n": 85,
+        "rate": 0.6,
         "ci": [
-          0.47978347984220315,
-          0.6955637075889103
+          0.49371248037407567,
+          0.697639318783076
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 39,
-        "n": 76,
-        "rate": 0.5131578947368421,
+        "k": 44,
+        "n": 85,
+        "rate": 0.5176470588235295,
         "ci": [
-          0.4028849903549509,
-          0.622164607849494
+          0.41297360126349636,
+          0.6207943632936481
         ]
       },
-      "mean_findings_returned": 1.263157894736842,
+      "mean_findings_returned": 1.2705882352941176,
       "sensitivity_abnormal": {
-        "k": 56,
-        "n": 59,
-        "rate": 0.9491525423728814,
+        "k": 60,
+        "n": 64,
+        "rate": 0.9375,
         "ci": [
-          0.8608327667771333,
-          0.9825575988405467
+          0.8500230335750312,
+          0.9754291963252071
         ]
       },
       "specificity_normal": {
-        "k": 11,
-        "n": 17,
-        "rate": 0.6470588235294118,
+        "k": 12,
+        "n": 21,
+        "rate": 0.5714285714285714,
         "ci": [
-          0.4129996672121182,
-          0.826905138560951
+          0.3654621629703244,
+          0.7553030051347894
         ]
       },
-      "chance_top1": 0.10091093117408907,
-      "chance_top3": 0.2943411851306588,
-      "majority_top1": 0.23684210526315788
+      "chance_top1": 0.10251885369532429,
+      "chance_top3": 0.29869600987248046,
+      "majority_top1": 0.24705882352941178
     },
     "excluding annotated films": {
-      "n_images": 78,
-      "n_groups": 72,
+      "n_images": 87,
+      "n_groups": 80,
       "modality_detection": {
-        "k": 73,
-        "n": 78,
-        "rate": 0.9358974358974359,
+        "k": 82,
+        "n": 87,
+        "rate": 0.9425287356321839,
         "ci": [
-          0.8585622037936654,
-          0.9723110929160764
+          0.8724245521342497,
+          0.9752047278432054
         ]
       },
       "top1": {
-        "k": 44,
-        "n": 78,
-        "rate": 0.5641025641025641,
+        "k": 49,
+        "n": 87,
+        "rate": 0.5632183908045977,
         "ci": [
-          0.4536178766457738,
-          0.6685693728703647
+          0.45851365231750213,
+          0.6625762448221343
         ]
       },
       "top3": {
-        "k": 63,
-        "n": 78,
-        "rate": 0.8076923076923077,
+        "k": 71,
+        "n": 87,
+        "rate": 0.8160919540229885,
         "ci": [
-          0.7066498081657022,
-          0.8798489895117625
+          0.721943165293875,
+          0.8835063204043074
         ]
       },
-      "top1_group_collapsed": 0.5796296296296296,
+      "top1_group_collapsed": 0.5841666666666667,
       "end_to_end_top1": {
-        "k": 41,
-        "n": 78,
-        "rate": 0.5256410256410257,
+        "k": 46,
+        "n": 87,
+        "rate": 0.5287356321839081,
         "ci": [
-          0.4162457167544665,
-          0.632629183051989
+          0.4248617443382648,
+          0.6301791179979336
         ]
       },
       "returned_contains_truth": {
-        "k": 47,
-        "n": 78,
-        "rate": 0.6025641025641025,
+        "k": 53,
+        "n": 87,
+        "rate": 0.6091954022988506,
         "ci": [
-          0.4916165517837074,
-          0.7038830474421142
+          0.5041319615871446,
+          0.7050233152904094
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 39,
-        "n": 78,
-        "rate": 0.5,
+        "k": 44,
+        "n": 87,
+        "rate": 0.5057471264367817,
         "ci": [
-          0.39167242528547985,
-          0.6083275747145201
+          0.4026891499485618,
+          0.608319022518678
         ]
       },
-      "mean_findings_returned": 1.2564102564102564,
+      "mean_findings_returned": 1.264367816091954,
       "sensitivity_abnormal": {
-        "k": 58,
-        "n": 61,
-        "rate": 0.9508196721311475,
+        "k": 62,
+        "n": 66,
+        "rate": 0.9393939393939394,
         "ci": [
-          0.8650865720629857,
-          0.9831343231647693
+          0.8542688489926583,
+          0.9761817706953214
         ]
       },
       "specificity_normal": {
-        "k": 11,
-        "n": 17,
-        "rate": 0.6470588235294118,
+        "k": 12,
+        "n": 21,
+        "rate": 0.5714285714285714,
         "ci": [
-          0.4129996672121182,
-          0.826905138560951
+          0.3654621629703244,
+          0.7553030051347894
         ]
       },
-      "chance_top1": 0.10029585798816568,
-      "chance_top3": 0.29271113501882734,
-      "majority_top1": 0.23076923076923078
+      "chance_top1": 0.1019304450338933,
+      "chance_top3": 0.2971344747206816,
+      "majority_top1": 0.2413793103448276
     },
     "excluding both": {
-      "n_images": 76,
-      "n_groups": 70,
+      "n_images": 85,
+      "n_groups": 78,
       "modality_detection": {
-        "k": 71,
-        "n": 76,
-        "rate": 0.9342105263157895,
+        "k": 80,
+        "n": 85,
+        "rate": 0.9411764705882353,
         "ci": [
-          0.8550628538100542,
-          0.9715738869366242
+          0.8695838996357215,
+          0.9746152142928886
         ]
       },
       "top1": {
-        "k": 42,
-        "n": 76,
-        "rate": 0.5526315789473685,
+        "k": 47,
+        "n": 85,
+        "rate": 0.5529411764705883,
         "ci": [
-          0.4410031528161144,
-          0.6591952400016647
+          0.4472387121130747,
+          0.6540651815583585
         ]
       },
       "top3": {
-        "k": 61,
-        "n": 76,
-        "rate": 0.8026315789473685,
+        "k": 69,
+        "n": 85,
+        "rate": 0.8117647058823529,
         "ci": [
-          0.6995595508255928,
-          0.8765812078766376
+          0.7158877949459186,
+          0.8806795788969659
         ]
       },
-      "top1_group_collapsed": 0.5676190476190476,
+      "top1_group_collapsed": 0.5735042735042735,
       "end_to_end_top1": {
-        "k": 39,
-        "n": 76,
-        "rate": 0.5131578947368421,
+        "k": 44,
+        "n": 85,
+        "rate": 0.5176470588235295,
         "ci": [
-          0.4028849903549509,
-          0.622164607849494
+          0.41297360126349636,
+          0.6207943632936481
         ]
       },
       "returned_contains_truth": {
-        "k": 45,
-        "n": 76,
-        "rate": 0.5921052631578947,
+        "k": 51,
+        "n": 85,
+        "rate": 0.6,
         "ci": [
-          0.47978347984220315,
-          0.6955637075889103
+          0.49371248037407567,
+          0.697639318783076
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 39,
-        "n": 76,
-        "rate": 0.5131578947368421,
+        "k": 44,
+        "n": 85,
+        "rate": 0.5176470588235295,
         "ci": [
-          0.4028849903549509,
-          0.622164607849494
+          0.41297360126349636,
+          0.6207943632936481
         ]
       },
-      "mean_findings_returned": 1.263157894736842,
+      "mean_findings_returned": 1.2705882352941176,
       "sensitivity_abnormal": {
-        "k": 56,
-        "n": 59,
-        "rate": 0.9491525423728814,
+        "k": 60,
+        "n": 64,
+        "rate": 0.9375,
         "ci": [
-          0.8608327667771333,
-          0.9825575988405467
+          0.8500230335750312,
+          0.9754291963252071
         ]
       },
       "specificity_normal": {
-        "k": 11,
-        "n": 17,
-        "rate": 0.6470588235294118,
+        "k": 12,
+        "n": 21,
+        "rate": 0.5714285714285714,
         "ci": [
-          0.4129996672121182,
-          0.826905138560951
+          0.3654621629703244,
+          0.7553030051347894
         ]
       },
-      "chance_top1": 0.10091093117408907,
-      "chance_top3": 0.2943411851306588,
-      "majority_top1": 0.23684210526315788
+      "chance_top1": 0.10251885369532429,
+      "chance_top3": 0.29869600987248046,
+      "majority_top1": 0.24705882352941178
     },
     "ORIGINAL 62 images (the set the prompts were tuned on)": {
       "n_images": 62,
@@ -730,6 +730,87 @@
       "chance_top1": 0.11191553544494721,
       "chance_top3": 0.31945701357466066,
       "majority_top1": 0.5294117647058824
+    },
+    "EXTENSION 2 set (added later still; plan fixed before scoring)": {
+      "n_images": 9,
+      "n_groups": 9,
+      "modality_detection": {
+        "k": 9,
+        "n": 9,
+        "rate": 1.0,
+        "ci": [
+          0.7008472464490407,
+          1.0
+        ]
+      },
+      "top1": {
+        "k": 5,
+        "n": 9,
+        "rate": 0.5555555555555556,
+        "ci": [
+          0.2666473457440297,
+          0.811224570528086
+        ]
+      },
+      "top3": {
+        "k": 8,
+        "n": 9,
+        "rate": 0.8888888888888888,
+        "ci": [
+          0.5649937852319399,
+          0.9801096286728695
+        ]
+      },
+      "top1_group_collapsed": 0.5555555555555556,
+      "end_to_end_top1": {
+        "k": 5,
+        "n": 9,
+        "rate": 0.5555555555555556,
+        "ci": [
+          0.2666473457440297,
+          0.811224570528086
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 6,
+        "n": 9,
+        "rate": 0.6666666666666666,
+        "ci": [
+          0.35419734749908977,
+          0.879418401317257
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 5,
+        "n": 9,
+        "rate": 0.5555555555555556,
+        "ci": [
+          0.2666473457440297,
+          0.811224570528086
+        ]
+      },
+      "mean_findings_returned": 1.3333333333333333,
+      "sensitivity_abnormal": {
+        "k": 4,
+        "n": 5,
+        "rate": 0.8,
+        "ci": [
+          0.3755282641185388,
+          0.9637768390302125
+        ]
+      },
+      "specificity_normal": {
+        "k": 1,
+        "n": 4,
+        "rate": 0.25,
+        "ci": [
+          0.045586062644636216,
+          0.6993639475573634
+        ]
+      },
+      "chance_top1": 0.1160968660968661,
+      "chance_top3": 0.3354700854700855,
+      "majority_top1": 0.7777777777777778
     },
     "TEST half: held out from the prompt choice": {
       "n_images": 25,
@@ -910,6 +991,17 @@
         ]
       ]
     },
+    "CT scan | calcification": {
+      "n": 4,
+      "top1_ok": 3,
+      "top3_ok": 4,
+      "common_wrong_top1": [
+        [
+          "no significant abnormality",
+          1
+        ]
+      ]
+    },
     "CT scan | hemorrhage": {
       "n": 5,
       "top1_ok": 3,
@@ -947,13 +1039,13 @@
       "common_wrong_top1": []
     },
     "CT scan | normal head CT, no acute findings": {
-      "n": 5,
+      "n": 6,
       "top1_ok": 2,
-      "top3_ok": 5,
+      "top3_ok": 6,
       "common_wrong_top1": [
         [
           "sinus abnormality",
-          2
+          3
         ],
         [
           "mass lesion",
@@ -982,6 +1074,12 @@
       "n": 2,
       "top1_ok": 2,
       "top3_ok": 2,
+      "common_wrong_top1": []
+    },
+    "MRI brain scan | cerebral atrophy": {
+      "n": 1,
+      "top1_ok": 1,
+      "top3_ok": 1,
       "common_wrong_top1": []
     },
     "MRI brain scan | chronic infarct": {
@@ -1019,16 +1117,16 @@
       "common_wrong_top1": []
     },
     "MRI brain scan | normal brain MRI, no acute findings": {
-      "n": 4,
-      "top1_ok": 2,
-      "top3_ok": 4,
+      "n": 6,
+      "top1_ok": 3,
+      "top3_ok": 6,
       "common_wrong_top1": [
         [
-          "sinus abnormality",
-          1
+          "cerebral atrophy",
+          2
         ],
         [
-          "cerebral atrophy",
+          "sinus abnormality",
           1
         ]
       ]
@@ -1119,7 +1217,7 @@
       "common_wrong_top1": []
     },
     "chest X-ray | normal chest X-ray, no acute findings": {
-      "n": 8,
+      "n": 9,
       "top1_ok": 3,
       "top3_ok": 4,
       "common_wrong_top1": [
@@ -1181,14 +1279,14 @@
   },
   "modality_confusion": {
     "chest X-ray": {
-      "chest X-ray": 36
+      "chest X-ray": 37
     },
     "CT scan": {
-      "CT scan": 18,
+      "CT scan": 23,
       "MRI brain scan": 5
     },
     "MRI brain scan": {
-      "MRI brain scan": 20
+      "MRI brain scan": 23
     }
   },
   "rows": [
@@ -4588,6 +4686,428 @@
       "e2e_top1_ok": true,
       "true_abnormal": false,
       "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/74_ct_scan_normal_head_ct_no_acute_findings.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "Head CT scan.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.9887
+        ],
+        [
+          "MRI brain scan",
+          0.011
+        ],
+        [
+          "chest X-ray",
+          0.0001
+        ]
+      ],
+      "top1": "sinus abnormality",
+      "top1_score": 0.9772,
+      "top3": [
+        "sinus abnormality",
+        "mass lesion",
+        "normal head CT, no acute findings"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "sinus abnormality"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "sinus abnormality"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": false,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/75_ct_scan_calcification.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "calcification"
+      ],
+      "group": "Pallidumspitzenkalk in der Computertomografie 84M - CT axial - 001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.8386
+        ],
+        [
+          "MRI brain scan",
+          0.156
+        ],
+        [
+          "unspecified medical image",
+          0.0054
+        ]
+      ],
+      "top1": "calcification",
+      "top1_score": 0.7798,
+      "top3": [
+        "calcification",
+        "no significant abnormality",
+        "normal head CT, no acute findings"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "calcification"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/76_ct_scan_calcification.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "calcification"
+      ],
+      "group": "Pallidumspitzenkalk in der Computertomographie 83W - CT axial - 001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.6824
+        ],
+        [
+          "MRI brain scan",
+          0.3157
+        ],
+        [
+          "unspecified medical image",
+          0.0019
+        ]
+      ],
+      "top1": "no significant abnormality",
+      "top1_score": 0.3582,
+      "top3": [
+        "no significant abnormality",
+        "calcification",
+        "normal head CT, no acute findings"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "no significant abnormality",
+        "calcification",
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "no significant abnormality",
+        "normal head CT, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/77_ct_scan_calcification.png",
+      "modality": "CT scan",
+      "accepted": [
+        "calcification"
+      ],
+      "group": "CTHeadPharHiPara.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.5813
+        ],
+        [
+          "MRI brain scan",
+          0.4186
+        ],
+        [
+          "chest X-ray",
+          0.0001
+        ]
+      ],
+      "top1": "calcification",
+      "top1_score": 0.9996,
+      "top3": [
+        "calcification",
+        "sinus abnormality",
+        "ventricular enlargement"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "calcification"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/78_ct_scan_calcification.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "calcification"
+      ],
+      "group": "Sturge-Weber CT.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.956
+        ],
+        [
+          "MRI brain scan",
+          0.0406
+        ],
+        [
+          "unspecified medical image",
+          0.0019
+        ]
+      ],
+      "top1": "calcification",
+      "top1_score": 0.5939,
+      "top3": [
+        "calcification",
+        "hemorrhage",
+        "midline shift"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "calcification",
+        "hemorrhage"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "hemorrhage"
+      ],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/79_mri_brain_scan_cerebral_atrophy.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "cerebral atrophy",
+        "ventricular enlargement"
+      ],
+      "group": "BrainAtrophy(exvacuo).png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9997
+        ],
+        [
+          "CT scan",
+          0.0002
+        ],
+        [
+          "chest X-ray",
+          0.0
+        ]
+      ],
+      "top1": "cerebral atrophy",
+      "top1_score": 0.6503,
+      "top3": [
+        "cerebral atrophy",
+        "white matter hyperintensity",
+        "ventricular enlargement"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "cerebral atrophy"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/80_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "MRI Head Brain Normal.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9999
+        ],
+        [
+          "CT scan",
+          0.0001
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "no significant abnormality",
+      "top1_score": 0.5092,
+      "top3": [
+        "no significant abnormality",
+        "normal brain MRI, no acute findings",
+        "sinus abnormality"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "no significant abnormality"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/81_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "MRI head side.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9989
+        ],
+        [
+          "unspecified medical image",
+          0.0008
+        ],
+        [
+          "CT scan",
+          0.0003
+        ]
+      ],
+      "top1": "cerebral atrophy",
+      "top1_score": 0.5874,
+      "top3": [
+        "cerebral atrophy",
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "cerebral atrophy"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": false,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/82_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Normal posteroanterior (PA) chest radiograph (X-ray).jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension2",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9998
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pneumothorax",
+      "top1_score": 0.8396,
+      "top3": [
+        "pneumothorax",
+        "pulmonary nodule or mass",
+        "rib fracture"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 10,
+      "returned": [
+        "pneumothorax"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pneumothorax"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": false,
+      "pred_abnormal": true
     },
     {
       "file": "data/images/real/real_chest_xray_normal_pa.jpg",
