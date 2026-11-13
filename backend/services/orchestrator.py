@@ -59,6 +59,7 @@ from backend.models.schemas import (
     RAGEvidence,
 )
 from backend.services import storage
+from backend.services.errors import reasoning_failed_message
 from backend.services.confidence import (
     INSUFFICIENT_INPUT_NOTE,
     NONSPECIFIC_INPUT_NOTE,
@@ -340,7 +341,7 @@ class FusionTool(BaseTool):
             )
         except Exception as exc:  # Claude API failure, invalid JSON after retry, etc.
             ctx.fusion = FusionResult(
-                diagnoses=[], overall_confidence=0.0, conflicts=[f"Fusion reasoning failed: {exc}"]
+                diagnoses=[], overall_confidence=0.0, conflicts=[reasoning_failed_message(exc)]
             )
             ctx.confidence = 0.0
             _log_agent_call(
@@ -530,7 +531,7 @@ def _apply_degraded_defaults(context: _CaseContext, step: str, exc: Exception) -
         context.live = LiveEvidence(sources=[])  # sources_queried == 0 -> reported as unavailable
     elif step == "fusion" and context.fusion is None:
         context.fusion = FusionResult(
-            diagnoses=[], overall_confidence=0.0, conflicts=[f"Fusion reasoning failed: {_short(exc)}"]
+            diagnoses=[], overall_confidence=0.0, conflicts=[reasoning_failed_message(exc)]
         )
         context.confidence = 0.0
     elif step == "optimizer":

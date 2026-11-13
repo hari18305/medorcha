@@ -846,3 +846,28 @@ There is still one normal head-CT subject; two extension slices share it with th
 `results.json` / `RESULTS.md` now cover all 79; the 62-image figures quoted in the project report are kept in
 `results_original62.json` / `RESULTS_original62.md`; `results_bare_labels.json` is the bare-label comparison run.
 
+
+---
+
+## Provider error text no longer reaches the report (2026-11-13)
+
+When the fusion step failed, the raw exception text was pasted into `FinalReport.conflicts` ("Fusion reasoning failed:
+429 RESOURCE_EXHAUSTED ... quota ..."), so it reached the API response and the UI. Provider errors can carry quota and
+billing figures, project or key identifiers and request URLs.
+
+Fix: `backend/services/errors.py` maps an exception to a fixed one-clause reason (request limit reached, credentials
+rejected, provider unreachable or unavailable, answer the system could not use, or a generic "unexpected error") and the
+report now says, e.g., "The reasoning step could not be completed (the language-model provider's request limit was reached),
+so no diagnosis is shown. A clinician must review this case; retrying later may help." No part of the exception's own text is
+included. The full text still goes to the structured log, where an operator needs it. Both places that wrote the old
+message (the fusion tool and the CrewAI-layer fallback) use it.
+
+**Verified:** 601 backend tests (new `test_errors.py`: each category, status codes matched as whole numbers, secrets never
+present in the message; two orchestrator tests, one per failure path, assert the report is clean and the log is not). The
+old test that asserted the raw `RESOURCE_EXHAUSTED` text was changed to assert its absence, and a mutation check (restoring the
+raw message in the fusion tool) fails the new test.
+
+**Limits:** the category is a keyword match on the exception, so an error that matches nothing is reported as "an unexpected
+error occurred" (never its own text); an unusual provider wording can land in the wrong category. Other steps (clinical,
+imaging, RAG, live evidence) only send fixed text to the report and progress stream; their exception text goes to the log
+only. Not exercised against the real provider: quota is still exhausted, which is itself the case this handles.

@@ -385,8 +385,32 @@ def test_a_fusion_orchestration_failure_gives_zero_confidence_and_requires_revie
     assert report.confidence == 0.0
     assert report.review_required is True
     assert report.diagnoses == []
-    assert any("Fusion reasoning failed" in c and "RESOURCE_EXHAUSTED" in c for c in report.conflicts)
+    # The reason is shown in plain words; the provider's own error text (quota figures, codes,
+    # identifiers) stays in the log and never reaches the report or the API response.
+    assert any("reasoning step could not be completed" in c and "request limit was reached" in c for c in report.conflicts)
+    assert not any("RESOURCE_EXHAUSTED" in c or "429" in c or "free tier" in c for c in report.conflicts)
     mock_agents["fuse"].assert_not_called()
+
+
+def test_a_fusion_tool_failure_also_hides_the_provider_text(mock_agents, caplog):
+    # The other path: fuse() itself raises inside the tool (not the CrewAI layer).
+    mock_agents["fuse"].side_effect = RuntimeError(QUOTA_ERROR + " projects/secret-project-7")
+    # the real optimizer returns a zero-diagnosis fusion unchanged (it has nothing to refine)
+    async def passthrough(case, clinical, imaging, fusion, confidence, breakdown=None, **_):
+        return {"final_fusion": fusion, "final_confidence": confidence, "final_breakdown": breakdown,
+                "iterations": 0, "review_required": True, "iteration_log": []}
+
+    mock_agents["optimize"].side_effect = passthrough
+
+    with caplog.at_level("INFO"):
+        report = run_case(CASE_TEXT_ONLY)
+
+    assert report.confidence == 0.0 and report.review_required is True
+    joined = " ".join(report.conflicts)
+    assert "request limit was reached" in joined
+    assert "RESOURCE_EXHAUSTED" not in joined and "secret-project-7" not in joined
+    # the full text is still available to whoever reads the logs
+    assert "RESOURCE_EXHAUSTED" in caplog.text
 
 
 def test_an_optimizer_orchestration_failure_forces_review_even_though_it_never_ran(monkeypatch, mock_agents):
