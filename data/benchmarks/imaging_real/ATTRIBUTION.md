@@ -82,5 +82,14 @@ changes**: every Commons image here was **downscaled to at most 768 px wide by W
 | `71_mri_brain_scan_white_matter_hyperintensity.jpg` | [Leucoaraiose.jpg](https://commons.wikimedia.org/wiki/File:Leucoaraiose.jpg) | Yakafaucon | CC BY-SA 3.0 |
 | `72_mri_brain_scan_normal_brain_mri_no_acute_findings.png` | [Brain-T2-axial.png](https://commons.wikimedia.org/wiki/File:Brain-T2-axial.png) | Sean Novak | CC BY-SA 4.0 |
 | `73_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg` | [Normal axial T2-weighted MR image of the brain.jpg](https://commons.wikimedia.org/wiki/File:Normal_axial_T2-weighted_MR_image_of_the_brain.jpg) | Novaksean | CC BY-SA 4.0 |
+| `74_ct_scan_normal_head_ct_no_acute_findings.jpg` | [Head CT scan.jpg](https://commons.wikimedia.org/wiki/File:Head_CT_scan.jpg) | Andrew Ciscel | CC BY-SA 2.0 |
+| `75_ct_scan_calcification.jpg` | [Pallidumspitzenkalk in der Computertomografie 84M - CT axial - 001.jpg](https://commons.wikimedia.org/wiki/File:Pallidumspitzenkalk_in_der_Computertomografie_84M_-_CT_axial_-_001.jpg) | Hellerhoff | CC BY-SA 4.0 |
+| `76_ct_scan_calcification.jpg` | [Pallidumspitzenkalk in der Computertomographie 83W - CT axial - 001.jpg](https://commons.wikimedia.org/wiki/File:Pallidumspitzenkalk_in_der_Computertomographie_83W_-_CT_axial_-_001.jpg) | Hellerhoff | CC BY-SA 4.0 |
+| `77_ct_scan_calcification.png` | [CTHeadPharHiPara.png](https://commons.wikimedia.org/wiki/File:CTHeadPharHiPara.png) | James Heilman, MD | CC BY-SA 4.0 |
+| `78_ct_scan_calcification.jpg` | [Sturge-Weber CT.jpg](https://commons.wikimedia.org/wiki/File:Sturge-Weber_CT.jpg) | Frank Gaillard | CC BY-SA 3.0 |
+| `79_mri_brain_scan_cerebral_atrophy.png` | [BrainAtrophy(exvacuo).png](https://commons.wikimedia.org/wiki/File:BrainAtrophy(exvacuo).png) | James Heilman, MD | CC BY-SA 4.0 |
+| `80_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg` | [MRI Head Brain Normal.jpg](https://commons.wikimedia.org/wiki/File:MRI_Head_Brain_Normal.jpg) | Ptrump16 | CC BY-SA 4.0 |
+| `81_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg` | [MRI head side.jpg](https://commons.wikimedia.org/wiki/File:MRI_head_side.jpg) | en:User:TheBrain | CC BY-SA 3.0 |
+| `82_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg` | [Normal lateral chest radiograph (X-ray).jpg](https://commons.wikimedia.org/wiki/File:Normal_lateral_chest_radiograph_(X-ray).jpg) | Mikael Häggström | CC0 |
 
 The six images from `data/images/real/` are credited in that folder's `ATTRIBUTION.md`.

@@ -88,8 +88,8 @@ def _prop(k: int, n: int) -> dict:
 
 
 def load_manifest(path: Path = MANIFEST, only: str | None = None) -> list[dict]:
-    """`only` = "original" (the first 62 images) or "extension" (added later, never used for tuning);
-    None = all. The prompt experiment is frozen on "original"."""
+    """`only` = "original" (the first 62 images), "extension" or "extension2" (added later, never used for
+    tuning); None = all. The prompt experiment is frozen on "original"."""
     images = json.loads(Path(path).read_text(encoding="utf-8"))["images"]
     if only is None:
         return images
@@ -226,7 +226,8 @@ def run(manifest: list[dict], rank_fn=rank_image, progress=None, split: dict | N
         "excluding both": summarise([r for r in rows if not r["possible_pretraining_overlap"] and not r["has_annotation"]]),
     }
     for part, note in (("original", "ORIGINAL 62 images (the set the prompts were tuned on)"),
-                       ("extension", "EXTENSION set (added after the prompt choice, never used for tuning)")):
+                       ("extension", "EXTENSION set (added after the prompt choice, never used for tuning)"),
+                       ("extension2", "EXTENSION 2 set (added later still; plan fixed before scoring)")):
         sub = [r for r in rows if r["set"] == part]
         if sub and len(sub) < len(rows):
             result["subsets"][note] = summarise(sub)

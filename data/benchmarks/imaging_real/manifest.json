@@ -1495,6 +1495,198 @@
       "set": "extension"
     },
     {
+      "file": "data/benchmarks/imaging_real/images/74_ct_scan_normal_head_ct_no_acute_findings.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "Head CT scan.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Head CT scan.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Head_CT_scan.jpg",
+      "license": "CC BY-SA 2.0",
+      "artist": "Andrew Ciscel",
+      "description": "Normal CT scan of the head; this slice shows the cerebellum, a small portion of each temporal lobe, the orbits, and the sinuses.Routine Head Scan",
+      "original_size": [
+        512,
+        512
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/75_ct_scan_calcification.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "calcification"
+      ],
+      "group": "Pallidumspitzenkalk in der Computertomografie 84M - CT axial - 001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Pallidumspitzenkalk in der Computertomografie 84M - CT axial - 001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Pallidumspitzenkalk_in_der_Computertomografie_84M_-_CT_axial_-_001.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Hellerhoff",
+      "description": "Pallidumspitzenkalk in der Computertomografie",
+      "original_size": [
+        899,
+        1058
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/76_ct_scan_calcification.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "calcification"
+      ],
+      "group": "Pallidumspitzenkalk in der Computertomographie 83W - CT axial - 001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Pallidumspitzenkalk in der Computertomographie 83W - CT axial - 001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Pallidumspitzenkalk_in_der_Computertomographie_83W_-_CT_axial_-_001.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Hellerhoff",
+      "description": "Pallidumspitzenkalk in der Computertomographie",
+      "original_size": [
+        833,
+        1007
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/77_ct_scan_calcification.png",
+      "modality": "CT scan",
+      "labels": [
+        "calcification"
+      ],
+      "group": "CTHeadPharHiPara.png",
+      "source": "wikimedia_commons",
+      "commons_title": "CTHeadPharHiPara.png",
+      "page": "https://commons.wikimedia.org/wiki/File:CTHeadPharHiPara.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Calcification in the brain due to hyperparathyroidism (Phar's syndrome)",
+      "original_size": [
+        697,
+        856
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/78_ct_scan_calcification.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "calcification"
+      ],
+      "group": "Sturge-Weber CT.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Sturge-Weber CT.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Sturge-Weber_CT.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Frank Gaillard",
+      "description": "CT (without contrast) of the brain of a 20 month old child with Sturge-Weber syndrome demonstrating prominent subcortical white matter calcification. The entire case (including MRI images can be seen at Radiopaedia.org here.",
+      "original_size": [
+        312,
+        390
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/79_mri_brain_scan_cerebral_atrophy.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "cerebral atrophy",
+        "ventricular enlargement"
+      ],
+      "group": "BrainAtrophy(exvacuo).png",
+      "source": "wikimedia_commons",
+      "commons_title": "BrainAtrophy(exvacuo).png",
+      "page": "https://commons.wikimedia.org/wiki/File:BrainAtrophy(exvacuo).png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Brain atrophy from vascular dementia",
+      "original_size": [
+        710,
+        913
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/80_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "MRI Head Brain Normal.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "MRI Head Brain Normal.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:MRI_Head_Brain_Normal.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Ptrump16",
+      "description": "MRI of the head (Brain), normal. Device: Siemens MAGNETOM Aera 1.5T",
+      "original_size": [
+        697,
+        673
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/81_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "MRI head side.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "MRI head side.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:MRI_head_side.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "en:User:TheBrain",
+      "description": "Magnetic Resonance Imaging scan of a head.",
+      "original_size": [
+        256,
+        256
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/82_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Normal posteroanterior (PA) chest radiograph (X-ray).jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Normal lateral chest radiograph (X-ray).jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Normal_lateral_chest_radiograph_(X-ray).jpg",
+      "license": "CC0",
+      "artist": "Mikael Häggström",
+      "description": "Lateral chest radiograph (\"X-ray\") taken of a 21 year old woman who presented with pain on the left side of her thorax after colliding with another player during a soccer game. It shows a normal chest without any signs of injury.",
+      "original_size": [
+        1769,
+        2453
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension2"
+    },
+    {
       "file": "data/images/real/real_chest_xray_normal_pa.jpg",
       "modality": "chest X-ray",
       "labels": [

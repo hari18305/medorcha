@@ -17,7 +17,7 @@ caption. They are NOT re-read by a radiologist for this project, and the develop
 who picked them is not one. Treat them as "labelled by the uploader".
 
 KNOWN WEAKNESSES (also recorded in the manifest and the results):
-  * Small (79 images after the 2026-11-13 extension; 62 before): a few images per finding, so every per-finding number has a wide
+  * Small (88 images after the two 2026-11-13 extensions; 62 before): a few images per finding, so every per-finding number has a wide
     confidence interval. A handful of findings (MRI atrophy) had no usable image and
     are not covered. There is exactly ONE normal head-CT subject.
   * Possible training-data overlap: BiomedCLIP was trained on PubMed Central
@@ -152,6 +152,22 @@ EXTENSION = [
     ("Normal axial T2-weighted MR image of the brain.jpg", MRI, [NORMAL_MRI, "no significant abnormality"], None),
 ]
 
+# EXTENSION 2 (added 2026-11-13, after the first extension had been scored). Targets what the first two sets still
+# lacked: CT calcification and MRI cerebral atrophy (no image at all), a second normal head-CT subject, more normal
+# films. The plan is in EXTENSION2.md and was committed before these were scored. Only clean single-panel images were
+# used (no arrows, composites or patient text); that is why there is just ONE atrophy MRI and no CT atrophy at all.
+EXTENSION2 = [
+    ("Head CT scan.jpg", CT, [NORMAL_CT], None),
+    ("Pallidumspitzenkalk in der Computertomografie 84M - CT axial - 001.jpg", CT, ["calcification"], None),
+    ("Pallidumspitzenkalk in der Computertomographie 83W - CT axial - 001.jpg", CT, ["calcification"], None),
+    ("CTHeadPharHiPara.png", CT, ["calcification"], None),
+    ("Sturge-Weber CT.jpg", CT, ["calcification"], None),
+    ("BrainAtrophy(exvacuo).png", MRI, ["cerebral atrophy", "ventricular enlargement"], None),
+    ("MRI Head Brain Normal.jpg", MRI, [NORMAL_MRI, "no significant abnormality"], None),
+    ("MRI head side.jpg", MRI, [NORMAL_MRI, "no significant abnormality"], None),
+    ("Normal lateral chest radiograph (X-ray).jpg", CXR, [NORMAL_CXR], "Normal posteroanterior (PA) chest radiograph (X-ray).jpg"),
+]
+
 # The six real images already in the repo (data/images/real, see its ATTRIBUTION.md).
 EXISTING = [
     ("data/images/real/real_chest_xray_normal_pa.jpg", CXR, [NORMAL_CXR], None, "CC0 1.0", False),
@@ -201,10 +217,10 @@ def _slug(i: int, modality: str, label: str, ext: str) -> str:
 
 def build() -> None:
     IMG_DIR.mkdir(parents=True, exist_ok=True)
-    meta = fetch_metadata([t for t, *_ in SELECTION + EXTENSION])
+    meta = fetch_metadata([t for t, *_ in SELECTION + EXTENSION + EXTENSION2])
     entries = []
     with httpx.Client(headers=UA, timeout=60, follow_redirects=True) as c:
-        for i, (title, modality, labels, group) in enumerate(SELECTION + EXTENSION, 1):
+        for i, (title, modality, labels, group) in enumerate(SELECTION + EXTENSION + EXTENSION2, 1):
             m = meta[title]
             if not ALLOWED_LICENSE.match(m["license"]):
                 raise SystemExit(f"{title}: licence {m['license']!r} is not an allowed open licence")
@@ -221,7 +237,8 @@ def build() -> None:
                 "source": "wikimedia_commons", "commons_title": title, "page": m["page"], "license": m["license"],
                 "artist": m["artist"], "description": m["description"], "original_size": [m["orig_w"], m["orig_h"]],
                 "possible_pretraining_overlap": overlap, "changes": f"downscaled to <= {MAX_WIDTH}px wide by Wikimedia's thumbnail service",
-                **({"set": "extension"} if i > len(SELECTION) else {}),
+                **({"set": "extension"} if len(SELECTION) < i <= len(SELECTION) + len(EXTENSION) else {}),
+                **({"set": "extension2"} if i > len(SELECTION) + len(EXTENSION) else {}),
             })
     for path, modality, labels, group, lic, overlap in EXISTING:
         entries.append({
