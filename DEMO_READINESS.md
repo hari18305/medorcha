@@ -826,3 +826,23 @@ non-specific but that name one specific symptom (for example "dizziness") are no
 caught on purpose. The 0.60 cap is chosen, not fitted. Demo note: the "avoid
 generic filler" advice above still holds for the evidence panel, but such a case
 now goes straight to review instead of three optimizer rounds.
+
+---
+
+## Imaging benchmark widened to 79 images (2026-11-13)
+
+17 images were added (4 normal chest films; CT midline shift x2, infarct, 2 normal slices; MRI vascular malformation
+x3, chronic infarct, edema, WMH, 2 normals), chosen to fill gaps and fixed in `data/benchmarks/imaging_real/EXTENSION.md`
+*before* they were scored. They are marked `set: extension`, are not in `split.json`, and the prompt experiment is frozen
+on the original 62 (`load_manifest(only="original")`).
+
+**Result on the 17 fresh images:** current captions 10/17 top-1 (Wilson 36-78%) against 11/17 for bare labels; paired, 3
+gained and 4 lost (p = 1.0). So the captions' advantage on the original held-out half was **not** reproduced. The
+trade-off held: sensitivity 59/62 vs 54/62, specificity 11/17 vs 15/17 over all 79. Nothing was re-tuned; the captions stay
+with the weaker claim ("more sensitive, less specific, net gain unconfirmed") and `IMAGING_FINDING_PROMPTS=label` as the
+way back. Still uncovered: cerebral atrophy and CT calcification (only composites or annotated images were available).
+There is still one normal head-CT subject; two extension slices share it with the original set.
+
+`results.json` / `RESULTS.md` now cover all 79; the 62-image figures quoted in the project report are kept in
+`results_original62.json` / `RESULTS_original62.md`; `results_bare_labels.json` is the bare-label comparison run.
+

@@ -232,7 +232,7 @@ def run(manifest: list[dict], rank_fn=rank_image, progress=None, split: dict | N
             result["subsets"][note] = summarise(sub)
     if split:
         for half, note in (("test", "TEST half: held out from the prompt choice"), ("dev", "DEV half: used to choose the prompt (optimistic)")):
-            sub = [r for r in rows if split.get(r["group"]) == half]
+            sub = [r for r in rows if split.get(r["group"]) == half and r["set"] == "original"]  # split.json covers the original 62 only
             if sub:
                 result["subsets"][note] = summarise(sub)
     by_label = defaultdict(list)
@@ -277,10 +277,12 @@ CAVEATS = [
     "**Possible training overlap.** BiomedCLIP was trained on PubMed Central figure-caption pairs. Images from journal "
     "articles are flagged by a keyword heuristic on their own description, which can miss. See the 'excluding' rows.",
     "**Not independent.** Slices of one patient/series share a `group`; the group-collapsed figure counts each once. "
-    "There is exactly ONE normal head-CT subject (three slices), so CT specificity is close to meaningless.",
+    "There is exactly ONE normal head-CT subject (five slices), so CT specificity is close to meaningless.",
     "**The finding prompts were tuned on this set.** The wording was chosen on the DEV half and judged once on the "
     "TEST half (PROMPT_EXPERIMENT.md), so the all-image figures are partly in-sample. Quote the TEST-half row "
-    "(see 'Sensitivity to the weaknesses') as the unbiased read; it is ~25 images.",
+    "(see 'Sensitivity to the weaknesses') as the unbiased read; it is ~25 images. The 17-image EXTENSION set "
+    "(EXTENSION.md) was added afterwards and never used for tuning; it did **not** reproduce the captions' advantage "
+    "(3 gained, 4 lost against bare labels).",
     "**Not a clinical validation.** It characterises one zero-shot model's behaviour on a hand-picked set; it says "
     "nothing about the whole system's diagnostic accuracy.",
 ]
@@ -356,8 +358,7 @@ def main() -> int:
     if not args.limit and args.tag:
         out = BENCH_DIR / f"results_{args.tag}.json"
         out.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
-        print(f"
-wrote {out}")
+        print(f"\nwrote {out}")
     elif not args.limit:
         RESULTS_JSON.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
         RESULTS_MD.write_text(md, encoding="utf-8")

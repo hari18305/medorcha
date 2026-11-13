@@ -1,0 +1,4904 @@
+{
+  "overall": {
+    "n_images": 79,
+    "n_groups": 73,
+    "modality_detection": {
+      "k": 74,
+      "n": 79,
+      "rate": 0.9367088607594937,
+      "ci": [
+        0.8602493258443956,
+        0.9726655381852706
+      ]
+    },
+    "top1": {
+      "k": 37,
+      "n": 79,
+      "rate": 0.46835443037974683,
+      "ci": [
+        0.3623560095035789,
+        0.5772878409290539
+      ]
+    },
+    "top3": {
+      "k": 52,
+      "n": 79,
+      "rate": 0.6582278481012658,
+      "ci": [
+        0.548488933568034,
+        0.7532918142688015
+      ]
+    },
+    "top1_group_collapsed": 0.4520547945205479,
+    "end_to_end_top1": {
+      "k": 36,
+      "n": 79,
+      "rate": 0.45569620253164556,
+      "ci": [
+        0.35048276758066016,
+        0.5650186230250259
+      ]
+    },
+    "returned_contains_truth": {
+      "k": 39,
+      "n": 79,
+      "rate": 0.4936708860759494,
+      "ci": [
+        0.38630084542959936,
+        0.6016279246569272
+      ]
+    },
+    "returned_has_wrong_finding": {
+      "k": 45,
+      "n": 79,
+      "rate": 0.569620253164557,
+      "ci": [
+        0.4597200056030372,
+        0.6730635234451705
+      ]
+    },
+    "mean_findings_returned": 1.1898734177215189,
+    "sensitivity_abnormal": {
+      "k": 54,
+      "n": 62,
+      "rate": 0.8709677419354839,
+      "ci": [
+        0.7655044310309549,
+        0.9331420174150125
+      ]
+    },
+    "specificity_normal": {
+      "k": 15,
+      "n": 17,
+      "rate": 0.8823529411764706,
+      "ci": [
+        0.6566315750229009,
+        0.967120919987079
+      ]
+    },
+    "chance_top1": 0.10008114248620578,
+    "chance_top3": 0.292170487740108,
+    "majority_top1": 0.22784810126582278
+  },
+  "by_modality": {
+    "MRI brain scan": {
+      "n_images": 20,
+      "n_groups": 18,
+      "modality_detection": {
+        "k": 20,
+        "n": 20,
+        "rate": 1.0,
+        "ci": [
+          0.8388698745050667,
+          1.0
+        ]
+      },
+      "top1": {
+        "k": 6,
+        "n": 20,
+        "rate": 0.3,
+        "ci": [
+          0.14547527396899385,
+          0.5189767762289793
+        ]
+      },
+      "top3": {
+        "k": 10,
+        "n": 20,
+        "rate": 0.5,
+        "ci": [
+          0.2992949144298199,
+          0.7007050855701801
+        ]
+      },
+      "top1_group_collapsed": 0.3333333333333333,
+      "end_to_end_top1": {
+        "k": 6,
+        "n": 20,
+        "rate": 0.3,
+        "ci": [
+          0.14547527396899385,
+          0.5189767762289793
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 6,
+        "n": 20,
+        "rate": 0.3,
+        "ci": [
+          0.14547527396899385,
+          0.5189767762289793
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 15,
+        "n": 20,
+        "rate": 0.75,
+        "ci": [
+          0.5312949900419365,
+          0.888139947210597
+        ]
+      },
+      "mean_findings_returned": 1.25,
+      "sensitivity_abnormal": {
+        "k": 13,
+        "n": 16,
+        "rate": 0.8125,
+        "ci": [
+          0.5699064013154177,
+          0.9340852122641324
+        ]
+      },
+      "specificity_normal": {
+        "k": 3,
+        "n": 4,
+        "rate": 0.75,
+        "ci": [
+          0.3006360524426366,
+          0.9544139373553637
+        ]
+      },
+      "chance_top1": 0.09615384615384616,
+      "chance_top3": 0.27884615384615385,
+      "majority_top1": 0.2
+    },
+    "CT scan": {
+      "n_images": 23,
+      "n_groups": 19,
+      "modality_detection": {
+        "k": 18,
+        "n": 23,
+        "rate": 0.782608695652174,
+        "ci": [
+          0.5809611981726508,
+          0.9033616439828094
+        ]
+      },
+      "top1": {
+        "k": 10,
+        "n": 23,
+        "rate": 0.43478260869565216,
+        "ci": [
+          0.25634368332198654,
+          0.6318895069498304
+        ]
+      },
+      "top3": {
+        "k": 15,
+        "n": 23,
+        "rate": 0.6521739130434783,
+        "ci": [
+          0.4488997690689164,
+          0.8118894536301776
+        ]
+      },
+      "top1_group_collapsed": 0.3157894736842105,
+      "end_to_end_top1": {
+        "k": 9,
+        "n": 23,
+        "rate": 0.391304347826087,
+        "ci": [
+          0.22157377982382145,
+          0.5921482039625402
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 11,
+        "n": 23,
+        "rate": 0.4782608695652174,
+        "ci": [
+          0.2923686953994572,
+          0.6703757013578151
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 13,
+        "n": 23,
+        "rate": 0.5652173913043478,
+        "ci": [
+          0.3681104930501695,
+          0.7436563166780135
+        ]
+      },
+      "mean_findings_returned": 1.0434782608695652,
+      "sensitivity_abnormal": {
+        "k": 14,
+        "n": 18,
+        "rate": 0.7777777777777778,
+        "ci": [
+          0.5478497354769452,
+          0.90999218086618
+        ]
+      },
+      "specificity_normal": {
+        "k": 5,
+        "n": 5,
+        "rate": 1.0,
+        "ci": [
+          0.5655085052479191,
+          1.0
+        ]
+      },
+      "chance_top1": 0.12608695652173915,
+      "chance_top3": 0.36086956521739133,
+      "majority_top1": 0.2608695652173913
+    },
+    "chest X-ray": {
+      "n_images": 36,
+      "n_groups": 36,
+      "modality_detection": {
+        "k": 36,
+        "n": 36,
+        "rate": 1.0,
+        "ci": [
+          0.9035781695514236,
+          1.0
+        ]
+      },
+      "top1": {
+        "k": 21,
+        "n": 36,
+        "rate": 0.5833333333333334,
+        "ci": [
+          0.4219996966427768,
+          0.7285966649491271
+        ]
+      },
+      "top3": {
+        "k": 27,
+        "n": 36,
+        "rate": 0.75,
+        "ci": [
+          0.5892923231679656,
+          0.8624967616077461
+        ]
+      },
+      "top1_group_collapsed": 0.5833333333333334,
+      "end_to_end_top1": {
+        "k": 21,
+        "n": 36,
+        "rate": 0.5833333333333334,
+        "ci": [
+          0.4219996966427768,
+          0.7285966649491271
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 22,
+        "n": 36,
+        "rate": 0.6111111111111112,
+        "ci": [
+          0.4486417029674347,
+          0.7521534458217705
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 17,
+        "n": 36,
+        "rate": 0.4722222222222222,
+        "ci": [
+          0.31985792907209337,
+          0.6299432837306054
+        ]
+      },
+      "mean_findings_returned": 1.25,
+      "sensitivity_abnormal": {
+        "k": 27,
+        "n": 28,
+        "rate": 0.9642857142857143,
+        "ci": [
+          0.8228742388150135,
+          0.9936676435024582
+        ]
+      },
+      "specificity_normal": {
+        "k": 7,
+        "n": 8,
+        "rate": 0.875,
+        "ci": [
+          0.5291051942301386,
+          0.9775830911367038
+        ]
+      },
+      "chance_top1": 0.08564814814814814,
+      "chance_top3": 0.2556818181818182,
+      "majority_top1": 0.2222222222222222
+    }
+  },
+  "subsets": {
+    "excluding possible pretraining overlap": {
+      "n_images": 76,
+      "n_groups": 70,
+      "modality_detection": {
+        "k": 71,
+        "n": 76,
+        "rate": 0.9342105263157895,
+        "ci": [
+          0.8550628538100542,
+          0.9715738869366242
+        ]
+      },
+      "top1": {
+        "k": 36,
+        "n": 76,
+        "rate": 0.47368421052631576,
+        "ci": [
+          0.36541913011833066,
+          0.5844816734727798
+        ]
+      },
+      "top3": {
+        "k": 51,
+        "n": 76,
+        "rate": 0.6710526315789473,
+        "ci": [
+          0.5594359811214032,
+          0.7662087955363791
+        ]
+      },
+      "top1_group_collapsed": 0.45714285714285713,
+      "end_to_end_top1": {
+        "k": 35,
+        "n": 76,
+        "rate": 0.4605263157894737,
+        "ci": [
+          0.3530754655326989,
+          0.5717757398539667
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 38,
+        "n": 76,
+        "rate": 0.5,
+        "ci": [
+          0.3903240360982663,
+          0.6096759639017337
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 43,
+        "n": 76,
+        "rate": 0.5657894736842105,
+        "ci": [
+          0.4538555158542199,
+          0.671392475168004
+        ]
+      },
+      "mean_findings_returned": 1.1842105263157894,
+      "sensitivity_abnormal": {
+        "k": 51,
+        "n": 59,
+        "rate": 0.864406779661017,
+        "ci": [
+          0.7546010154508226,
+          0.9296590925031444
+        ]
+      },
+      "specificity_normal": {
+        "k": 15,
+        "n": 17,
+        "rate": 0.8823529411764706,
+        "ci": [
+          0.6566315750229009,
+          0.967120919987079
+        ]
+      },
+      "chance_top1": 0.10091093117408907,
+      "chance_top3": 0.2943411851306588,
+      "majority_top1": 0.23684210526315788
+    },
+    "excluding annotated films": {
+      "n_images": 78,
+      "n_groups": 72,
+      "modality_detection": {
+        "k": 73,
+        "n": 78,
+        "rate": 0.9358974358974359,
+        "ci": [
+          0.8585622037936654,
+          0.9723110929160764
+        ]
+      },
+      "top1": {
+        "k": 36,
+        "n": 78,
+        "rate": 0.46153846153846156,
+        "ci": [
+          0.35532213417762043,
+          0.5713655161126965
+        ]
+      },
+      "top3": {
+        "k": 51,
+        "n": 78,
+        "rate": 0.6538461538461539,
+        "ci": [
+          0.5432998724955743,
+          0.749949526343158
+        ]
+      },
+      "top1_group_collapsed": 0.4444444444444444,
+      "end_to_end_top1": {
+        "k": 35,
+        "n": 78,
+        "rate": 0.44871794871794873,
+        "ci": [
+          0.3433419189622355,
+          0.5589082814248538
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 38,
+        "n": 78,
+        "rate": 0.48717948717948717,
+        "ci": [
+          0.37948764475056745,
+          0.5960749053462049
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 45,
+        "n": 78,
+        "rate": 0.5769230769230769,
+        "ci": [
+          0.46621355164287304,
+          0.680411147776493
+        ]
+      },
+      "mean_findings_returned": 1.1923076923076923,
+      "sensitivity_abnormal": {
+        "k": 53,
+        "n": 61,
+        "rate": 0.8688524590163934,
+        "ci": [
+          0.761978875735935,
+          0.932020038541319
+        ]
+      },
+      "specificity_normal": {
+        "k": 15,
+        "n": 17,
+        "rate": 0.8823529411764706,
+        "ci": [
+          0.6566315750229009,
+          0.967120919987079
+        ]
+      },
+      "chance_top1": 0.10029585798816568,
+      "chance_top3": 0.29271113501882734,
+      "majority_top1": 0.23076923076923078
+    },
+    "excluding both": {
+      "n_images": 76,
+      "n_groups": 70,
+      "modality_detection": {
+        "k": 71,
+        "n": 76,
+        "rate": 0.9342105263157895,
+        "ci": [
+          0.8550628538100542,
+          0.9715738869366242
+        ]
+      },
+      "top1": {
+        "k": 36,
+        "n": 76,
+        "rate": 0.47368421052631576,
+        "ci": [
+          0.36541913011833066,
+          0.5844816734727798
+        ]
+      },
+      "top3": {
+        "k": 51,
+        "n": 76,
+        "rate": 0.6710526315789473,
+        "ci": [
+          0.5594359811214032,
+          0.7662087955363791
+        ]
+      },
+      "top1_group_collapsed": 0.45714285714285713,
+      "end_to_end_top1": {
+        "k": 35,
+        "n": 76,
+        "rate": 0.4605263157894737,
+        "ci": [
+          0.3530754655326989,
+          0.5717757398539667
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 38,
+        "n": 76,
+        "rate": 0.5,
+        "ci": [
+          0.3903240360982663,
+          0.6096759639017337
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 43,
+        "n": 76,
+        "rate": 0.5657894736842105,
+        "ci": [
+          0.4538555158542199,
+          0.671392475168004
+        ]
+      },
+      "mean_findings_returned": 1.1842105263157894,
+      "sensitivity_abnormal": {
+        "k": 51,
+        "n": 59,
+        "rate": 0.864406779661017,
+        "ci": [
+          0.7546010154508226,
+          0.9296590925031444
+        ]
+      },
+      "specificity_normal": {
+        "k": 15,
+        "n": 17,
+        "rate": 0.8823529411764706,
+        "ci": [
+          0.6566315750229009,
+          0.967120919987079
+        ]
+      },
+      "chance_top1": 0.10091093117408907,
+      "chance_top3": 0.2943411851306588,
+      "majority_top1": 0.23684210526315788
+    },
+    "ORIGINAL 62 images (the set the prompts were tuned on)": {
+      "n_images": 62,
+      "n_groups": 60,
+      "modality_detection": {
+        "k": 58,
+        "n": 62,
+        "rate": 0.9354838709677419,
+        "ci": [
+          0.8455226734181273,
+          0.974627505192356
+        ]
+      },
+      "top1": {
+        "k": 26,
+        "n": 62,
+        "rate": 0.41935483870967744,
+        "ci": [
+          0.30477395467281665,
+          0.5433463826215384
+        ]
+      },
+      "top3": {
+        "k": 40,
+        "n": 62,
+        "rate": 0.6451612903225806,
+        "ci": [
+          0.5208089986340214,
+          0.7525743942361396
+        ]
+      },
+      "top1_group_collapsed": 0.4,
+      "end_to_end_top1": {
+        "k": 25,
+        "n": 62,
+        "rate": 0.4032258064516129,
+        "ci": [
+          0.2902468291165249,
+          0.5274975756367011
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 28,
+        "n": 62,
+        "rate": 0.45161290322580644,
+        "ci": [
+          0.3341951476826002,
+          0.5746770546940128
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 39,
+        "n": 62,
+        "rate": 0.6290322580645161,
+        "ci": [
+          0.504577349121774,
+          0.7384301112072582
+        ]
+      },
+      "mean_findings_returned": 1.1935483870967742,
+      "sensitivity_abnormal": {
+        "k": 48,
+        "n": 53,
+        "rate": 0.9056603773584906,
+        "ci": [
+          0.7974602432629856,
+          0.9590279625581031
+        ]
+      },
+      "specificity_normal": {
+        "k": 7,
+        "n": 9,
+        "rate": 0.7777777777777778,
+        "ci": [
+          0.4525833436728054,
+          0.9367762376877727
+        ]
+      },
+      "chance_top1": 0.09683622828784119,
+      "chance_top3": 0.28468869839837585,
+      "majority_top1": 0.20967741935483872
+    },
+    "EXTENSION set (added after the prompt choice, never used for tuning)": {
+      "n_images": 17,
+      "n_groups": 14,
+      "modality_detection": {
+        "k": 16,
+        "n": 17,
+        "rate": 0.9411764705882353,
+        "ci": [
+          0.730174547964372,
+          0.9895398693548358
+        ]
+      },
+      "top1": {
+        "k": 11,
+        "n": 17,
+        "rate": 0.6470588235294118,
+        "ci": [
+          0.4129996672121182,
+          0.826905138560951
+        ]
+      },
+      "top3": {
+        "k": 12,
+        "n": 17,
+        "rate": 0.7058823529411765,
+        "ci": [
+          0.468664666737861,
+          0.8672020613444361
+        ]
+      },
+      "top1_group_collapsed": 0.7142857142857143,
+      "end_to_end_top1": {
+        "k": 11,
+        "n": 17,
+        "rate": 0.6470588235294118,
+        "ci": [
+          0.4129996672121182,
+          0.826905138560951
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 11,
+        "n": 17,
+        "rate": 0.6470588235294118,
+        "ci": [
+          0.4129996672121182,
+          0.826905138560951
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 6,
+        "n": 17,
+        "rate": 0.35294117647058826,
+        "ci": [
+          0.17309486143904904,
+          0.5870003327878818
+        ]
+      },
+      "mean_findings_returned": 1.1764705882352942,
+      "sensitivity_abnormal": {
+        "k": 6,
+        "n": 9,
+        "rate": 0.6666666666666666,
+        "ci": [
+          0.35419734749908977,
+          0.879418401317257
+        ]
+      },
+      "specificity_normal": {
+        "k": 8,
+        "n": 8,
+        "rate": 1.0,
+        "ci": [
+          0.6755843804891231,
+          1.0
+        ]
+      },
+      "chance_top1": 0.11191553544494721,
+      "chance_top3": 0.31945701357466066,
+      "majority_top1": 0.5294117647058824
+    },
+    "TEST half: held out from the prompt choice": {
+      "n_images": 25,
+      "n_groups": 25,
+      "modality_detection": {
+        "k": 24,
+        "n": 25,
+        "rate": 0.96,
+        "ci": [
+          0.8045552759497747,
+          0.9929039496133008
+        ]
+      },
+      "top1": {
+        "k": 7,
+        "n": 25,
+        "rate": 0.28,
+        "ci": [
+          0.1428367383738157,
+          0.47576971896558296
+        ]
+      },
+      "top3": {
+        "k": 15,
+        "n": 25,
+        "rate": 0.6,
+        "ci": [
+          0.40739127785127344,
+          0.7659694233580909
+        ]
+      },
+      "top1_group_collapsed": 0.28,
+      "end_to_end_top1": {
+        "k": 7,
+        "n": 25,
+        "rate": 0.28,
+        "ci": [
+          0.1428367383738157,
+          0.47576971896558296
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 8,
+        "n": 25,
+        "rate": 0.32,
+        "ci": [
+          0.17204987516891143,
+          0.5159008626542329
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 19,
+        "n": 25,
+        "rate": 0.76,
+        "ci": [
+          0.5656994004476144,
+          0.8850384226967327
+        ]
+      },
+      "mean_findings_returned": 1.24,
+      "sensitivity_abnormal": {
+        "k": 21,
+        "n": 22,
+        "rate": 0.9545454545454546,
+        "ci": [
+          0.7820151050048196,
+          0.9919307806988522
+        ]
+      },
+      "specificity_normal": {
+        "k": 1,
+        "n": 3,
+        "rate": 0.3333333333333333,
+        "ci": [
+          0.0614903152761605,
+          0.7923450448735121
+        ]
+      },
+      "chance_top1": 0.09287179487179488,
+      "chance_top3": 0.2744102564102564,
+      "majority_top1": 0.24
+    },
+    "DEV half: used to choose the prompt (optimistic)": {
+      "n_images": 39,
+      "n_groups": 35,
+      "modality_detection": {
+        "k": 36,
+        "n": 39,
+        "rate": 0.9230769230769231,
+        "ci": [
+          0.7967862687194474,
+          0.9734930859265043
+        ]
+      },
+      "top1": {
+        "k": 21,
+        "n": 39,
+        "rate": 0.5384615384615384,
+        "ci": [
+          0.3856918682173881,
+          0.6843335276595165
+        ]
+      },
+      "top3": {
+        "k": 27,
+        "n": 39,
+        "rate": 0.6923076923076923,
+        "ci": [
+          0.535784513844354,
+          0.8143424655401694
+        ]
+      },
+      "top1_group_collapsed": 0.4857142857142857,
+      "end_to_end_top1": {
+        "k": 20,
+        "n": 39,
+        "rate": 0.5128205128205128,
+        "ci": [
+          0.3619910864569657,
+          0.661350712168669
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 22,
+        "n": 39,
+        "rate": 0.5641025641025641,
+        "ci": [
+          0.40975423474522105,
+          0.7069547583829534
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 20,
+        "n": 39,
+        "rate": 0.5128205128205128,
+        "ci": [
+          0.3619910864569657,
+          0.661350712168669
+        ]
+      },
+      "mean_findings_returned": 1.1538461538461537,
+      "sensitivity_abnormal": {
+        "k": 27,
+        "n": 31,
+        "rate": 0.8709677419354839,
+        "ci": [
+          0.7114724304561464,
+          0.9486579883535524
+        ]
+      },
+      "specificity_normal": {
+        "k": 8,
+        "n": 8,
+        "rate": 1.0,
+        "ci": [
+          0.6755843804891231,
+          1.0
+        ]
+      },
+      "chance_top1": 0.09953977646285339,
+      "chance_top3": 0.29206263821648437,
+      "majority_top1": 0.23076923076923078
+    }
+  },
+  "by_label": {
+    "CT scan | acute infarct": {
+      "n": 4,
+      "top1_ok": 3,
+      "top3_ok": 4,
+      "common_wrong_top1": [
+        [
+          "ventricular enlargement",
+          1
+        ]
+      ]
+    },
+    "CT scan | hemorrhage": {
+      "n": 5,
+      "top1_ok": 0,
+      "top3_ok": 2,
+      "common_wrong_top1": [
+        [
+          "acute infarct",
+          4
+        ],
+        [
+          "normal head CT, no acute findings",
+          1
+        ]
+      ]
+    },
+    "CT scan | mass lesion": {
+      "n": 3,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "ventricular enlargement",
+          1
+        ],
+        [
+          "acute infarct",
+          1
+        ]
+      ]
+    },
+    "CT scan | midline shift": {
+      "n": 2,
+      "top1_ok": 1,
+      "top3_ok": 2,
+      "common_wrong_top1": [
+        [
+          "acute infarct",
+          1
+        ]
+      ]
+    },
+    "CT scan | normal head CT, no acute findings": {
+      "n": 5,
+      "top1_ok": 5,
+      "top3_ok": 5,
+      "common_wrong_top1": []
+    },
+    "CT scan | sinus abnormality": {
+      "n": 2,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "normal head CT, no acute findings",
+          1
+        ],
+        [
+          "hypodense lesion",
+          1
+        ]
+      ]
+    },
+    "CT scan | ventricular enlargement": {
+      "n": 2,
+      "top1_ok": 1,
+      "top3_ok": 2,
+      "common_wrong_top1": [
+        [
+          "normal head CT, no acute findings",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | acute infarct": {
+      "n": 2,
+      "top1_ok": 1,
+      "top3_ok": 2,
+      "common_wrong_top1": [
+        [
+          "white matter hyperintensity",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | chronic infarct": {
+      "n": 1,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "normal brain MRI, no acute findings",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | edema": {
+      "n": 1,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "cerebral atrophy",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | hemorrhage": {
+      "n": 2,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "cerebral atrophy",
+          2
+        ]
+      ]
+    },
+    "MRI brain scan | mass lesion": {
+      "n": 4,
+      "top1_ok": 0,
+      "top3_ok": 2,
+      "common_wrong_top1": [
+        [
+          "acute infarct",
+          3
+        ],
+        [
+          "chronic infarct",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | normal brain MRI, no acute findings": {
+      "n": 4,
+      "top1_ok": 3,
+      "top3_ok": 4,
+      "common_wrong_top1": [
+        [
+          "cerebral atrophy",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | vascular malformation": {
+      "n": 3,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "normal brain MRI, no acute findings",
+          2
+        ],
+        [
+          "chronic infarct",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | ventricular enlargement": {
+      "n": 1,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "acute infarct",
+          1
+        ]
+      ]
+    },
+    "MRI brain scan | white matter hyperintensity": {
+      "n": 2,
+      "top1_ok": 2,
+      "top3_ok": 2,
+      "common_wrong_top1": []
+    },
+    "chest X-ray | atelectasis": {
+      "n": 3,
+      "top1_ok": 2,
+      "top3_ok": 3,
+      "common_wrong_top1": [
+        [
+          "pleural effusion",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | cardiomegaly": {
+      "n": 3,
+      "top1_ok": 2,
+      "top3_ok": 2,
+      "common_wrong_top1": [
+        [
+          "atelectasis",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | consolidation": {
+      "n": 3,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "pulmonary edema",
+          3
+        ]
+      ]
+    },
+    "chest X-ray | hilar or mediastinal widening": {
+      "n": 1,
+      "top1_ok": 1,
+      "top3_ok": 1,
+      "common_wrong_top1": []
+    },
+    "chest X-ray | hyperinflation consistent with emphysema": {
+      "n": 2,
+      "top1_ok": 0,
+      "top3_ok": 0,
+      "common_wrong_top1": [
+        [
+          "rib fracture",
+          1
+        ],
+        [
+          "atelectasis",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | normal chest X-ray, no acute findings": {
+      "n": 8,
+      "top1_ok": 7,
+      "top3_ok": 8,
+      "common_wrong_top1": [
+        [
+          "hilar or mediastinal widening",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | pleural effusion": {
+      "n": 3,
+      "top1_ok": 2,
+      "top3_ok": 3,
+      "common_wrong_top1": [
+        [
+          "atelectasis",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | pneumothorax": {
+      "n": 4,
+      "top1_ok": 3,
+      "top3_ok": 3,
+      "common_wrong_top1": [
+        [
+          "cardiomegaly",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | pulmonary edema": {
+      "n": 3,
+      "top1_ok": 3,
+      "top3_ok": 3,
+      "common_wrong_top1": []
+    },
+    "chest X-ray | pulmonary nodule or mass": {
+      "n": 3,
+      "top1_ok": 0,
+      "top3_ok": 3,
+      "common_wrong_top1": [
+        [
+          "atelectasis",
+          1
+        ],
+        [
+          "pulmonary edema",
+          1
+        ]
+      ]
+    },
+    "chest X-ray | rib fracture": {
+      "n": 3,
+      "top1_ok": 1,
+      "top3_ok": 1,
+      "common_wrong_top1": [
+        [
+          "no significant abnormality",
+          1
+        ],
+        [
+          "pneumothorax",
+          1
+        ]
+      ]
+    }
+  },
+  "modality_confusion": {
+    "chest X-ray": {
+      "chest X-ray": 36
+    },
+    "CT scan": {
+      "CT scan": 18,
+      "MRI brain scan": 5
+    },
+    "MRI brain scan": {
+      "MRI brain scan": 20
+    }
+  },
+  "rows": [
+    {
+      "file": "data/benchmarks/imaging_real/images/01_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest X-ray 2346.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "MRI brain scan",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.5715,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "no significant abnormality"
+      ],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/02_chest_x_ray_normal_chest_x_ray_no_acute_findings.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest Xray PA 3-8-2010.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.9924,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/03_chest_x_ray_normal_chest_x_ray_no_acute_findings.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "hilar or mediastinal widening",
+      "top1_score": 0.7007,
+      "top3": [
+        "hilar or mediastinal widening",
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "hilar or mediastinal widening"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "hilar or mediastinal widening"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": false,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/04_chest_x_ray_pneumothorax.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pneumothorax"
+      ],
+      "group": "05-Spontanpneumothorax.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9998
+        ],
+        [
+          "CT scan",
+          0.0002
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "pneumothorax",
+      "top1_score": 0.9991,
+      "top3": [
+        "pneumothorax",
+        "hyperinflation consistent with emphysema",
+        "atelectasis"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pneumothorax"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/05_chest_x_ray_pneumothorax.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pneumothorax"
+      ],
+      "group": "09-01-Pneumothorax.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9999
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pneumothorax",
+      "top1_score": 0.8205,
+      "top3": [
+        "pneumothorax",
+        "atelectasis",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pneumothorax"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/06_chest_x_ray_pneumothorax.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pneumothorax"
+      ],
+      "group": "Deep sulcus sign 59jm - Roe - 001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "cardiomegaly",
+      "top1_score": 0.9095,
+      "top3": [
+        "cardiomegaly",
+        "pulmonary edema",
+        "pleural effusion"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 9,
+      "returned": [
+        "cardiomegaly"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "cardiomegaly"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/07_chest_x_ray_pleural_effusion.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pleural effusion"
+      ],
+      "group": "Effusion.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "pleural effusion",
+      "top1_score": 0.8139,
+      "top3": [
+        "pleural effusion",
+        "atelectasis",
+        "no significant abnormality"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pleural effusion"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/08_chest_x_ray_pleural_effusion.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pleural effusion"
+      ],
+      "group": "Effusionhalf.PNG",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "atelectasis",
+      "top1_score": 0.3592,
+      "top3": [
+        "atelectasis",
+        "pulmonary edema",
+        "pleural effusion"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "atelectasis",
+        "pulmonary edema",
+        "pleural effusion"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "atelectasis",
+        "pulmonary edema"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/09_chest_x_ray_pleural_effusion.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pleural effusion"
+      ],
+      "group": "Bilateral Pleural Effusion.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9999
+        ],
+        [
+          "CT scan",
+          0.0001
+        ],
+        [
+          "MRI brain scan",
+          0.0
+        ]
+      ],
+      "top1": "pleural effusion",
+      "top1_score": 0.9536,
+      "top3": [
+        "pleural effusion",
+        "no significant abnormality",
+        "atelectasis"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pleural effusion"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/10_chest_x_ray_cardiomegaly.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "cardiomegaly"
+      ],
+      "group": "Cardiomegalia.JPG",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9999
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "atelectasis",
+      "top1_score": 0.7611,
+      "top3": [
+        "atelectasis",
+        "hilar or mediastinal widening",
+        "no significant abnormality"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 4,
+      "returned": [
+        "atelectasis"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "atelectasis"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/11_chest_x_ray_cardiomegaly.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "cardiomegaly"
+      ],
+      "group": "Cardiomegally.PNG",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "cardiomegaly",
+      "top1_score": 0.996,
+      "top3": [
+        "cardiomegaly",
+        "pulmonary edema",
+        "normal chest X-ray, no acute findings"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "cardiomegaly"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/12_chest_x_ray_cardiomegaly.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "cardiomegaly"
+      ],
+      "group": "Enfermedad Mitral.JPG",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "cardiomegaly",
+      "top1_score": 0.5343,
+      "top3": [
+        "cardiomegaly",
+        "hilar or mediastinal widening",
+        "normal chest X-ray, no acute findings"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "cardiomegaly",
+        "hilar or mediastinal widening"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "hilar or mediastinal widening"
+      ],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/13_chest_x_ray_consolidation.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "consolidation"
+      ],
+      "group": "Aspiration pneumonia201711-3264.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.7925,
+      "top3": [
+        "pulmonary edema",
+        "rib fracture",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 11,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pulmonary edema"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/14_chest_x_ray_consolidation.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "consolidation"
+      ],
+      "group": "Chest radiograph in influensa and H influenzae, posteroanterior.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.8099,
+      "top3": [
+        "pulmonary edema",
+        "atelectasis",
+        "no significant abnormality"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 7,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pulmonary edema"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/15_chest_x_ray_consolidation.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "consolidation"
+      ],
+      "group": "Chest X-ray in influenza and Haemophilus influenzae.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.8782,
+      "top3": [
+        "pulmonary edema",
+        "no significant abnormality",
+        "atelectasis"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 10,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pulmonary edema"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/16_chest_x_ray_pulmonary_edema.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pulmonary edema"
+      ],
+      "group": "16-01-Lungenoedem.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.9887,
+      "top3": [
+        "pulmonary edema",
+        "no significant abnormality",
+        "pleural effusion"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/17_chest_x_ray_pulmonary_edema.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pulmonary edema"
+      ],
+      "group": "AP portable CXR of a patient in acute pulmonary oedema.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.9941,
+      "top3": [
+        "pulmonary edema",
+        "cardiomegaly",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/18_chest_x_ray_pulmonary_edema.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pulmonary edema"
+      ],
+      "group": "Lungenoedem nach NSTEMI 73W - CR ap - 001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "MRI brain scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.9892,
+      "top3": [
+        "pulmonary edema",
+        "cardiomegaly",
+        "pleural effusion"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/19_chest_x_ray_pulmonary_nodule_or_mass.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pulmonary nodule or mass"
+      ],
+      "group": "LungCa.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "atelectasis",
+      "top1_score": 0.5201,
+      "top3": [
+        "atelectasis",
+        "hilar or mediastinal widening",
+        "pulmonary nodule or mass"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "atelectasis",
+        "hilar or mediastinal widening"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "atelectasis",
+        "hilar or mediastinal widening"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/20_chest_x_ray_pulmonary_nodule_or_mass.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pulmonary nodule or mass"
+      ],
+      "group": "LungCancer-Xray-01.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9999
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pulmonary edema",
+      "top1_score": 0.7421,
+      "top3": [
+        "pulmonary edema",
+        "pulmonary nodule or mass",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "pulmonary edema"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pulmonary edema"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/21_chest_x_ray_pulmonary_nodule_or_mass.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pulmonary nodule or mass"
+      ],
+      "group": "Plattenepithelkarzinom der Lunge rechter Oberlappen 76W - CR pa - 001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "MRI brain scan",
+          0.0
+        ]
+      ],
+      "top1": "hilar or mediastinal widening",
+      "top1_score": 0.9829,
+      "top3": [
+        "hilar or mediastinal widening",
+        "atelectasis",
+        "pulmonary nodule or mass"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "hilar or mediastinal widening"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "hilar or mediastinal widening"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/22_chest_x_ray_hyperinflation_consistent_with_emphysema.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "hyperinflation consistent with emphysema"
+      ],
+      "group": "Emphysema2008.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "rib fracture",
+      "top1_score": 0.2723,
+      "top3": [
+        "rib fracture",
+        "hilar or mediastinal widening",
+        "pulmonary edema"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 8,
+      "returned": [
+        "rib fracture",
+        "hilar or mediastinal widening",
+        "pulmonary edema",
+        "pneumothorax"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "rib fracture",
+        "hilar or mediastinal widening",
+        "pulmonary edema",
+        "pneumothorax"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/23_chest_x_ray_hyperinflation_consistent_with_emphysema.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "hyperinflation consistent with emphysema"
+      ],
+      "group": "BullousEmphysema.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "atelectasis",
+      "top1_score": 0.9273,
+      "top3": [
+        "atelectasis",
+        "pulmonary edema",
+        "rib fracture"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 7,
+      "returned": [
+        "atelectasis"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "atelectasis"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/24_chest_x_ray_atelectasis.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "atelectasis"
+      ],
+      "group": "Unterlappenatelektase rechts pa.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "pleural effusion",
+      "top1_score": 0.513,
+      "top3": [
+        "pleural effusion",
+        "atelectasis",
+        "no significant abnormality"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "pleural effusion"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pleural effusion"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/25_chest_x_ray_atelectasis.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "atelectasis"
+      ],
+      "group": "Oberlappenatelektase links pa.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "atelectasis",
+      "top1_score": 0.951,
+      "top3": [
+        "atelectasis",
+        "hilar or mediastinal widening",
+        "pneumothorax"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "atelectasis"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/26_chest_x_ray_atelectasis.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "atelectasis"
+      ],
+      "group": "Atelectasia.JPG",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9995
+        ],
+        [
+          "CT scan",
+          0.0005
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ]
+      ],
+      "top1": "atelectasis",
+      "top1_score": 0.7384,
+      "top3": [
+        "atelectasis",
+        "pleural effusion",
+        "consolidation"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "atelectasis"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/27_chest_x_ray_rib_fracture.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "rib fracture"
+      ],
+      "group": "Rib fracture 2347.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "no significant abnormality",
+      "top1_score": 0.4316,
+      "top3": [
+        "no significant abnormality",
+        "normal chest X-ray, no acute findings",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 4,
+      "returned": [
+        "no significant abnormality",
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "no significant abnormality",
+        "normal chest X-ray, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/28_chest_x_ray_rib_fracture.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "rib fracture",
+        "pleural effusion"
+      ],
+      "group": "Гемоторакс, переломы рёбер.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9985
+        ],
+        [
+          "CT scan",
+          0.0015
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "pleural effusion",
+      "top1_score": 0.9028,
+      "top3": [
+        "pleural effusion",
+        "atelectasis",
+        "no significant abnormality"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pleural effusion"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/29_chest_x_ray_rib_fracture.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "rib fracture"
+      ],
+      "group": "Rippenserienfraktur Röntgen Thorax.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "pneumothorax",
+      "top1_score": 0.6863,
+      "top3": [
+        "pneumothorax",
+        "atelectasis",
+        "normal chest X-ray, no acute findings"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 6,
+      "returned": [
+        "pneumothorax"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "pneumothorax"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/30_chest_x_ray_hilar_or_mediastinal_widening.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "hilar or mediastinal widening"
+      ],
+      "group": "HilarAdenopathyNo.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "hilar or mediastinal widening",
+      "top1_score": 0.9853,
+      "top3": [
+        "hilar or mediastinal widening",
+        "atelectasis",
+        "pulmonary nodule or mass"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "hilar or mediastinal widening"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/31_ct_scan_hemorrhage.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "Trauma subdural.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.8784
+        ],
+        [
+          "MRI brain scan",
+          0.1189
+        ],
+        [
+          "chest X-ray",
+          0.0026
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.7438,
+      "top3": [
+        "acute infarct",
+        "hypodense lesion",
+        "ventricular enlargement"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 5,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/32_ct_scan_hemorrhage.png",
+      "modality": "CT scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "BilateralSubDur.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.8816
+        ],
+        [
+          "MRI brain scan",
+          0.1135
+        ],
+        [
+          "chest X-ray",
+          0.0031
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.8553,
+      "top3": [
+        "normal head CT, no acute findings",
+        "ventricular enlargement",
+        "acute infarct"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 6,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal head CT, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/33_ct_scan_hemorrhage.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "Intra Parenchymal Bleed with Edema.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.648
+        ],
+        [
+          "MRI brain scan",
+          0.3516
+        ],
+        [
+          "chest X-ray",
+          0.0003
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9674,
+      "top3": [
+        "acute infarct",
+        "hemorrhage",
+        "hypodense lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/34_ct_scan_hemorrhage.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "Intracerebral hemorrage (CT scan).jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": false,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.7846
+        ],
+        [
+          "CT scan",
+          0.2154
+        ],
+        [
+          "chest X-ray",
+          0.0
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9535,
+      "top3": [
+        "acute infarct",
+        "hypodense lesion",
+        "ventricular enlargement"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 4,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/35_ct_scan_hemorrhage.png",
+      "modality": "CT scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "Frontale Kontusionsblutung als Contre coup 01.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.585
+        ],
+        [
+          "MRI brain scan",
+          0.4033
+        ],
+        [
+          "unspecified medical image",
+          0.0112
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9904,
+      "top3": [
+        "acute infarct",
+        "hemorrhage",
+        "hypodense lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/36_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "CT Brain MCA Infarct.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.9397
+        ],
+        [
+          "MRI brain scan",
+          0.0597
+        ],
+        [
+          "chest X-ray",
+          0.0005
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9529,
+      "top3": [
+        "acute infarct",
+        "hemorrhage",
+        "hypodense lesion"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/37_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "Right MCA and PCA territories infarct.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": false,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.6667
+        ],
+        [
+          "CT scan",
+          0.3308
+        ],
+        [
+          "chest X-ray",
+          0.0025
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9951,
+      "top3": [
+        "acute infarct",
+        "normal head CT, no acute findings",
+        "hypodense lesion"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/38_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "POCITKWojder.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": false,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.6904
+        ],
+        [
+          "CT scan",
+          0.3094
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ]
+      ],
+      "top1": "ventricular enlargement",
+      "top1_score": 0.5899,
+      "top3": [
+        "ventricular enlargement",
+        "acute infarct",
+        "normal head CT, no acute findings"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "ventricular enlargement",
+        "acute infarct"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "ventricular enlargement"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/39_ct_scan_ventricular_enlargement.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "ventricular enlargement"
+      ],
+      "group": "Hydrocephalus.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.7871
+        ],
+        [
+          "MRI brain scan",
+          0.2115
+        ],
+        [
+          "chest X-ray",
+          0.0014
+        ]
+      ],
+      "top1": "ventricular enlargement",
+      "top1_score": 0.8429,
+      "top3": [
+        "ventricular enlargement",
+        "normal head CT, no acute findings",
+        "acute infarct"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "ventricular enlargement"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/40_ct_scan_ventricular_enlargement.png",
+      "modality": "CT scan",
+      "accepted": [
+        "ventricular enlargement"
+      ],
+      "group": "dilmen_nph_ct",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": false,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.5048
+        ],
+        [
+          "CT scan",
+          0.4813
+        ],
+        [
+          "chest X-ray",
+          0.0102
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.99,
+      "top3": [
+        "normal head CT, no acute findings",
+        "ventricular enlargement",
+        "acute infarct"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal head CT, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/41_ct_scan_mass_lesion.png",
+      "modality": "CT scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "BrainCa.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.746
+        ],
+        [
+          "MRI brain scan",
+          0.2533
+        ],
+        [
+          "chest X-ray",
+          0.0006
+        ]
+      ],
+      "top1": "ventricular enlargement",
+      "top1_score": 0.8043,
+      "top3": [
+        "ventricular enlargement",
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 7,
+      "returned": [
+        "ventricular enlargement"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "ventricular enlargement"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/42_ct_scan_mass_lesion.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "Medulloblastom CT.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.8977
+        ],
+        [
+          "MRI brain scan",
+          0.102
+        ],
+        [
+          "chest X-ray",
+          0.0003
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.8629,
+      "top3": [
+        "acute infarct",
+        "ventricular enlargement",
+        "hypodense lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 6,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/43_ct_scan_mass_lesion.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "Tectal plate glioma CT.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.951
+        ],
+        [
+          "MRI brain scan",
+          0.0429
+        ],
+        [
+          "chest X-ray",
+          0.0057
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.7305,
+      "top3": [
+        "normal head CT, no acute findings",
+        "ventricular enlargement",
+        "no significant abnormality"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 8,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal head CT, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/44_ct_scan_sinus_abnormality.png",
+      "modality": "CT scan",
+      "accepted": [
+        "sinus abnormality"
+      ],
+      "group": "FrontalSinusitis.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.9873
+        ],
+        [
+          "MRI brain scan",
+          0.0123
+        ],
+        [
+          "chest X-ray",
+          0.0003
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.9967,
+      "top3": [
+        "normal head CT, no acute findings",
+        "no significant abnormality",
+        "hypodense lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 8,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal head CT, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/45_ct_scan_sinus_abnormality.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "sinus abnormality"
+      ],
+      "group": "Chronische Sinusitis maxillaris mit Ebonisierung des Knochens 92W - 001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.9956
+        ],
+        [
+          "unspecified medical image",
+          0.0032
+        ],
+        [
+          "MRI brain scan",
+          0.0012
+        ]
+      ],
+      "top1": "hypodense lesion",
+      "top1_score": 0.6819,
+      "top3": [
+        "hypodense lesion",
+        "no significant abnormality",
+        "mass lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 9,
+      "returned": [
+        "hypodense lesion"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "hypodense lesion"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/46_mri_brain_scan_normal_brain_mri_no_acute_findings.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "Brain MRI t2 142301.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.999
+        ],
+        [
+          "chest X-ray",
+          0.0006
+        ],
+        [
+          "CT scan",
+          0.0002
+        ]
+      ],
+      "top1": "normal brain MRI, no acute findings",
+      "top1_score": 0.4884,
+      "top3": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy",
+        "white matter hyperintensity"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/47_mri_brain_scan_acute_infarct.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "acute infarct"
+      ],
+      "group": "DWI MRI of a cerebral infarction.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9617
+        ],
+        [
+          "unspecified medical image",
+          0.0383
+        ],
+        [
+          "chest X-ray",
+          0.0
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9884,
+      "top3": [
+        "acute infarct",
+        "chronic infarct",
+        "white matter hyperintensity"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/48_mri_brain_scan_acute_infarct.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "acute infarct",
+        "chronic infarct"
+      ],
+      "group": "LACIMRIflairWojder.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "white matter hyperintensity",
+      "top1_score": 0.9636,
+      "top3": [
+        "white matter hyperintensity",
+        "normal brain MRI, no acute findings",
+        "acute infarct"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "white matter hyperintensity"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "white matter hyperintensity"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/49_mri_brain_scan_hemorrhage.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "MRI Cerebellum Hemorrhage.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          1.0
+        ],
+        [
+          "chest X-ray",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "cerebral atrophy",
+      "top1_score": 0.9963,
+      "top3": [
+        "cerebral atrophy",
+        "chronic infarct",
+        "white matter hyperintensity"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 10,
+      "returned": [
+        "cerebral atrophy"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/50_mri_brain_scan_hemorrhage.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "hemorrhage"
+      ],
+      "group": "Frontale Kontusionsblutung MRT T1 01.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.998
+        ],
+        [
+          "CT scan",
+          0.0019
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ]
+      ],
+      "top1": "cerebral atrophy",
+      "top1_score": 0.793,
+      "top3": [
+        "cerebral atrophy",
+        "vascular malformation",
+        "mass lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 5,
+      "returned": [
+        "cerebral atrophy"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/51_mri_brain_scan_mass_lesion.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "Glioblastoma - MR coronal with contrast.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9726
+        ],
+        [
+          "CT scan",
+          0.0274
+        ],
+        [
+          "chest X-ray",
+          0.0
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.4676,
+      "top3": [
+        "acute infarct",
+        "vascular malformation",
+        "mass lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "acute infarct",
+        "vascular malformation"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct",
+        "vascular malformation"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/52_mri_brain_scan_mass_lesion.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "Glioblastoma multiforme - MRT T1 ax.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9997
+        ],
+        [
+          "CT scan",
+          0.0002
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "chronic infarct",
+      "top1_score": 0.5826,
+      "top3": [
+        "chronic infarct",
+        "ventricular enlargement",
+        "cerebral atrophy"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 5,
+      "returned": [
+        "chronic infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "chronic infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/53_mri_brain_scan_mass_lesion.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "Huge Meningioma.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9802
+        ],
+        [
+          "CT scan",
+          0.0196
+        ],
+        [
+          "unspecified medical image",
+          0.0002
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.683,
+      "top3": [
+        "acute infarct",
+        "chronic infarct",
+        "mass lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/54_mri_brain_scan_mass_lesion.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "mass lesion"
+      ],
+      "group": "Butterfly glioblastoma.png",
+      "possible_pretraining_overlap": true,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9998
+        ],
+        [
+          "CT scan",
+          0.0002
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9287,
+      "top3": [
+        "acute infarct",
+        "chronic infarct",
+        "ventricular enlargement"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 4,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/55_mri_brain_scan_white_matter_hyperintensity.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "white matter hyperintensity"
+      ],
+      "group": "MSMRI.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9996
+        ],
+        [
+          "CT scan",
+          0.0004
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "white matter hyperintensity",
+      "top1_score": 0.6058,
+      "top3": [
+        "white matter hyperintensity",
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "white matter hyperintensity"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/56_mri_brain_scan_ventricular_enlargement.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "ventricular enlargement"
+      ],
+      "group": "dilmen_nph_mri",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "chest X-ray",
+          0.0
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.8972,
+      "top3": [
+        "acute infarct",
+        "chronic infarct",
+        "normal brain MRI, no acute findings"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 5,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/57_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest x-ray plain film normal.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9992
+        ],
+        [
+          "unspecified medical image",
+          0.0008
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.9972,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/58_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest X-ray.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9981
+        ],
+        [
+          "unspecified medical image",
+          0.0019
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.8417,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "pneumothorax",
+        "atelectasis"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/59_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Normal PA chest x-ray (5414485536).jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          0.9999
+        ],
+        [
+          "unspecified medical image",
+          0.0001
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.9987,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/60_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Normal posteroanterior (PA) chest radiograph (X-ray).jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.5647,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "hilar or mediastinal widening",
+        "atelectasis"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/61_ct_scan_midline_shift.png",
+      "modality": "CT scan",
+      "accepted": [
+        "midline shift",
+        "acute infarct"
+      ],
+      "group": "LeftsidedstrokeNo.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.925
+        ],
+        [
+          "MRI brain scan",
+          0.0748
+        ],
+        [
+          "chest X-ray",
+          0.0002
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9255,
+      "top3": [
+        "acute infarct",
+        "hypodense lesion",
+        "hemorrhage"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/62_ct_scan_midline_shift.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "midline shift",
+        "hemorrhage"
+      ],
+      "group": "Subfalcine-herniation-001.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": false,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.6912
+        ],
+        [
+          "CT scan",
+          0.3087
+        ],
+        [
+          "chest X-ray",
+          0.0001
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9997,
+      "top3": [
+        "acute infarct",
+        "hemorrhage",
+        "hypodense lesion"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/63_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "accepted": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "INFARCT.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.9109
+        ],
+        [
+          "MRI brain scan",
+          0.0883
+        ],
+        [
+          "chest X-ray",
+          0.0007
+        ]
+      ],
+      "top1": "acute infarct",
+      "top1_score": 0.9586,
+      "top3": [
+        "acute infarct",
+        "hypodense lesion",
+        "hemorrhage"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "acute infarct"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/64_ct_scan_normal_head_ct_no_acute_findings.png",
+      "modality": "CT scan",
+      "accepted": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.995
+        ],
+        [
+          "MRI brain scan",
+          0.0047
+        ],
+        [
+          "unspecified medical image",
+          0.0002
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.9116,
+      "top3": [
+        "normal head CT, no acute findings",
+        "no significant abnormality",
+        "hypodense lesion"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/65_ct_scan_normal_head_ct_no_acute_findings.png",
+      "modality": "CT scan",
+      "accepted": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.9326
+        ],
+        [
+          "MRI brain scan",
+          0.0624
+        ],
+        [
+          "unspecified medical image",
+          0.0048
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.953,
+      "top3": [
+        "normal head CT, no acute findings",
+        "hypodense lesion",
+        "acute infarct"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/66_mri_brain_scan_vascular_malformation.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "vascular malformation"
+      ],
+      "group": "avm_001_mri",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9995
+        ],
+        [
+          "CT scan",
+          0.0005
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "normal brain MRI, no acute findings",
+      "top1_score": 0.7984,
+      "top3": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy",
+        "chronic infarct"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 7,
+      "returned": [
+        "normal brain MRI, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal brain MRI, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/67_mri_brain_scan_vascular_malformation.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "vascular malformation"
+      ],
+      "group": "avm_001_mri",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "chronic infarct",
+      "top1_score": 0.5672,
+      "top3": [
+        "chronic infarct",
+        "acute infarct",
+        "cerebral atrophy"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 6,
+      "returned": [
+        "chronic infarct",
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "chronic infarct",
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/68_mri_brain_scan_vascular_malformation.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "vascular malformation"
+      ],
+      "group": "avm_001_mri",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9994
+        ],
+        [
+          "unspecified medical image",
+          0.0003
+        ],
+        [
+          "CT scan",
+          0.0002
+        ]
+      ],
+      "top1": "normal brain MRI, no acute findings",
+      "top1_score": 0.5375,
+      "top3": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy",
+        "ventricular enlargement"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 8,
+      "returned": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/69_mri_brain_scan_chronic_infarct.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "chronic infarct"
+      ],
+      "group": "Lacunar stroke MRI.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9999
+        ],
+        [
+          "CT scan",
+          0.0001
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "normal brain MRI, no acute findings",
+      "top1_score": 0.8784,
+      "top3": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy",
+        "white matter hyperintensity"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 4,
+      "returned": [
+        "normal brain MRI, no acute findings"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "normal brain MRI, no acute findings"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/70_mri_brain_scan_edema.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "edema"
+      ],
+      "group": "Posterior reversible encephalopathy syndrome MRI.jpg",
+      "possible_pretraining_overlap": true,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9999
+        ],
+        [
+          "CT scan",
+          0.0001
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "cerebral atrophy",
+      "top1_score": 0.3386,
+      "top3": [
+        "cerebral atrophy",
+        "acute infarct",
+        "normal brain MRI, no acute findings"
+      ],
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 8,
+      "returned": [
+        "cerebral atrophy",
+        "acute infarct"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "cerebral atrophy",
+        "acute infarct"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/71_mri_brain_scan_white_matter_hyperintensity.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "white matter hyperintensity"
+      ],
+      "group": "Leucoaraiose.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9979
+        ],
+        [
+          "CT scan",
+          0.0021
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "white matter hyperintensity",
+      "top1_score": 0.9677,
+      "top3": [
+        "white matter hyperintensity",
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "white matter hyperintensity"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/72_mri_brain_scan_normal_brain_mri_no_acute_findings.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "Brain-T2-axial.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9994
+        ],
+        [
+          "unspecified medical image",
+          0.0003
+        ],
+        [
+          "CT scan",
+          0.0003
+        ]
+      ],
+      "top1": "normal brain MRI, no acute findings",
+      "top1_score": 0.9953,
+      "top3": [
+        "normal brain MRI, no acute findings",
+        "white matter hyperintensity",
+        "cerebral atrophy"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal brain MRI, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/73_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "Normal axial T2-weighted MR image of the brain.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "extension",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9998
+        ],
+        [
+          "CT scan",
+          0.0002
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "normal brain MRI, no acute findings",
+      "top1_score": 0.538,
+      "top3": [
+        "normal brain MRI, no acute findings",
+        "cerebral atrophy",
+        "chronic infarct"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal brain MRI, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/images/real/real_chest_xray_normal_pa.jpg",
+      "modality": "chest X-ray",
+      "accepted": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "data/images/real/real_chest_xray_normal_pa.jpg",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ],
+        [
+          "unspecified medical image",
+          0.0
+        ]
+      ],
+      "top1": "normal chest X-ray, no acute findings",
+      "top1_score": 0.5492,
+      "top3": [
+        "normal chest X-ray, no acute findings",
+        "hilar or mediastinal widening",
+        "atelectasis"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/images/real/real_chest_xray_pneumothorax.png",
+      "modality": "chest X-ray",
+      "accepted": [
+        "pneumothorax"
+      ],
+      "group": "data/images/real/real_chest_xray_pneumothorax.png",
+      "possible_pretraining_overlap": true,
+      "has_annotation": true,
+      "set": "original",
+      "detected_modality": "chest X-ray",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "chest X-ray",
+          1.0
+        ],
+        [
+          "MRI brain scan",
+          0.0
+        ],
+        [
+          "CT scan",
+          0.0
+        ]
+      ],
+      "top1": "pneumothorax",
+      "top1_score": 0.6814,
+      "top3": [
+        "pneumothorax",
+        "rib fracture",
+        "hilar or mediastinal widening"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "pneumothorax"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": true,
+      "pred_abnormal": true
+    },
+    {
+      "file": "data/images/real/real_ct_scan_06.png",
+      "modality": "CT scan",
+      "accepted": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.922
+        ],
+        [
+          "MRI brain scan",
+          0.0775
+        ],
+        [
+          "chest X-ray",
+          0.0004
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.9987,
+      "top3": [
+        "normal head CT, no acute findings",
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/images/real/real_ct_scan_10.png",
+      "modality": "CT scan",
+      "accepted": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.6897
+        ],
+        [
+          "MRI brain scan",
+          0.3096
+        ],
+        [
+          "chest X-ray",
+          0.0006
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.9989,
+      "top3": [
+        "normal head CT, no acute findings",
+        "acute infarct",
+        "no significant abnormality"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/images/real/real_ct_scan_14.png",
+      "modality": "CT scan",
+      "accepted": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "CT scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "CT scan",
+          0.6445
+        ],
+        [
+          "MRI brain scan",
+          0.3536
+        ],
+        [
+          "chest X-ray",
+          0.0019
+        ]
+      ],
+      "top1": "normal head CT, no acute findings",
+      "top1_score": 0.9919,
+      "top3": [
+        "normal head CT, no acute findings",
+        "acute infarct",
+        "ventricular enlargement"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
+        "normal head CT, no acute findings"
+      ],
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
+      "true_abnormal": false,
+      "pred_abnormal": false
+    },
+    {
+      "file": "data/images/real/real_brain_mri_t1.png",
+      "modality": "MRI brain scan",
+      "accepted": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "data/images/real/real_brain_mri_t1.png",
+      "possible_pretraining_overlap": false,
+      "has_annotation": false,
+      "set": "original",
+      "detected_modality": "MRI brain scan",
+      "modality_ok": true,
+      "modality_scores": [
+        [
+          "MRI brain scan",
+          0.9217
+        ],
+        [
+          "CT scan",
+          0.0777
+        ],
+        [
+          "unspecified medical image",
+          0.0005
+        ]
+      ],
+      "top1": "cerebral atrophy",
+      "top1_score": 0.7905,
+      "top3": [
+        "cerebral atrophy",
+        "normal brain MRI, no acute findings",
+        "white matter hyperintensity"
+      ],
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 2,
+      "returned": [
+        "cerebral atrophy"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": false,
+      "true_abnormal": false,
+      "pred_abnormal": true
+    }
+  ]
+}

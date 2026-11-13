@@ -256,3 +256,33 @@ def test_results_json_matches_the_manifest_size(manifest):
     assert math.isclose(
         results["overall"]["top1"]["rate"], sum(r["top1_ok"] for r in results["rows"]) / len(results["rows"])
     )
+
+
+def test_manifest_sets_are_disjoint_and_cover_everything():
+    everything = ib.load_manifest()
+    original = ib.load_manifest(only="original")
+    extension = ib.load_manifest(only="extension")
+    assert len(original) + len(extension) == len(everything)
+    assert not {e["file"] for e in original} & {e["file"] for e in extension}
+    assert original and extension
+
+
+def test_dev_and_test_subsets_never_include_extension_images():
+    # An extension image that shares a group with an original one (the extra normal-CT slices) is
+    # not in the split's halves: it must not be counted in a half it was never assigned to.
+    def stub(path, modality):
+        return {"modality": "CT scan", "modality_scores": [("CT scan", 1.0)],
+                "finding_scores": [("hemorrhage", 0.9), ("mass lesion", 0.1)]}
+
+    def entry(name, group, set_name):
+        e = {"file": name, "modality": "CT scan", "labels": ["hemorrhage"], "group": group}
+        if set_name == "extension":
+            e["set"] = "extension"
+        return e
+
+    manifest = [entry("a.png", "g1", "original"), entry("b.png", "g2", "original"), entry("c.png", "g1", "extension")]
+    result = ib.run(manifest, rank_fn=stub, split={"g1": "dev", "g2": "test"})
+    dev = next(v for k, v in result["subsets"].items() if k.startswith("DEV half"))
+    assert dev["n_images"] == 1  # a.png only; c.png shares g1 but is an extension image
+    ext = next(v for k, v in result["subsets"].items() if k.startswith("EXTENSION"))
+    assert ext["n_images"] == 1
