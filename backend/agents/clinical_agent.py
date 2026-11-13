@@ -33,9 +33,14 @@ explanation, no markdown code fences — matching exactly this shape:
 Field rules:
 - "demographics": any age/sex/other demographic details mentioned in the \
 text itself (not inferred from outside context). Empty object if none.
-- "symptoms": each distinct symptom or complaint as a short string.
+- "symptoms": each distinct symptom or complaint as a short string. Also \
+list clinically meaningful negatives the note states, as "absence of X" \
+(for example "absence of breathlessness").
 - "history": past medical history, conditions, or relevant background as \
-short strings.
+short strings. Include the recent event or exposure that explains the \
+complaint, and its timing, whenever the note gives one (for example \
+"collision during sport", "fall two days ago", "on warfarin"); never drop \
+the mechanism or the time course.
 - "labs": lab test names mapped to their reported value (as a string, \
 including units if given), e.g. {"hemoglobin": "12.1 g/dL"}.
 - "imaging_text_findings": any imaging findings mentioned in the TEXT \

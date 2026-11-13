@@ -568,6 +568,8 @@ def _step_detail(context: _CaseContext, step: str) -> str | None:
             im = context.imaging
             if im.unsupported_modality:
                 return f"{im.modality}: not assessed (no findings model)"
+            if im.inconclusive:
+                return f"{im.modality}: read inconclusive (best label {im.confidence:.0%}); not used"
             return f"{im.modality}: {im.findings[0]}" if im.findings else im.modality
         if step == "rag" and context.rag is not None:
             return f"{len(context.rag.evidence)} offline passage(s)"

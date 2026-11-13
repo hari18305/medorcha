@@ -143,13 +143,26 @@ def _is_nonspecific_symptom(symptom: str) -> bool:
     return " ".join(words) in _NONSPECIFIC_SYMPTOMS
 
 
+def _is_negative_symptom(symptom: str) -> bool:
+    """A stated negative ("absence of fever", "no breathlessness"): useful context, but not a presenting problem."""
+    t = symptom.strip().lower()
+    return t.startswith(("absence of", "no ", "denies", "without"))
+
+
+def _positive_symptoms(clinical: ClinicalFindings) -> list[str]:
+    return [s for s in clinical.symptoms if not _is_negative_symptom(s)]
+
+
 def is_nonspecific_presentation(clinical: ClinicalFindings | None) -> bool:
     """True when there is at least one symptom, every symptom is a general one,
     and there are no lab values or report findings. A case with no symptoms at
     all is the insufficient-input case, handled by has_clinical_anchor()."""
-    if clinical is None or clinical.labs or clinical.imaging_text_findings or not clinical.symptoms:
+    if clinical is None or clinical.labs or clinical.imaging_text_findings:
         return False
-    return all(_is_nonspecific_symptom(s) for s in clinical.symptoms)
+    positive = _positive_symptoms(clinical)
+    if not positive:
+        return False
+    return all(_is_nonspecific_symptom(s) for s in positive)
 
 
 def input_quality(clinical: ClinicalFindings | None) -> str:
@@ -163,12 +176,13 @@ def input_quality(clinical: ClinicalFindings | None) -> str:
 
 def has_clinical_anchor(clinical: ClinicalFindings | None) -> bool:
     """True when the case supplied something to reason from: at least one
-    symptom, one lab value, or one finding extracted from a report. History and
+    symptom, one lab value, or one finding extracted from a report. Stated negatives ("absence of
+    fever") do not count either. History and
     demographics alone do not count (they are context, not a presenting
     problem), and neither do findings the imaging model itself produced."""
     if clinical is None:
         return True  # caller did not pass clinical findings: gate not applied
-    return bool(clinical.symptoms or clinical.labs or clinical.imaging_text_findings)
+    return bool(_positive_symptoms(clinical) or clinical.labs or clinical.imaging_text_findings)
 
 
 def _compute_s_rag(rag: RAGEvidence) -> float:

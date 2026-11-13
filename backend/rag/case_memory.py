@@ -85,7 +85,7 @@ def build_case_text(clinical: ClinicalFindings, imaging: ImagingFindings | None)
         parts.append(", ".join(clinical.symptoms))
     if clinical.history:
         parts.append("history of " + ", ".join(clinical.history))
-    if imaging is not None and imaging.findings and not imaging.unsupported_modality:
+    if imaging is not None and imaging.drives_retrieval:
         parts.append("imaging findings: " + ", ".join(imaging.findings))
     return "; ".join(parts)
 

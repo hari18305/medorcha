@@ -12,6 +12,8 @@ Model: pritamdeka/S-BioBert-snli-multinli-stsb
 
 from sentence_transformers import SentenceTransformer
 
+from backend.services.inference import on_model_thread
+
 MODEL_NAME = "pritamdeka/S-BioBert-snli-multinli-stsb"
 EMBEDDING_DIM = 768
 
@@ -31,6 +33,7 @@ def _get_model() -> SentenceTransformer:
     return _model
 
 
+@on_model_thread
 def embed_text(text: str) -> list[float]:
     """Embed a single string into a 768-dim BioBERT sentence embedding."""
     model = _get_model()

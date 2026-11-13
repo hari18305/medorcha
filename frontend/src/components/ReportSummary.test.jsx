@@ -177,6 +177,17 @@ describe("ReportSummary: imaging", () => {
     expect(screen.queryByText("no findings model available")).not.toBeInTheDocument();
   });
 
+  it("shows an indecisive read as inconclusive: says so, shows the score, and does not present the labels as findings", () => {
+    renderReport({ imaging: { modality: "MRI brain scan", findings: ["edema", "cerebral atrophy"], confidence: 0.34, inconclusive: true } }, { imageSubmitted: true });
+    const section = document.querySelector('[data-imaging-state="inconclusive"]');
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent("Inconclusive read");
+    expect(section).toHaveTextContent("34%");
+    expect(section).toHaveTextContent("not used in the evidence search");
+    expect(document.querySelector('[data-imaging-state="assessed"]')).toBeNull();
+    expect(screen.getByText("Inconclusive")).toBeInTheDocument(); // the run-summary line
+  });
+
   it("explains an image that produced no findings", () => {
     renderReport({ imaging: null }, { imageSubmitted: true });
     expect(screen.getByText(/no imaging findings were recorded/)).toBeInTheDocument();

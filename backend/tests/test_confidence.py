@@ -350,3 +350,25 @@ def test_specific_symptoms_are_untouched_by_the_nonspecific_cap():
     breakdown = compute_confidence_breakdown(_rag([0.9]), _live(["high"]), _fusion([]), _clin(symptoms=["fatigue", "chest pain"]))
     assert breakdown["confidence"] == pytest.approx(0.96)
     assert breakdown["input_quality"] == "ok"
+
+
+# --------------------------------------------------------------------------
+# Stated negatives ("absence of X") are context, not a presenting problem
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("neg", ["absence of fever", "no breathlessness", "denies chest pain", "without vomiting"])
+def test_a_stated_negative_alone_is_not_a_clinical_anchor(neg):
+    assert has_clinical_anchor(_clin(symptoms=[neg])) is False
+    assert input_quality(_clin(symptoms=[neg])) == "no_anchor"
+
+
+def test_negatives_do_not_hide_a_real_symptom_or_make_a_vague_one_specific():
+    assert has_clinical_anchor(_clin(symptoms=["absence of fever", "headache"])) is True
+    assert input_quality(_clin(symptoms=["absence of fever", "headache"])) == "ok"
+    # "fatigue" is a general complaint; a negative beside it must not turn it into a specific one
+    assert input_quality(_clin(symptoms=["fatigue", "absence of fever"])) == "nonspecific"
+
+
+def test_a_symptom_that_merely_starts_with_no_letters_is_still_a_symptom():
+    assert has_clinical_anchor(_clin(symptoms=["nocturia"])) is True  # "no " needs the space

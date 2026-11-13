@@ -199,6 +199,14 @@ def _format_imaging(imaging: ImagingFindings | None) -> str:
             f"for this modality. Do not reason about imaging findings for "
             f"this case; treat it as if no imaging were provided."
         )
+    if imaging.inconclusive:
+        return (
+            f"Modality: {imaging.modality}\n"
+            f"Findings: INCONCLUSIVE -- the zero-shot classifier could not tell (its best label scored only "
+            f"{imaging.confidence:.2f}). Do not use its labels as findings or let them shape the differential; "
+            "decide from the clinical information and the evidence, and treat any look at the image itself "
+            "as a sanity check only."
+        )
     caution = (
         "Reliability: these are candidate labels from a fast zero-shot classifier over a "
         "small fixed label set -- hypotheses to check against the rest of the evidence, not "

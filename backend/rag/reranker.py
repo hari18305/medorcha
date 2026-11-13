@@ -56,6 +56,8 @@ import math
 import os
 
 import torch
+
+from backend.services.inference import on_model_thread
 from sentence_transformers import CrossEncoder
 
 MS_MARCO_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
@@ -135,6 +137,7 @@ def _rrf_order(top: list[dict]) -> list[dict]:
     )
 
 
+@on_model_thread
 def rerank(query: str, candidates: list[dict], top_k: int = 5) -> list[dict]:
     """Rerank `candidates` by cross-encoder relevance to `query`.
 

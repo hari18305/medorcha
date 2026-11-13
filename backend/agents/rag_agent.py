@@ -54,7 +54,7 @@ def _build_query(findings: ClinicalFindings, imaging: ImagingFindings | None) ->
         parts.append(", ".join(findings.symptoms))
     if findings.history:
         parts.append("history of " + ", ".join(findings.history))
-    if imaging is not None and imaging.findings and not imaging.unsupported_modality:
+    if imaging is not None and imaging.drives_retrieval:
         parts.append("imaging findings: " + ", ".join(imaging.findings))
     return "; ".join(parts)
 

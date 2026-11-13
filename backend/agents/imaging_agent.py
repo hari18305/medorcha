@@ -30,6 +30,7 @@ from backend.agents.imaging_labels import (
     SUPPORTED_FINDING_MODALITIES,
 )
 from backend.models.schemas import ImagingFindings
+from backend.services.inference import on_model_thread
 
 MODEL_ID = "hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224"
 
@@ -64,6 +65,25 @@ def _relative_threshold_from_env() -> float:
 
 
 FINDING_RELATIVE_THRESHOLD = _relative_threshold_from_env()
+
+# A read whose TOP finding scores below this is "indecisive": the softmax over ~a dozen labels is
+# flat, so the labels say "the classifier could not tell", not "this is what the film shows". Such a
+# read is reported as inconclusive and kept out of retrieval and the differential. Found live: a
+# generated picture (CASE004) scored its three labels 0.34 / 0.23 / 0.22 and, listed as findings,
+# steered a headache-and-hypertension case to TIA / vertebrobasilar insufficiency / PRES at 0.73
+# confidence with no review.
+# Chosen from the score-versus-accuracy table of the 88 real benchmark images (top score under
+# 0.4: 4 of 9 right; 0.8 and above: 24 of 35), NOT validated: on those images the rule discards 4
+# correct reads to avoid 5 wrong ones, and it cannot catch a confident wrong read (a generated chest
+# X-ray scored "pulmonary nodule" 0.9). Override with IMAGING_MIN_TOP_SCORE.
+def _indecisive_threshold_from_env() -> float:
+    try:
+        return float(os.getenv("IMAGING_MIN_TOP_SCORE", "0.40"))
+    except ValueError:
+        return 0.40
+
+
+INDECISIVE_SCORE_THRESHOLD = _indecisive_threshold_from_env()
 
 # CLIP-style logit scale applied to cosine similarities before softmax,
 # matching BiomedCLIP's training configuration.
@@ -124,6 +144,7 @@ def get_biomedclip_bundle():
     return _get_model_bundle()
 
 
+@on_model_thread
 def _embed_image_sync(path: Path) -> list[float]:
     """Synchronous, CPU/GPU-bound BiomedCLIP image embedding. Run via an
     executor by embed_image() -- same pattern as
@@ -216,6 +237,7 @@ def _zero_shot_scores(
     return sorted(zip(labels, scores), key=lambda pair: pair[1], reverse=True)
 
 
+@on_model_thread
 def rank_image(path: Path, modality_hint: str | None = None) -> dict:
     """Synchronous BiomedCLIP inference returning the FULL zero-shot rankings.
 
@@ -314,4 +336,5 @@ async def analyze_image(image_path: str, modality_hint: str | None = None) -> Im
         findings=findings,
         confidence=confidence,
         unsupported_modality=unsupported,
+        inconclusive=(not unsupported) and confidence < INDECISIVE_SCORE_THRESHOLD,
     )

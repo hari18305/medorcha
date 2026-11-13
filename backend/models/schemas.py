@@ -40,6 +40,18 @@ class ImagingFindings(BaseModel):
     # Downstream consumers (rag_agent, fusion_agent) must check this
     # rather than trusting `findings` at face value when it's True.
     unsupported_modality: bool = False
+    # True when the zero-shot read was indecisive: the top finding's score is below
+    # imaging_agent.INDECISIVE_SCORE_THRESHOLD, so the labels amount to "the classifier could not
+    # tell". The labels are kept for display but must not steer retrieval or the differential (found
+    # live: a generated picture whose three labels scored 0.34/0.23/0.22 pulled a headache case
+    # toward TIA, vertebrobasilar insufficiency and PRES). Consumers use `drives_retrieval`.
+    inconclusive: bool = False
+
+    @property
+    def drives_retrieval(self) -> bool:
+        """Whether the findings may be used as evidence: there are some, the modality has a findings
+        model, and the read was decisive."""
+        return bool(self.findings) and not self.unsupported_modality and not self.inconclusive
 
 
 class EvidenceItem(BaseModel):

@@ -475,3 +475,15 @@ def test_the_image_prompt_tells_the_model_not_to_rank_a_label_it_cannot_see():
     from backend.agents.fusion_agent import IMAGE_SYSTEM_PROMPT
 
     assert "do NOT rank a pre-filter label you cannot see in the image" in IMAGE_SYSTEM_PROMPT
+
+
+def test_format_imaging_inconclusive_tells_the_llm_not_to_use_the_labels():
+    flat = ImagingFindings(modality="MRI brain scan", findings=["edema", "cerebral atrophy", "chronic infarct"],
+                           confidence=0.34, inconclusive=True)
+
+    formatted = _format_imaging(flat)
+
+    assert "INCONCLUSIVE" in formatted
+    assert "0.34" in formatted
+    assert "edema" not in formatted and "cerebral atrophy" not in formatted  # the labels never reach the prompt
+    assert "Do not use its labels" in formatted

@@ -191,7 +191,7 @@ async def _select_refinement_strategy(
         f"Current query: {current_query!r}\n\n"
         f"Clinical symptoms: {', '.join(clinical.symptoms) or '(none extracted)'}\n"
         f"Clinical history: {', '.join(clinical.history) or '(none extracted)'}\n"
-        f"Imaging: {', '.join(imaging.findings) if imaging else '(no imaging)'}\n\n"
+        f"Imaging: {', '.join(imaging.findings) if imaging is not None and imaging.drives_retrieval else '(no imaging findings used)'}\n\n"
         f"{_format_evidence_summary(rag, live)}\n\n"
         f"{_format_fusion_for_prompt(fusion)}"
     )

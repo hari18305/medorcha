@@ -45,6 +45,26 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
               </span>
             </p>
           </div>
+        ) : imaging.inconclusive ? (
+          <div data-imaging-state="inconclusive">
+            <p className="text-sm text-slate-700">
+              <span className="font-medium">Modality:</span> {imaging.modality}
+            </p>
+            <p className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+              <InfoIcon className="mt-0.5 h-4 w-4 text-amber-700" />
+              <span>
+                <span className="font-semibold">Inconclusive read.</span> The image classifier could not tell
+                what this shows (its best label scored only {Math.round((imaging.confidence ?? 0) * 100)}%). Its
+                labels were not used in the evidence search or the differential; the result rests on the
+                clinical information.
+              </span>
+            </p>
+            {imaging.findings?.length > 0 && (
+              <p className="mt-2 text-xs text-slate-500">
+                Labels it leaned toward, shown for transparency only: {imaging.findings.join(", ")}.
+              </p>
+            )}
+          </div>
         ) : (
           <div data-imaging-state="assessed">
             <p className="text-sm text-slate-700">

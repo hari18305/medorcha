@@ -315,3 +315,15 @@ async def test_run_rag_skips_visual_precedent_for_unsupported_modality(fake_qdra
     await run_rag(CASE001_FINDINGS, unsupported, image_path="data/images/some_chest_xray.png")
 
     fake_retrieve_visual.assert_not_called()
+
+
+def test_an_inconclusive_image_read_does_not_enter_the_query():
+    # CASE004: three near-equal labels (edema / atrophy / chronic infarct) used to be appended and steered retrieval.
+    flat = ImagingFindings(modality="MRI brain scan", findings=["edema", "cerebral atrophy", "chronic infarct"],
+                           confidence=0.34, inconclusive=True)
+
+    query = _build_query(CASE001_FINDINGS, flat)
+
+    assert "headache" in query and "hypertension" in query
+    assert "imaging findings" not in query
+    assert "edema" not in query

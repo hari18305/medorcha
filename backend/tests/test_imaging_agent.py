@@ -444,3 +444,49 @@ def test_production_prompts_match_the_ones_the_held_out_experiment_selected():
     for modality, labels in FINDING_LABELS_BY_MODALITY.items():
         for label in labels:
             assert [finding_prompt(modality, label)] == pe.FINDING_CANDIDATES["T1_showing"](modality, label)
+
+
+# --------------------------------------------------------------------------
+# Indecisive reads (CASE004): a flat softmax says "could not tell", not a finding
+# --------------------------------------------------------------------------
+
+
+async def test_a_flat_read_is_marked_inconclusive(monkeypatch):
+    # Every finding label has the SAME embedding, so the softmax over the brain labels is uniform and the top score
+    # is about 1/13: the classifier cannot tell. The modality is still detected (MRI wins the modality step).
+    image_embedding = torch.tensor([[1.0, 0.0]])
+    text_embeddings = _uniform_text_embeddings(torch.tensor([0.0, 1.0]))
+    text_embeddings["MRI brain scan"] = torch.tensor([1.0, 0.0])
+    model, preprocess, tokenizer = _make_bundle(image_embedding, text_embeddings)
+    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: (model, preprocess, tokenizer))
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.modality == "MRI brain scan"
+    assert result.confidence < imaging_agent.INDECISIVE_SCORE_THRESHOLD
+    assert result.inconclusive is True
+    assert result.findings  # kept for display, never empty
+    assert result.drives_retrieval is False
+
+
+async def test_a_decisive_read_is_not_inconclusive(dominant_finding_bundle):
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.confidence > 0.9
+    assert result.inconclusive is False
+    assert result.drives_retrieval is True
+
+
+async def test_an_unsupported_modality_is_not_also_called_inconclusive(dominant_finding_bundle):
+    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="unspecified medical image")
+
+    assert result.unsupported_modality is True
+    assert result.inconclusive is False  # its confidence 0.0 is "no model", not "could not tell"
+    assert result.drives_retrieval is False
+
+
+def test_the_threshold_is_overridable_by_environment(monkeypatch):
+    monkeypatch.setenv("IMAGING_MIN_TOP_SCORE", "0.7")
+    assert imaging_agent._indecisive_threshold_from_env() == 0.7
+    monkeypatch.setenv("IMAGING_MIN_TOP_SCORE", "not a number")
+    assert imaging_agent._indecisive_threshold_from_env() == 0.40

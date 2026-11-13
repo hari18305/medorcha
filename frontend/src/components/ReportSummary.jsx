@@ -317,7 +317,9 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
                     : "None submitted"
                   : report.imaging.unsupported_modality
                     ? "Not assessed"
-                    : report.imaging.modality
+                    : report.imaging.inconclusive
+                      ? "Inconclusive"
+                      : report.imaging.modality
               }
             />
           </dl>

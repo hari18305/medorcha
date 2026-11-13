@@ -708,3 +708,17 @@ def test_a_faulty_progress_sink_never_breaks_the_pipeline(mock_agents):
 
     report = run_case(CASE_TEXT_ONLY, progress=_Broken())
     assert report.confidence == 0.8
+
+
+def test_the_progress_detail_says_when_the_image_read_was_inconclusive(mock_agents):
+    from backend.models.schemas import ImagingFindings
+
+    mock_agents["analyze_image"].return_value = ImagingFindings(
+        modality="MRI brain scan", findings=["edema"], confidence=0.34, inconclusive=True
+    )
+    sink = _Sink()
+
+    run_case(CASE_TEXT_AND_IMAGE, progress=sink)
+
+    detail = next(e[3] for e in sink.of("finished") if e[1] == "imaging")
+    assert "inconclusive" in detail and "34%" in detail and "not used" in detail
