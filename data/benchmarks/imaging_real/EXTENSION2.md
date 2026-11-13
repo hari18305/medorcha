@@ -54,3 +54,15 @@ sensitivity 12/14 against 9/14; specificity 7/12 against 10/12. So the pattern i
 abnormal films and also call more normal films abnormal, and a net top-1 advantage is still not shown on images that took
 no part in choosing them. Still missing: more than one atrophy film, any CT atrophy, and a second normal head-CT subject
 who is not a slice through the orbits.
+
+---
+
+# Second search for the remaining gaps (2026-11-14): nothing usable found
+
+A further search for single-panel, unannotated, openly licensed images for the gaps listed above (more cerebral-atrophy MRI,
+any atrophy CT, a second normal head-CT subject, more normal films) added **no images**, so there is no extension 3. What was
+found and why it was rejected: Alzheimer / Pick / LATE / DLB atrophy MRIs are multi-panel composites or carry boxes and arrows;
+the two other atrophy CTs and MRIs found earlier are composites or annotated; the second "normal" brain CT on Commons is a
+montage of the same Uppsala subject already in the set; the Antwerp "healthy lungs" film (Public domain) has the patient's name
+and date of birth printed on it, and an AP normal film carries a date overlay and a partial ID, so neither was used; an MS
+DIR-sequence MRI is circled and arrowed. The set stays at 88 images and the gaps stay as stated in EXTENSION2.md.
