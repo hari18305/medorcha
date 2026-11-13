@@ -53,3 +53,7 @@ backend/tests/eval_*.csv
 backend/tests/eval_*.md
 backend/tests/mode2_items.csv
 eval_run/
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/

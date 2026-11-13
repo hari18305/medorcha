@@ -387,7 +387,7 @@ into the clinical findings on the server; lab values count as clinical
 input, past history on its own does not (see the input-sufficiency gate
 above). `npm test` in `frontend/` runs two suites: `npm run test:unit` (the
 form-logic and polling helpers, Node's built-in runner) and `npm run test:ui`
-(component tests: Vitest + React Testing Library in jsdom, installed by `npm install`). If confidence is below threshold, you'll be routed
+(component tests: Vitest + React Testing Library in jsdom, installed by `npm install`). `npm run test:e2e` runs 7 browser end-to-end tests: the built frontend in the installed Chrome against a real FastAPI backend whose models and network calls are faked (`scripts/e2e_backend.py`; no API key, no model download; the frontend is served on port 3000). If confidence is below threshold, you'll be routed
 automatically to the review screen (also reachable manually via the
 "Review Case" button on any report).
 

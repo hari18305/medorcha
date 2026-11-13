@@ -1008,3 +1008,26 @@ image-only cases, was not checked against a clinician. An independent (non-Gemin
 
 Possible follow-up from CASE004: an image that carries no clinical signal still steers the differential; consider a plausibility
 check on very low-confidence image findings, or lowering the weight of the image when the text conflicts.
+
+---
+
+## Three optional items done (2026-11-14)
+
+**1. Browser end-to-end tests (`npm run test:e2e`, 7 tests, about 1 min).** Playwright drives the installed Chrome (no browser
+download) against the built frontend and a real FastAPI backend. `scripts/e2e_backend.py` keeps the real app, async job registry and
+progress events, orchestrator, confidence formula with both input-quality rules, optimizer loop, review endpoints and SQLite, and fakes
+the extractor, BiomedCLIP, retrieval, live evidence, the fusion model, the optimizer's strategy choice and the case-memory write. They
+cover: validation in the browser with no request sent; an ordinary case through progress, report, a citation chip that scrolls to its
+evidence, and the patient summary; a vague complaint going straight to Review with the non-specific note at 60%, closed with an
+annotation and a rating; an image with no text held at 50%; weak evidence running the three optimizer rounds on screen and ending in
+review; an override recorded and the report reopened; and a reload falling back to the form. Mutation-checked (removing the 0.60 cap
+makes the vague-complaint test fail: 94% shown). **Not covered:** any real model (the backend is canned by design), layout and
+styling beyond what the assertions touch, drag-and-drop, other browsers. It uses port 3000 because 5173 was taken by a dev server that
+is not part of the test.
+
+**2. Imaging benchmark gaps: nothing usable found.** A second search added no images (see EXTENSION2.md): the remaining
+candidates are composites, annotated, or carry a patient's name and birth date. The set stays at 88; atrophy has one film, CT atrophy none.
+
+**3. Retrieval relevance re-judged.** About 40% of the MRR drop was a stale key: re-judged MRR@5 is 0.881 (42 passages) against
+0.821 (67 passages), versus 0.863 against 0.764 under the original sets (knowledge-base README has the table and the caveats; the
+additions were committed before re-scoring, by a non-clinician).
