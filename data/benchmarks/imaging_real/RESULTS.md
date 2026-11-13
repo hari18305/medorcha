@@ -9,16 +9,17 @@ BiomedCLIP zero-shot (`imaging_agent.rank_image`), 62 real images in 60 groups (
 - **Optimistic.** Commons holds clear, typical teaching examples; real clinical films are harder and messier. Accuracy here is an upper bound on what to expect, not an estimate of it.
 - **Possible training overlap.** BiomedCLIP was trained on PubMed Central figure-caption pairs. Images from journal articles are flagged by a keyword heuristic on their own description, which can miss. See the 'excluding' rows.
 - **Not independent.** Slices of one patient/series share a `group`; the group-collapsed figure counts each once. There is exactly ONE normal head-CT subject (three slices), so CT specificity is close to meaningless.
+- **The finding prompts were tuned on this set.** The wording was chosen on the DEV half and judged once on the TEST half (PROMPT_EXPERIMENT.md), so the all-image figures are partly in-sample. Quote the TEST-half row (see 'Sensitivity to the weaknesses') as the unbiased read; it is ~25 images.
 - **Not a clinical validation.** It characterises one zero-shot model's behaviour on a hand-picked set; it says nothing about the whole system's diagnostic accuracy.
 
 ## Headline (proportion, count, Wilson 95% interval)
 
 | | images | modality detected | top-1 finding | top-3 | end-to-end top-1 | normal-vs-abnormal: sensitivity | specificity |
 |---|---|---|---|---|---|---|---|
-| **all** | 62 | 94% (58/62; 85%-97%) | 42% (26/62; 30%-54%) | 65% (40/62; 52%-75%) | 40% (25/62; 29%-53%) | 91% (48/53; 80%-96%) | 78% (7/9; 45%-94%) |
-| MRI brain scan | 12 | 100% (12/12; 76%-100%) | 25% (3/12; 9%-53%) | 58% (7/12; 32%-81%) | 25% (3/12; 9%-53%) | 100% (10/10; 72%-100%) | 50% (1/2; 9%-91%) |
-| CT scan | 18 | 78% (14/18; 55%-91%) | 33% (6/18; 16%-56%) | 56% (10/18; 34%-75%) | 28% (5/18; 12%-51%) | 73% (11/15; 48%-89%) | 100% (3/3; 44%-100%) |
-| chest X-ray | 32 | 100% (32/32; 89%-100%) | 53% (17/32; 36%-69%) | 72% (23/32; 55%-84%) | 53% (17/32; 36%-69%) | 96% (27/28; 82%-99%) | 75% (3/4; 30%-95%) |
+| **all** | 62 | 94% (58/62; 85%-97%) | 56% (35/62; 44%-68%) | 79% (49/62; 67%-87%) | 53% (33/62; 41%-65%) | 96% (51/53; 87%-99%) | 56% (5/9; 27%-81%) |
+| MRI brain scan | 12 | 100% (12/12; 76%-100%) | 58% (7/12; 32%-81%) | 83% (10/12; 55%-95%) | 58% (7/12; 32%-81%) | 100% (10/10; 72%-100%) | 0% (0/2; 0%-66%) |
+| CT scan | 18 | 78% (14/18; 55%-91%) | 44% (8/18; 25%-66%) | 78% (14/18; 55%-91%) | 33% (6/18; 16%-56%) | 87% (13/15; 62%-96%) | 33% (1/3; 6%-79%) |
+| chest X-ray | 32 | 100% (32/32; 89%-100%) | 62% (20/32; 45%-77%) | 78% (25/32; 61%-89%) | 62% (20/32; 45%-77%) | 100% (28/28; 88%-100%) | 100% (4/4; 51%-100%) |
 
 Top-1 / top-3 use the TRUE modality's label set (isolating the findings model); end-to-end uses the modality the pipeline detects, so a wrong modality counts as wrong.
 
@@ -26,56 +27,58 @@ Top-1 / top-3 use the TRUE modality's label set (isolating the findings model); 
 
 | | top-1 | chance top-1 | always-the-commonest-label | top-3 | chance top-3 | group-collapsed top-1 |
 |---|---|---|---|---|---|---|
-| **all** | 42% (26/62; 30%-54%) | 10% | 21% | 65% (40/62; 52%-75%) | 28% | 40% |
-| MRI brain scan | 25% (3/12; 9%-53%) | 10% | 33% | 58% (7/12; 32%-81%) | 28% | 25% |
-| CT scan | 33% (6/18; 16%-56%) | 12% | 28% | 56% (10/18; 34%-75%) | 34% | 25% |
-| chest X-ray | 53% (17/32; 36%-69%) | 9% | 12% | 72% (23/32; 55%-84%) | 26% | 53% |
+| **all** | 56% (35/62; 44%-68%) | 10% | 21% | 79% (49/62; 67%-87%) | 28% | 57% |
+| MRI brain scan | 58% (7/12; 32%-81%) | 10% | 33% | 83% (10/12; 55%-95%) | 28% | 58% |
+| CT scan | 44% (8/18; 25%-66%) | 12% | 28% | 78% (14/18; 55%-91%) | 34% | 46% |
+| chest X-ray | 62% (20/32; 45%-77%) | 9% | 12% | 78% (25/32; 61%-89%) | 26% | 62% |
 
 ## What the pipeline would actually pass downstream
 
 | | reported findings contain the truth | also reports a wrong finding | mean findings reported |
 |---|---|---|---|
-| **all** | 45% (28/62; 33%-57%) | 63% (39/62; 50%-74%) | 1.19 |
-| MRI brain scan | 25% (3/12; 9%-53%) | 83% (10/12; 55%-95%) | 1.17 |
-| CT scan | 39% (7/18; 20%-61%) | 67% (12/18; 44%-84%) | 1.06 |
-| chest X-ray | 56% (18/32; 39%-72%) | 53% (17/32; 36%-69%) | 1.28 |
+| **all** | 60% (37/62; 47%-71%) | 48% (30/62; 36%-61%) | 1.19 |
+| MRI brain scan | 67% (8/12; 39%-86%) | 42% (5/12; 19%-68%) | 1.08 |
+| CT scan | 44% (8/18; 25%-66%) | 56% (10/18; 34%-75%) | 1.22 |
+| chest X-ray | 66% (21/32; 48%-80%) | 47% (15/32; 31%-64%) | 1.22 |
 
 ## Sensitivity to the weaknesses above (top-1)
 
 | subset | images | top-1 | modality detected |
 |---|---|---|---|
-| all | 62 | 42% (26/62; 30%-54%) | 94% (58/62; 85%-97%) |
-| excluding possible pretraining overlap | 60 | 42% (25/60; 30%-54%) | 93% (56/60; 84%-97%) |
-| excluding annotated films | 61 | 41% (25/61; 30%-54%) | 93% (57/61; 84%-97%) |
-| excluding both | 60 | 42% (25/60; 30%-54%) | 93% (56/60; 84%-97%) |
+| all | 62 | 56% (35/62; 44%-68%) | 94% (58/62; 85%-97%) |
+| excluding possible pretraining overlap | 60 | 55% (33/60; 42%-67%) | 93% (56/60; 84%-97%) |
+| excluding annotated films | 61 | 56% (34/61; 43%-67%) | 93% (57/61; 84%-97%) |
+| excluding both | 60 | 55% (33/60; 42%-67%) | 93% (56/60; 84%-97%) |
+| TEST half: held out from the prompt choice | 25 | 48% (12/25; 30%-67%) | 96% (24/25; 80%-99%) |
+| DEV half: used to choose the prompt (optimistic) | 37 | 62% (23/37; 46%-76%) | 92% (34/37; 79%-97%) |
 
 ## Per finding
 
 | modality | finding | n | top-1 | top-3 | most common wrong top-1 |
 |---|---|---|---|---|---|
-| CT scan | acute infarct | 3 | 2/3 | 3/3 | ventricular enlargement x1 |
-| CT scan | hemorrhage | 5 | 0/5 | 2/5 | acute infarct x4; normal head CT, no acute findings x1 |
-| CT scan | mass lesion | 3 | 0/3 | 0/3 | ventricular enlargement x1; acute infarct x1 |
-| CT scan | normal head CT, no acute findings | 3 | 3/3 | 3/3 | - |
-| CT scan | sinus abnormality | 2 | 0/2 | 0/2 | normal head CT, no acute findings x1; hypodense lesion x1 |
-| CT scan | ventricular enlargement | 2 | 1/2 | 2/2 | normal head CT, no acute findings x1 |
-| MRI brain scan | acute infarct | 2 | 1/2 | 2/2 | white matter hyperintensity x1 |
-| MRI brain scan | hemorrhage | 2 | 0/2 | 0/2 | cerebral atrophy x2 |
-| MRI brain scan | mass lesion | 4 | 0/4 | 2/4 | acute infarct x3; chronic infarct x1 |
-| MRI brain scan | normal brain MRI, no acute findings | 2 | 1/2 | 2/2 | cerebral atrophy x1 |
-| MRI brain scan | ventricular enlargement | 1 | 0/1 | 0/1 | acute infarct x1 |
-| MRI brain scan | white matter hyperintensity | 1 | 1/1 | 1/1 | - |
-| chest X-ray | atelectasis | 3 | 2/3 | 3/3 | pleural effusion x1 |
-| chest X-ray | cardiomegaly | 3 | 2/3 | 2/3 | atelectasis x1 |
-| chest X-ray | consolidation | 3 | 0/3 | 0/3 | pulmonary edema x3 |
+| CT scan | acute infarct | 3 | 1/3 | 3/3 | midline shift x1; ventricular enlargement x1 |
+| CT scan | hemorrhage | 5 | 3/5 | 4/5 | midline shift x1; calcification x1 |
+| CT scan | mass lesion | 3 | 0/3 | 1/3 | hypodense lesion x1; ventricular enlargement x1 |
+| CT scan | normal head CT, no acute findings | 3 | 1/3 | 3/3 | sinus abnormality x2 |
+| CT scan | sinus abnormality | 2 | 2/2 | 2/2 | - |
+| CT scan | ventricular enlargement | 2 | 1/2 | 1/2 | normal head CT, no acute findings x1 |
+| MRI brain scan | acute infarct | 2 | 2/2 | 2/2 | - |
+| MRI brain scan | hemorrhage | 2 | 1/2 | 1/2 | cerebral atrophy x1 |
+| MRI brain scan | mass lesion | 4 | 4/4 | 4/4 | - |
+| MRI brain scan | normal brain MRI, no acute findings | 2 | 0/2 | 2/2 | sinus abnormality x1; cerebral atrophy x1 |
+| MRI brain scan | ventricular enlargement | 1 | 0/1 | 0/1 | hemorrhage x1 |
+| MRI brain scan | white matter hyperintensity | 1 | 0/1 | 1/1 | cerebral atrophy x1 |
+| chest X-ray | atelectasis | 3 | 0/3 | 1/3 | pleural effusion x2; hyperinflation consistent with emphysema x1 |
+| chest X-ray | cardiomegaly | 3 | 3/3 | 3/3 | - |
+| chest X-ray | consolidation | 3 | 0/3 | 3/3 | pulmonary nodule or mass x2; pulmonary edema x1 |
 | chest X-ray | hilar or mediastinal widening | 1 | 1/1 | 1/1 | - |
-| chest X-ray | hyperinflation consistent with emphysema | 2 | 0/2 | 0/2 | rib fracture x1; atelectasis x1 |
-| chest X-ray | normal chest X-ray, no acute findings | 4 | 3/4 | 4/4 | hilar or mediastinal widening x1 |
-| chest X-ray | pleural effusion | 3 | 2/3 | 3/3 | atelectasis x1 |
+| chest X-ray | hyperinflation consistent with emphysema | 2 | 2/2 | 2/2 | - |
+| chest X-ray | normal chest X-ray, no acute findings | 4 | 1/4 | 1/4 | no significant abnormality x3 |
+| chest X-ray | pleural effusion | 3 | 3/3 | 3/3 | - |
 | chest X-ray | pneumothorax | 4 | 3/4 | 3/4 | cardiomegaly x1 |
 | chest X-ray | pulmonary edema | 3 | 3/3 | 3/3 | - |
-| chest X-ray | pulmonary nodule or mass | 3 | 0/3 | 3/3 | atelectasis x1; pulmonary edema x1 |
-| chest X-ray | rib fracture | 3 | 1/3 | 1/3 | no significant abnormality x1; pneumothorax x1 |
+| chest X-ray | pulmonary nodule or mass | 3 | 2/3 | 3/3 | hilar or mediastinal widening x1 |
+| chest X-ray | rib fracture | 3 | 2/3 | 2/3 | pneumothorax x1 |
 
 ## Modality detection (rows = truth, columns = detected)
 

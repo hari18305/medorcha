@@ -630,10 +630,55 @@ head-CT subject, so CT specificity is close to meaningless. It characterises one
 a hand-picked set; it is not a clinical validation and says nothing about the whole
 system's diagnostic accuracy.
 
-**Not done.** The labels are plain phrases ("hemorrhage"); BiomedCLIP is sensitive to
-prompt wording ("a CT of the head showing a subdural hemorrhage"), which might lift these
-numbers. That is an experiment this benchmark can now judge, but with 62 images it needs a
-held-out split or it will just fit the set. I did not do it.
+### Follow-up: finding-prompt wording, tested on a held-out half
+
+The labels were bare phrases ("hemorrhage"). I tested whether captions that read like the
+figure captions BiomedCLIP was trained on do better. Because 62 images is too few to try
+variants and keep the winner, the design was fixed and committed BEFORE any result
+(`9049e41`): a group-level dev/test split (37 / 25 images), five finding-prompt and four
+modality-prompt candidates, "choose by dev MRR", and "adopt only if TEST top-1 gains >= 2
+images and MRR does not drop". The test half was used once (the script refuses a second run).
+
+| | dev (37) | **test, held out (25)** |
+|---|---|---|
+| current wording (bare label) | 19/37 top-1 | **7/25** top-1, MRR 0.49 |
+| chosen: "head CT scan showing intracranial hemorrhage, hyperdense blood" | 23/37 | **12/25** top-1, MRR 0.61 |
+
+Paired on test: 7 images gained, 2 lost, exact McNemar p = 0.18 (**not significant**: with 25
+images only a very large effect would be). The rule said adopt, so the new wording is the
+default (`IMAGING_FINDING_PROMPTS=label` restores the old one). Modality-detection wording was
+also tried and **not** adopted (24/25 -> 25/25 on test, a gain of 1, bar 2). The dev-to-test
+drop for the chosen wording (62% -> 48%) is what selecting on dev looks like.
+
+Whole benchmark, before -> after (the all-image figures are now partly in-sample, so quote the
+test-half row):
+
+| | before | after |
+|---|---|---|
+| top-1 (all 62) | 42% | 56% (44-68) |
+| top-3 | 65% | 79% |
+| test half only, top-1 | 28% (7/25) | **48% (12/25)** |
+| reported findings contain truth | 45% | 60% |
+| pipeline also passes a wrong finding | 63% | 48% |
+| sensitivity (abnormal called abnormal) | 91% | 96% |
+| **specificity (normal called normal)** | **78% (7/9)** | **56% (5/9)** |
+
+**What improved:** head-CT hemorrhage 0/5 -> 3/5 top-1 and none is called "acute infarct"
+any more (the failure flagged above); brain-MRI tumours 0/4 -> 4/4; CT sinus 0/2 -> 2/2;
+emphysema 0/2 -> 2/2; lung nodule/mass 0/3 -> 2/3.
+
+**What got worse, and the rule did not see it.** The captions bias the model toward naming
+a finding: normal chest X-rays 3/4 -> 1/4, normal head CT 3/3 -> 1/3 (one subject), normal MRI
+1/2 -> 0/2, and atelectasis 2/3 -> 0/3. I did not pre-register specificity, so adoption follows
+the rule, but this is a real trade-off: fewer missed abnormalities (sensitivity up), more normal
+films reported with a spurious finding (specificity down, 9 normals so the interval is 27-81%).
+Whether that is acceptable is a judgement for whoever owns the clinical risk; it is one
+environment variable to reverse. Consolidation is still 0/3 top-1 (now 3/3 in the top 3).
+
+**Limits.** I had seen the full-set failure patterns before writing the descriptions, so they
+are informed by them (never tuned against a run); the descriptions are a non-radiologist's; the
+labels are the uploader's; ~25 test images; the descriptions must not be edited to chase this
+benchmark now that the test half has been used.
 
 ## Known gaps (carried over from the team's HANDOFF.md, still true)
 

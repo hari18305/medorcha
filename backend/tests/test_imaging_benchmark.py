@@ -177,6 +177,17 @@ def test_run_aggregates_subsets_labels_and_confusion():
     assert "Read this first" in ib.render_md(res)  # the caveats always travel with the numbers
 
 
+def test_run_reports_dev_and_test_halves_when_given_a_split():
+    labels = FINDING_LABELS_BY_MODALITY[CXR]
+    ranking = [("pneumothorax", 0.9)] + [(lab, 0.0) for lab in labels if lab != "pneumothorax"]
+    manifest = [_entry(["pneumothorax"], group="a"), _entry(["cardiomegaly"], group="b"), _entry(["pneumothorax"], group="c")]
+    res = ib.run(manifest, rank_fn=_fake_rank(ranking), split={"a": "dev", "b": "test", "c": "dev"})
+    assert res["subsets"]["TEST half: held out from the prompt choice"]["n_images"] == 1
+    assert res["subsets"]["DEV half: used to choose the prompt (optimistic)"]["n_images"] == 2
+    assert res["subsets"]["TEST half: held out from the prompt choice"]["top1"]["k"] == 0   # b's truth is cardiomegaly
+    assert "held out" in ib.render_md(res) and "tuned on this set" in ib.render_md(res)
+
+
 # --------------------------------------------------------------------------
 # the committed manifest
 # --------------------------------------------------------------------------

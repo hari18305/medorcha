@@ -12,68 +12,68 @@
       ]
     },
     "top1": {
-      "k": 26,
+      "k": 35,
       "n": 62,
-      "rate": 0.41935483870967744,
+      "rate": 0.5645161290322581,
       "ci": [
-        0.30477395467281665,
-        0.5433463826215384
+        0.4409276740746583,
+        0.6805760560898577
       ]
     },
     "top3": {
-      "k": 40,
+      "k": 49,
       "n": 62,
-      "rate": 0.6451612903225806,
+      "rate": 0.7903225806451613,
       "ci": [
-        0.5208089986340214,
-        0.7525743942361396
+        0.6736054886034556,
+        0.8731612971368666
       ]
     },
-    "top1_group_collapsed": 0.4,
+    "top1_group_collapsed": 0.5722222222222223,
     "end_to_end_top1": {
-      "k": 25,
+      "k": 33,
       "n": 62,
-      "rate": 0.4032258064516129,
+      "rate": 0.532258064516129,
       "ci": [
-        0.2902468291165249,
-        0.5274975756367011
+        0.40983817375848014,
+        0.650913691323778
       ]
     },
     "returned_contains_truth": {
-      "k": 28,
+      "k": 37,
       "n": 62,
-      "rate": 0.45161290322580644,
+      "rate": 0.5967741935483871,
       "ci": [
-        0.3341951476826002,
-        0.5746770546940128
+        0.4725024243632989,
+        0.7097531708834752
       ]
     },
     "returned_has_wrong_finding": {
-      "k": 39,
+      "k": 30,
       "n": 62,
-      "rate": 0.6290322580645161,
+      "rate": 0.4838709677419355,
       "ci": [
-        0.504577349121774,
-        0.7384301112072582
+        0.36409654206505293,
+        0.605527525393818
       ]
     },
     "mean_findings_returned": 1.1935483870967742,
     "sensitivity_abnormal": {
-      "k": 48,
+      "k": 51,
       "n": 53,
-      "rate": 0.9056603773584906,
+      "rate": 0.9622641509433962,
       "ci": [
-        0.7974602432629856,
-        0.9590279625581031
+        0.8724547684904087,
+        0.9895899311661807
       ]
     },
     "specificity_normal": {
-      "k": 7,
+      "k": 5,
       "n": 9,
-      "rate": 0.7777777777777778,
+      "rate": 0.5555555555555556,
       "ci": [
-        0.4525833436728054,
-        0.9367762376877727
+        0.2666473457440297,
+        0.811224570528086
       ]
     },
     "chance_top1": 0.09683622828784119,
@@ -94,15 +94,6 @@
         ]
       },
       "top1": {
-        "k": 3,
-        "n": 12,
-        "rate": 0.25,
-        "ci": [
-          0.08894003962896138,
-          0.53231033912066
-        ]
-      },
-      "top3": {
         "k": 7,
         "n": 12,
         "rate": 0.5833333333333334,
@@ -111,26 +102,7 @@
           0.8067425380947535
         ]
       },
-      "top1_group_collapsed": 0.25,
-      "end_to_end_top1": {
-        "k": 3,
-        "n": 12,
-        "rate": 0.25,
-        "ci": [
-          0.08894003962896138,
-          0.53231033912066
-        ]
-      },
-      "returned_contains_truth": {
-        "k": 3,
-        "n": 12,
-        "rate": 0.25,
-        "ci": [
-          0.08894003962896138,
-          0.53231033912066
-        ]
-      },
-      "returned_has_wrong_finding": {
+      "top3": {
         "k": 10,
         "n": 12,
         "rate": 0.8333333333333334,
@@ -139,7 +111,35 @@
           0.9530358523851776
         ]
       },
-      "mean_findings_returned": 1.1666666666666667,
+      "top1_group_collapsed": 0.5833333333333334,
+      "end_to_end_top1": {
+        "k": 7,
+        "n": 12,
+        "rate": 0.5833333333333334,
+        "ci": [
+          0.3195073356553728,
+          0.8067425380947535
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 8,
+        "n": 12,
+        "rate": 0.6666666666666666,
+        "ci": [
+          0.3906175873976139,
+          0.8618821601026385
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 5,
+        "n": 12,
+        "rate": 0.4166666666666667,
+        "ci": [
+          0.19325746190524656,
+          0.6804926643446272
+        ]
+      },
+      "mean_findings_returned": 1.0833333333333333,
       "sensitivity_abnormal": {
         "k": 10,
         "n": 10,
@@ -150,12 +150,12 @@
         ]
       },
       "specificity_normal": {
-        "k": 1,
+        "k": 0,
         "n": 2,
-        "rate": 0.5,
+        "rate": 0.0,
         "ci": [
-          0.09452865480086614,
-          0.9054713451991339
+          0.0,
+          0.6576280471103807
         ]
       },
       "chance_top1": 0.09615384615384616,
@@ -175,6 +175,25 @@
         ]
       },
       "top1": {
+        "k": 8,
+        "n": 18,
+        "rate": 0.4444444444444444,
+        "ci": [
+          0.24559231101389126,
+          0.6628393057174837
+        ]
+      },
+      "top3": {
+        "k": 14,
+        "n": 18,
+        "rate": 0.7777777777777778,
+        "ci": [
+          0.5478497354769452,
+          0.90999218086618
+        ]
+      },
+      "top1_group_collapsed": 0.4583333333333333,
+      "end_to_end_top1": {
         "k": 6,
         "n": 18,
         "rate": 0.3333333333333333,
@@ -183,7 +202,16 @@
           0.5625093065574964
         ]
       },
-      "top3": {
+      "returned_contains_truth": {
+        "k": 8,
+        "n": 18,
+        "rate": 0.4444444444444444,
+        "ci": [
+          0.24559231101389126,
+          0.6628393057174837
+        ]
+      },
+      "returned_has_wrong_finding": {
         "k": 10,
         "n": 18,
         "rate": 0.5555555555555556,
@@ -192,51 +220,23 @@
           0.7544076889861088
         ]
       },
-      "top1_group_collapsed": 0.25,
-      "end_to_end_top1": {
-        "k": 5,
-        "n": 18,
-        "rate": 0.2777777777777778,
-        "ci": [
-          0.12499569146355474,
-          0.5087307754619452
-        ]
-      },
-      "returned_contains_truth": {
-        "k": 7,
-        "n": 18,
-        "rate": 0.3888888888888889,
-        "ci": [
-          0.20304991926931162,
-          0.6138133141934384
-        ]
-      },
-      "returned_has_wrong_finding": {
-        "k": 12,
-        "n": 18,
-        "rate": 0.6666666666666666,
-        "ci": [
-          0.4374906934425036,
-          0.8372144563633714
-        ]
-      },
-      "mean_findings_returned": 1.0555555555555556,
+      "mean_findings_returned": 1.2222222222222223,
       "sensitivity_abnormal": {
-        "k": 11,
+        "k": 13,
         "n": 15,
-        "rate": 0.7333333333333333,
+        "rate": 0.8666666666666667,
         "ci": [
-          0.4804911034231324,
-          0.8910272389681718
+          0.6211750079348376,
+          0.9626395301086407
         ]
       },
       "specificity_normal": {
-        "k": 3,
+        "k": 1,
         "n": 3,
-        "rate": 1.0,
+        "rate": 0.3333333333333333,
         "ci": [
-          0.43849391955098227,
-          1.0
+          0.0614903152761605,
+          0.7923450448735121
         ]
       },
       "chance_top1": 0.11666666666666667,
@@ -256,68 +256,68 @@
         ]
       },
       "top1": {
-        "k": 17,
+        "k": 20,
         "n": 32,
-        "rate": 0.53125,
+        "rate": 0.625,
         "ci": [
-          0.3644923793257382,
-          0.6913087009831766
+          0.45254100589525126,
+          0.7706633153404079
         ]
       },
       "top3": {
-        "k": 23,
+        "k": 25,
         "n": 32,
-        "rate": 0.71875,
+        "rate": 0.78125,
         "ci": [
-          0.546251630618882,
-          0.8443559315435214
+          0.6124466920955516,
+          0.8897630306846815
         ]
       },
-      "top1_group_collapsed": 0.53125,
+      "top1_group_collapsed": 0.625,
       "end_to_end_top1": {
-        "k": 17,
+        "k": 20,
         "n": 32,
-        "rate": 0.53125,
+        "rate": 0.625,
         "ci": [
-          0.3644923793257382,
-          0.6913087009831766
+          0.45254100589525126,
+          0.7706633153404079
         ]
       },
       "returned_contains_truth": {
-        "k": 18,
+        "k": 21,
         "n": 32,
-        "rate": 0.5625,
+        "rate": 0.65625,
         "ci": [
-          0.3932530203122613,
-          0.7183491403055682
+          0.4831077350878594,
+          0.7958976664567146
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 17,
+        "k": 15,
         "n": 32,
-        "rate": 0.53125,
+        "rate": 0.46875,
         "ci": [
-          0.3644923793257382,
-          0.6913087009831766
+          0.30869129901682335,
+          0.6355076206742619
         ]
       },
-      "mean_findings_returned": 1.28125,
+      "mean_findings_returned": 1.21875,
       "sensitivity_abnormal": {
-        "k": 27,
+        "k": 28,
         "n": 28,
-        "rate": 0.9642857142857143,
+        "rate": 1.0,
         "ci": [
-          0.8228742388150135,
-          0.9936676435024582
+          0.8793527963418923,
+          1.0
         ]
       },
       "specificity_normal": {
-        "k": 3,
+        "k": 4,
         "n": 4,
-        "rate": 0.75,
+        "rate": 1.0,
         "ci": [
-          0.3006360524426366,
-          0.9544139373553637
+          0.5100999795960008,
+          1.0
         ]
       },
       "chance_top1": 0.0859375,
@@ -339,68 +339,68 @@
         ]
       },
       "top1": {
-        "k": 25,
+        "k": 33,
         "n": 60,
-        "rate": 0.4166666666666667,
+        "rate": 0.55,
         "ci": [
-          0.30064086487871833,
-          0.5427214568676039
+          0.42491714548981496,
+          0.6690654614623918
         ]
       },
       "top3": {
-        "k": 39,
+        "k": 47,
         "n": 60,
-        "rate": 0.65,
+        "rate": 0.7833333333333333,
         "ci": [
-          0.5236238380947751,
-          0.7583239827618451
+          0.6637973165265748,
+          0.8687707895359299
         ]
       },
-      "top1_group_collapsed": 0.39655172413793105,
+      "top1_group_collapsed": 0.5574712643678161,
       "end_to_end_top1": {
-        "k": 24,
+        "k": 31,
         "n": 60,
-        "rate": 0.4,
+        "rate": 0.5166666666666667,
         "ci": [
-          0.28569303003765506,
-          0.5263417560579315
+          0.39307594850843575,
+          0.6382515871422999
         ]
       },
       "returned_contains_truth": {
-        "k": 27,
+        "k": 35,
         "n": 60,
-        "rate": 0.45,
+        "rate": 0.5833333333333334,
         "ci": [
-          0.33093453853760824,
-          0.575082854510185
+          0.45727854313239624,
+          0.6993591351212818
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 38,
+        "k": 30,
         "n": 60,
-        "rate": 0.6333333333333333,
+        "rate": 0.5,
         "ci": [
-          0.5068276736679673,
-          0.7437926115379172
+          0.37734812427246284,
+          0.6226518757275372
         ]
       },
       "mean_findings_returned": 1.2,
       "sensitivity_abnormal": {
-        "k": 46,
+        "k": 49,
         "n": 51,
-        "rate": 0.9019607843137255,
+        "rate": 0.9607843137254902,
         "ci": [
-          0.7902151004554693,
-          0.957392555046923
+          0.8678345101373474,
+          0.9891791437312488
         ]
       },
       "specificity_normal": {
-        "k": 7,
+        "k": 5,
         "n": 9,
-        "rate": 0.7777777777777778,
+        "rate": 0.5555555555555556,
         "ci": [
-          0.4525833436728054,
-          0.9367762376877727
+          0.2666473457440297,
+          0.811224570528086
         ]
       },
       "chance_top1": 0.09739316239316238,
@@ -420,68 +420,68 @@
         ]
       },
       "top1": {
-        "k": 25,
+        "k": 34,
         "n": 61,
-        "rate": 0.4098360655737705,
+        "rate": 0.5573770491803278,
         "ci": [
-          0.2953514834927377,
-          0.5350043374617113
+          0.4330314670045551,
+          0.6749239196607956
         ]
       },
       "top3": {
-        "k": 39,
+        "k": 48,
         "n": 61,
-        "rate": 0.639344262295082,
+        "rate": 0.7868852459016393,
         "ci": [
-          0.5139167326739971,
-          0.7482606349418546
+          0.6687734610328795,
+          0.8710034722938738
         ]
       },
-      "top1_group_collapsed": 0.3898305084745763,
+      "top1_group_collapsed": 0.5649717514124294,
       "end_to_end_top1": {
-        "k": 24,
+        "k": 32,
         "n": 61,
-        "rate": 0.39344262295081966,
+        "rate": 0.5245901639344263,
         "ci": [
-          0.28068166862043625,
-          0.5188297561439126
+          0.4015694171531101,
+          0.6446971771320402
         ]
       },
       "returned_contains_truth": {
-        "k": 27,
+        "k": 36,
         "n": 61,
-        "rate": 0.4426229508196721,
+        "rate": 0.5901639344262295,
         "ci": [
-          0.32507608033920443,
-          0.5669685329954449
+          0.46499566253828867,
+          0.7046485165072622
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 39,
+        "k": 30,
         "n": 61,
-        "rate": 0.639344262295082,
+        "rate": 0.4918032786885246,
         "ci": [
-          0.5139167326739971,
-          0.7482606349418546
+          0.37060186643725185,
+          0.6139759354676981
         ]
       },
       "mean_findings_returned": 1.1967213114754098,
       "sensitivity_abnormal": {
-        "k": 47,
+        "k": 50,
         "n": 52,
-        "rate": 0.9038461538461539,
+        "rate": 0.9615384615384616,
         "ci": [
-          0.79390118138839,
-          0.9582262648165898
+          0.8701857125563401,
+          0.9893885116779224
         ]
       },
       "specificity_normal": {
-        "k": 7,
+        "k": 5,
         "n": 9,
-        "rate": 0.7777777777777778,
+        "rate": 0.5555555555555556,
         "ci": [
-          0.4525833436728054,
-          0.9367762376877727
+          0.2666473457440297,
+          0.811224570528086
         ]
       },
       "chance_top1": 0.09705758722152165,
@@ -501,81 +501,247 @@
         ]
       },
       "top1": {
-        "k": 25,
+        "k": 33,
         "n": 60,
-        "rate": 0.4166666666666667,
+        "rate": 0.55,
         "ci": [
-          0.30064086487871833,
-          0.5427214568676039
+          0.42491714548981496,
+          0.6690654614623918
         ]
       },
       "top3": {
-        "k": 39,
+        "k": 47,
         "n": 60,
-        "rate": 0.65,
+        "rate": 0.7833333333333333,
         "ci": [
-          0.5236238380947751,
-          0.7583239827618451
+          0.6637973165265748,
+          0.8687707895359299
         ]
       },
-      "top1_group_collapsed": 0.39655172413793105,
+      "top1_group_collapsed": 0.5574712643678161,
       "end_to_end_top1": {
-        "k": 24,
+        "k": 31,
         "n": 60,
-        "rate": 0.4,
+        "rate": 0.5166666666666667,
         "ci": [
-          0.28569303003765506,
-          0.5263417560579315
+          0.39307594850843575,
+          0.6382515871422999
         ]
       },
       "returned_contains_truth": {
-        "k": 27,
+        "k": 35,
         "n": 60,
-        "rate": 0.45,
+        "rate": 0.5833333333333334,
         "ci": [
-          0.33093453853760824,
-          0.575082854510185
+          0.45727854313239624,
+          0.6993591351212818
         ]
       },
       "returned_has_wrong_finding": {
-        "k": 38,
+        "k": 30,
         "n": 60,
-        "rate": 0.6333333333333333,
+        "rate": 0.5,
         "ci": [
-          0.5068276736679673,
-          0.7437926115379172
+          0.37734812427246284,
+          0.6226518757275372
         ]
       },
       "mean_findings_returned": 1.2,
       "sensitivity_abnormal": {
-        "k": 46,
+        "k": 49,
         "n": 51,
-        "rate": 0.9019607843137255,
+        "rate": 0.9607843137254902,
         "ci": [
-          0.7902151004554693,
-          0.957392555046923
+          0.8678345101373474,
+          0.9891791437312488
         ]
       },
       "specificity_normal": {
-        "k": 7,
+        "k": 5,
         "n": 9,
-        "rate": 0.7777777777777778,
+        "rate": 0.5555555555555556,
         "ci": [
-          0.4525833436728054,
-          0.9367762376877727
+          0.2666473457440297,
+          0.811224570528086
         ]
       },
       "chance_top1": 0.09739316239316238,
       "chance_top3": 0.2861655011655012,
       "majority_top1": 0.2
+    },
+    "TEST half: held out from the prompt choice": {
+      "n_images": 25,
+      "n_groups": 25,
+      "modality_detection": {
+        "k": 24,
+        "n": 25,
+        "rate": 0.96,
+        "ci": [
+          0.8045552759497747,
+          0.9929039496133008
+        ]
+      },
+      "top1": {
+        "k": 12,
+        "n": 25,
+        "rate": 0.48,
+        "ci": [
+          0.30031003928960015,
+          0.6650178204685269
+        ]
+      },
+      "top3": {
+        "k": 17,
+        "n": 25,
+        "rate": 0.68,
+        "ci": [
+          0.48409913734576715,
+          0.8279501248310887
+        ]
+      },
+      "top1_group_collapsed": 0.48,
+      "end_to_end_top1": {
+        "k": 12,
+        "n": 25,
+        "rate": 0.48,
+        "ci": [
+          0.30031003928960015,
+          0.6650178204685269
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 12,
+        "n": 25,
+        "rate": 0.48,
+        "ci": [
+          0.30031003928960015,
+          0.6650178204685269
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 14,
+        "n": 25,
+        "rate": 0.56,
+        "ci": [
+          0.37067017019564436,
+          0.7333462505299744
+        ]
+      },
+      "mean_findings_returned": 1.12,
+      "sensitivity_abnormal": {
+        "k": 21,
+        "n": 22,
+        "rate": 0.9545454545454546,
+        "ci": [
+          0.7820151050048196,
+          0.9919307806988522
+        ]
+      },
+      "specificity_normal": {
+        "k": 2,
+        "n": 3,
+        "rate": 0.6666666666666666,
+        "ci": [
+          0.2076549551264879,
+          0.9385096847238394
+        ]
+      },
+      "chance_top1": 0.09287179487179488,
+      "chance_top3": 0.2744102564102564,
+      "majority_top1": 0.24
+    },
+    "DEV half: used to choose the prompt (optimistic)": {
+      "n_images": 37,
+      "n_groups": 35,
+      "modality_detection": {
+        "k": 34,
+        "n": 37,
+        "rate": 0.918918918918919,
+        "ci": [
+          0.7869900750149847,
+          0.9720399336036787
+        ]
+      },
+      "top1": {
+        "k": 23,
+        "n": 37,
+        "rate": 0.6216216216216216,
+        "ci": [
+          0.4610014255281996,
+          0.7593621253610898
+        ]
+      },
+      "top3": {
+        "k": 32,
+        "n": 37,
+        "rate": 0.8648648648648649,
+        "ci": [
+          0.7202227252929444,
+          0.9408679273749238
+        ]
+      },
+      "top1_group_collapsed": 0.638095238095238,
+      "end_to_end_top1": {
+        "k": 21,
+        "n": 37,
+        "rate": 0.5675675675675675,
+        "ci": [
+          0.40913906334200717,
+          0.713285131596487
+        ]
+      },
+      "returned_contains_truth": {
+        "k": 25,
+        "n": 37,
+        "rate": 0.6756756756756757,
+        "ci": [
+          0.5146336850482394,
+          0.8036692217918453
+        ]
+      },
+      "returned_has_wrong_finding": {
+        "k": 16,
+        "n": 37,
+        "rate": 0.43243243243243246,
+        "ci": [
+          0.2867148684035131,
+          0.5908609366579929
+        ]
+      },
+      "mean_findings_returned": 1.2432432432432432,
+      "sensitivity_abnormal": {
+        "k": 30,
+        "n": 31,
+        "rate": 0.967741935483871,
+        "ci": [
+          0.8380554282383037,
+          0.9942829259130554
+        ]
+      },
+      "specificity_normal": {
+        "k": 3,
+        "n": 6,
+        "rate": 0.5,
+        "ci": [
+          0.18761280689940868,
+          0.8123871931005913
+        ]
+      },
+      "chance_top1": 0.09951489951489952,
+      "chance_top3": 0.29163359163359165,
+      "majority_top1": 0.1891891891891892
     }
   },
   "by_label": {
     "CT scan | acute infarct": {
       "n": 3,
-      "top1_ok": 2,
+      "top1_ok": 1,
       "top3_ok": 3,
       "common_wrong_top1": [
+        [
+          "midline shift",
+          1
+        ],
         [
           "ventricular enlargement",
           1
@@ -584,15 +750,15 @@
     },
     "CT scan | hemorrhage": {
       "n": 5,
-      "top1_ok": 0,
-      "top3_ok": 2,
+      "top1_ok": 3,
+      "top3_ok": 4,
       "common_wrong_top1": [
         [
-          "acute infarct",
-          4
+          "midline shift",
+          1
         ],
         [
-          "normal head CT, no acute findings",
+          "calcification",
           1
         ]
       ]
@@ -600,43 +766,39 @@
     "CT scan | mass lesion": {
       "n": 3,
       "top1_ok": 0,
-      "top3_ok": 0,
+      "top3_ok": 1,
       "common_wrong_top1": [
         [
-          "ventricular enlargement",
+          "hypodense lesion",
           1
         ],
         [
-          "acute infarct",
+          "ventricular enlargement",
           1
         ]
       ]
     },
     "CT scan | normal head CT, no acute findings": {
       "n": 3,
-      "top1_ok": 3,
+      "top1_ok": 1,
       "top3_ok": 3,
-      "common_wrong_top1": []
+      "common_wrong_top1": [
+        [
+          "sinus abnormality",
+          2
+        ]
+      ]
     },
     "CT scan | sinus abnormality": {
       "n": 2,
-      "top1_ok": 0,
-      "top3_ok": 0,
-      "common_wrong_top1": [
-        [
-          "normal head CT, no acute findings",
-          1
-        ],
-        [
-          "hypodense lesion",
-          1
-        ]
-      ]
+      "top1_ok": 2,
+      "top3_ok": 2,
+      "common_wrong_top1": []
     },
     "CT scan | ventricular enlargement": {
       "n": 2,
       "top1_ok": 1,
-      "top3_ok": 2,
+      "top3_ok": 1,
       "common_wrong_top1": [
         [
           "normal head CT, no acute findings",
@@ -646,46 +808,36 @@
     },
     "MRI brain scan | acute infarct": {
       "n": 2,
-      "top1_ok": 1,
+      "top1_ok": 2,
       "top3_ok": 2,
-      "common_wrong_top1": [
-        [
-          "white matter hyperintensity",
-          1
-        ]
-      ]
+      "common_wrong_top1": []
     },
     "MRI brain scan | hemorrhage": {
       "n": 2,
-      "top1_ok": 0,
-      "top3_ok": 0,
+      "top1_ok": 1,
+      "top3_ok": 1,
       "common_wrong_top1": [
         [
           "cerebral atrophy",
-          2
+          1
         ]
       ]
     },
     "MRI brain scan | mass lesion": {
       "n": 4,
+      "top1_ok": 4,
+      "top3_ok": 4,
+      "common_wrong_top1": []
+    },
+    "MRI brain scan | normal brain MRI, no acute findings": {
+      "n": 2,
       "top1_ok": 0,
       "top3_ok": 2,
       "common_wrong_top1": [
         [
-          "acute infarct",
-          3
-        ],
-        [
-          "chronic infarct",
+          "sinus abnormality",
           1
-        ]
-      ]
-    },
-    "MRI brain scan | normal brain MRI, no acute findings": {
-      "n": 2,
-      "top1_ok": 1,
-      "top3_ok": 2,
-      "common_wrong_top1": [
+        ],
         [
           "cerebral atrophy",
           1
@@ -698,47 +850,55 @@
       "top3_ok": 0,
       "common_wrong_top1": [
         [
-          "acute infarct",
+          "hemorrhage",
           1
         ]
       ]
     },
     "MRI brain scan | white matter hyperintensity": {
       "n": 1,
-      "top1_ok": 1,
+      "top1_ok": 0,
       "top3_ok": 1,
-      "common_wrong_top1": []
+      "common_wrong_top1": [
+        [
+          "cerebral atrophy",
+          1
+        ]
+      ]
     },
     "chest X-ray | atelectasis": {
       "n": 3,
-      "top1_ok": 2,
-      "top3_ok": 3,
+      "top1_ok": 0,
+      "top3_ok": 1,
       "common_wrong_top1": [
         [
           "pleural effusion",
+          2
+        ],
+        [
+          "hyperinflation consistent with emphysema",
           1
         ]
       ]
     },
     "chest X-ray | cardiomegaly": {
       "n": 3,
-      "top1_ok": 2,
-      "top3_ok": 2,
-      "common_wrong_top1": [
-        [
-          "atelectasis",
-          1
-        ]
-      ]
+      "top1_ok": 3,
+      "top3_ok": 3,
+      "common_wrong_top1": []
     },
     "chest X-ray | consolidation": {
       "n": 3,
       "top1_ok": 0,
-      "top3_ok": 0,
+      "top3_ok": 3,
       "common_wrong_top1": [
         [
+          "pulmonary nodule or mass",
+          2
+        ],
+        [
           "pulmonary edema",
-          3
+          1
         ]
       ]
     },
@@ -750,40 +910,26 @@
     },
     "chest X-ray | hyperinflation consistent with emphysema": {
       "n": 2,
-      "top1_ok": 0,
-      "top3_ok": 0,
-      "common_wrong_top1": [
-        [
-          "rib fracture",
-          1
-        ],
-        [
-          "atelectasis",
-          1
-        ]
-      ]
+      "top1_ok": 2,
+      "top3_ok": 2,
+      "common_wrong_top1": []
     },
     "chest X-ray | normal chest X-ray, no acute findings": {
       "n": 4,
-      "top1_ok": 3,
-      "top3_ok": 4,
+      "top1_ok": 1,
+      "top3_ok": 1,
       "common_wrong_top1": [
         [
-          "hilar or mediastinal widening",
-          1
+          "no significant abnormality",
+          3
         ]
       ]
     },
     "chest X-ray | pleural effusion": {
       "n": 3,
-      "top1_ok": 2,
+      "top1_ok": 3,
       "top3_ok": 3,
-      "common_wrong_top1": [
-        [
-          "atelectasis",
-          1
-        ]
-      ]
+      "common_wrong_top1": []
     },
     "chest X-ray | pneumothorax": {
       "n": 4,
@@ -804,28 +950,20 @@
     },
     "chest X-ray | pulmonary nodule or mass": {
       "n": 3,
-      "top1_ok": 0,
+      "top1_ok": 2,
       "top3_ok": 3,
       "common_wrong_top1": [
         [
-          "atelectasis",
-          1
-        ],
-        [
-          "pulmonary edema",
+          "hilar or mediastinal widening",
           1
         ]
       ]
     },
     "chest X-ray | rib fracture": {
       "n": 3,
-      "top1_ok": 1,
-      "top3_ok": 1,
+      "top1_ok": 2,
+      "top3_ok": 2,
       "common_wrong_top1": [
-        [
-          "no significant abnormality",
-          1
-        ],
         [
           "pneumothorax",
           1
@@ -871,25 +1009,24 @@
           0.0
         ]
       ],
-      "top1": "normal chest X-ray, no acute findings",
-      "top1_score": 0.5715,
+      "top1": "no significant abnormality",
+      "top1_score": 0.7696,
       "top3": [
-        "normal chest X-ray, no acute findings",
         "no significant abnormality",
-        "hilar or mediastinal widening"
+        "hyperinflation consistent with emphysema",
+        "pulmonary nodule or mass"
       ],
-      "top1_ok": true,
-      "top3_ok": true,
-      "truth_rank": 1,
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 7,
       "returned": [
-        "normal chest X-ray, no acute findings",
         "no significant abnormality"
       ],
-      "returned_hit": true,
+      "returned_hit": false,
       "returned_wrong": [
         "no significant abnormality"
       ],
-      "e2e_top1_ok": true,
+      "e2e_top1_ok": false,
       "true_abnormal": false,
       "pred_abnormal": false
     },
@@ -919,20 +1056,23 @@
         ]
       ],
       "top1": "normal chest X-ray, no acute findings",
-      "top1_score": 0.9924,
+      "top1_score": 0.4411,
       "top3": [
         "normal chest X-ray, no acute findings",
         "no significant abnormality",
-        "hilar or mediastinal widening"
+        "hyperinflation consistent with emphysema"
       ],
       "top1_ok": true,
       "top3_ok": true,
       "truth_rank": 1,
       "returned": [
-        "normal chest X-ray, no acute findings"
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality"
       ],
       "returned_hit": true,
-      "returned_wrong": [],
+      "returned_wrong": [
+        "no significant abnormality"
+      ],
       "e2e_top1_ok": true,
       "true_abnormal": false,
       "pred_abnormal": false
@@ -962,26 +1102,28 @@
           0.0
         ]
       ],
-      "top1": "hilar or mediastinal widening",
-      "top1_score": 0.7007,
+      "top1": "no significant abnormality",
+      "top1_score": 0.516,
       "top3": [
-        "hilar or mediastinal widening",
-        "normal chest X-ray, no acute findings",
-        "no significant abnormality"
+        "no significant abnormality",
+        "hyperinflation consistent with emphysema",
+        "hilar or mediastinal widening"
       ],
       "top1_ok": false,
-      "top3_ok": true,
-      "truth_rank": 2,
+      "top3_ok": false,
+      "truth_rank": 5,
       "returned": [
-        "hilar or mediastinal widening"
+        "no significant abnormality",
+        "hyperinflation consistent with emphysema"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "hilar or mediastinal widening"
+        "no significant abnormality",
+        "hyperinflation consistent with emphysema"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": false,
-      "pred_abnormal": true
+      "pred_abnormal": false
     },
     {
       "file": "data/benchmarks/imaging_real/images/04_chest_x_ray_pneumothorax.jpg",
@@ -1009,11 +1151,11 @@
         ]
       ],
       "top1": "pneumothorax",
-      "top1_score": 0.9991,
+      "top1_score": 0.9995,
       "top3": [
         "pneumothorax",
         "hyperinflation consistent with emphysema",
-        "atelectasis"
+        "no significant abnormality"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1053,11 +1195,11 @@
         ]
       ],
       "top1": "pneumothorax",
-      "top1_score": 0.8205,
+      "top1_score": 0.9815,
       "top3": [
         "pneumothorax",
-        "atelectasis",
-        "hilar or mediastinal widening"
+        "hyperinflation consistent with emphysema",
+        "atelectasis"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1097,11 +1239,11 @@
         ]
       ],
       "top1": "cardiomegaly",
-      "top1_score": 0.9095,
+      "top1_score": 0.7048,
       "top3": [
         "cardiomegaly",
         "pulmonary edema",
-        "pleural effusion"
+        "normal chest X-ray, no acute findings"
       ],
       "top1_ok": false,
       "top3_ok": false,
@@ -1143,10 +1285,10 @@
         ]
       ],
       "top1": "pleural effusion",
-      "top1_score": 0.8139,
+      "top1_score": 0.9987,
       "top3": [
         "pleural effusion",
-        "atelectasis",
+        "pneumothorax",
         "no significant abnormality"
       ],
       "top1_ok": true,
@@ -1186,27 +1328,22 @@
           0.0
         ]
       ],
-      "top1": "atelectasis",
-      "top1_score": 0.3592,
+      "top1": "pleural effusion",
+      "top1_score": 0.8872,
       "top3": [
-        "atelectasis",
-        "pulmonary edema",
-        "pleural effusion"
+        "pleural effusion",
+        "pneumothorax",
+        "atelectasis"
       ],
-      "top1_ok": false,
+      "top1_ok": true,
       "top3_ok": true,
-      "truth_rank": 3,
+      "truth_rank": 1,
       "returned": [
-        "atelectasis",
-        "pulmonary edema",
         "pleural effusion"
       ],
       "returned_hit": true,
-      "returned_wrong": [
-        "atelectasis",
-        "pulmonary edema"
-      ],
-      "e2e_top1_ok": false,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -1236,11 +1373,11 @@
         ]
       ],
       "top1": "pleural effusion",
-      "top1_score": 0.9536,
+      "top1_score": 0.9924,
       "top3": [
         "pleural effusion",
-        "no significant abnormality",
-        "atelectasis"
+        "atelectasis",
+        "pneumothorax"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1279,24 +1416,22 @@
           0.0
         ]
       ],
-      "top1": "atelectasis",
-      "top1_score": 0.7611,
+      "top1": "cardiomegaly",
+      "top1_score": 0.6801,
       "top3": [
-        "atelectasis",
-        "hilar or mediastinal widening",
-        "no significant abnormality"
+        "cardiomegaly",
+        "no significant abnormality",
+        "normal chest X-ray, no acute findings"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 4,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "atelectasis"
+        "cardiomegaly"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "atelectasis"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -1326,11 +1461,11 @@
         ]
       ],
       "top1": "cardiomegaly",
-      "top1_score": 0.996,
+      "top1_score": 0.6631,
       "top3": [
         "cardiomegaly",
-        "pulmonary edema",
-        "normal chest X-ray, no acute findings"
+        "normal chest X-ray, no acute findings",
+        "no significant abnormality"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1370,23 +1505,20 @@
         ]
       ],
       "top1": "cardiomegaly",
-      "top1_score": 0.5343,
+      "top1_score": 0.8727,
       "top3": [
         "cardiomegaly",
         "hilar or mediastinal widening",
-        "normal chest X-ray, no acute findings"
+        "no significant abnormality"
       ],
       "top1_ok": true,
       "top3_ok": true,
       "truth_rank": 1,
       "returned": [
-        "cardiomegaly",
-        "hilar or mediastinal widening"
+        "cardiomegaly"
       ],
       "returned_hit": true,
-      "returned_wrong": [
-        "hilar or mediastinal widening"
-      ],
+      "returned_wrong": [],
       "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
@@ -1416,22 +1548,22 @@
           0.0
         ]
       ],
-      "top1": "pulmonary edema",
-      "top1_score": 0.7925,
+      "top1": "pulmonary nodule or mass",
+      "top1_score": 0.9598,
       "top3": [
-        "pulmonary edema",
-        "rib fracture",
-        "hilar or mediastinal widening"
+        "pulmonary nodule or mass",
+        "consolidation",
+        "pneumothorax"
       ],
       "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 11,
+      "top3_ok": true,
+      "truth_rank": 2,
       "returned": [
-        "pulmonary edema"
+        "pulmonary nodule or mass"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "pulmonary edema"
+        "pulmonary nodule or mass"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
@@ -1463,15 +1595,15 @@
         ]
       ],
       "top1": "pulmonary edema",
-      "top1_score": 0.8099,
+      "top1_score": 0.8779,
       "top3": [
         "pulmonary edema",
-        "atelectasis",
-        "no significant abnormality"
+        "pneumothorax",
+        "consolidation"
       ],
       "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 7,
+      "top3_ok": true,
+      "truth_rank": 3,
       "returned": [
         "pulmonary edema"
       ],
@@ -1508,21 +1640,24 @@
           0.0
         ]
       ],
-      "top1": "pulmonary edema",
-      "top1_score": 0.8782,
+      "top1": "pulmonary nodule or mass",
+      "top1_score": 0.4058,
       "top3": [
+        "pulmonary nodule or mass",
         "pulmonary edema",
-        "no significant abnormality",
-        "atelectasis"
+        "consolidation"
       ],
       "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 10,
+      "top3_ok": true,
+      "truth_rank": 3,
       "returned": [
-        "pulmonary edema"
+        "pulmonary nodule or mass",
+        "pulmonary edema",
+        "consolidation"
       ],
-      "returned_hit": false,
+      "returned_hit": true,
       "returned_wrong": [
+        "pulmonary nodule or mass",
         "pulmonary edema"
       ],
       "e2e_top1_ok": false,
@@ -1555,11 +1690,11 @@
         ]
       ],
       "top1": "pulmonary edema",
-      "top1_score": 0.9887,
+      "top1_score": 0.8842,
       "top3": [
         "pulmonary edema",
-        "no significant abnormality",
-        "pleural effusion"
+        "consolidation",
+        "normal chest X-ray, no acute findings"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1599,11 +1734,11 @@
         ]
       ],
       "top1": "pulmonary edema",
-      "top1_score": 0.9941,
+      "top1_score": 0.7278,
       "top3": [
         "pulmonary edema",
-        "cardiomegaly",
-        "hilar or mediastinal widening"
+        "consolidation",
+        "pneumothorax"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1643,11 +1778,11 @@
         ]
       ],
       "top1": "pulmonary edema",
-      "top1_score": 0.9892,
+      "top1_score": 0.9968,
       "top3": [
         "pulmonary edema",
-        "cardiomegaly",
-        "pleural effusion"
+        "consolidation",
+        "cardiomegaly"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -1686,26 +1821,22 @@
           0.0
         ]
       ],
-      "top1": "atelectasis",
-      "top1_score": 0.5201,
+      "top1": "pulmonary nodule or mass",
+      "top1_score": 0.8842,
       "top3": [
-        "atelectasis",
-        "hilar or mediastinal widening",
+        "pulmonary nodule or mass",
+        "consolidation",
+        "rib fracture"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
         "pulmonary nodule or mass"
       ],
-      "top1_ok": false,
-      "top3_ok": true,
-      "truth_rank": 3,
-      "returned": [
-        "atelectasis",
-        "hilar or mediastinal widening"
-      ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "atelectasis",
-        "hilar or mediastinal widening"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -1734,24 +1865,22 @@
           0.0
         ]
       ],
-      "top1": "pulmonary edema",
-      "top1_score": 0.7421,
+      "top1": "pulmonary nodule or mass",
+      "top1_score": 0.7817,
       "top3": [
-        "pulmonary edema",
         "pulmonary nodule or mass",
-        "hilar or mediastinal widening"
+        "pneumothorax",
+        "consolidation"
       ],
-      "top1_ok": false,
+      "top1_ok": true,
       "top3_ok": true,
-      "truth_rank": 2,
+      "truth_rank": 1,
       "returned": [
-        "pulmonary edema"
+        "pulmonary nodule or mass"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "pulmonary edema"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -1781,15 +1910,15 @@
         ]
       ],
       "top1": "hilar or mediastinal widening",
-      "top1_score": 0.9829,
+      "top1_score": 0.684,
       "top3": [
         "hilar or mediastinal widening",
-        "atelectasis",
-        "pulmonary nodule or mass"
+        "pulmonary nodule or mass",
+        "no significant abnormality"
       ],
       "top1_ok": false,
       "top3_ok": true,
-      "truth_rank": 3,
+      "truth_rank": 2,
       "returned": [
         "hilar or mediastinal widening"
       ],
@@ -1826,30 +1955,25 @@
           0.0
         ]
       ],
-      "top1": "rib fracture",
-      "top1_score": 0.2723,
+      "top1": "hyperinflation consistent with emphysema",
+      "top1_score": 0.3696,
       "top3": [
-        "rib fracture",
-        "hilar or mediastinal widening",
-        "pulmonary edema"
+        "hyperinflation consistent with emphysema",
+        "pneumothorax",
+        "rib fracture"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 8,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "rib fracture",
-        "hilar or mediastinal widening",
-        "pulmonary edema",
+        "hyperinflation consistent with emphysema",
         "pneumothorax"
       ],
-      "returned_hit": false,
+      "returned_hit": true,
       "returned_wrong": [
-        "rib fracture",
-        "hilar or mediastinal widening",
-        "pulmonary edema",
         "pneumothorax"
       ],
-      "e2e_top1_ok": false,
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -1878,24 +2002,22 @@
           0.0
         ]
       ],
-      "top1": "atelectasis",
-      "top1_score": 0.9273,
+      "top1": "hyperinflation consistent with emphysema",
+      "top1_score": 0.5651,
       "top3": [
-        "atelectasis",
-        "pulmonary edema",
+        "hyperinflation consistent with emphysema",
+        "pneumothorax",
         "rib fracture"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 7,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "atelectasis"
+        "hyperinflation consistent with emphysema"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "atelectasis"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -1925,15 +2047,15 @@
         ]
       ],
       "top1": "pleural effusion",
-      "top1_score": 0.513,
+      "top1_score": 0.9773,
       "top3": [
         "pleural effusion",
-        "atelectasis",
-        "no significant abnormality"
+        "no significant abnormality",
+        "pneumothorax"
       ],
       "top1_ok": false,
-      "top3_ok": true,
-      "truth_rank": 2,
+      "top3_ok": false,
+      "truth_rank": 9,
       "returned": [
         "pleural effusion"
       ],
@@ -1970,22 +2092,26 @@
           0.0
         ]
       ],
-      "top1": "atelectasis",
-      "top1_score": 0.951,
+      "top1": "hyperinflation consistent with emphysema",
+      "top1_score": 0.451,
       "top3": [
-        "atelectasis",
+        "hyperinflation consistent with emphysema",
         "hilar or mediastinal widening",
         "pneumothorax"
       ],
-      "top1_ok": true,
-      "top3_ok": true,
-      "truth_rank": 1,
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 5,
       "returned": [
-        "atelectasis"
+        "hyperinflation consistent with emphysema",
+        "hilar or mediastinal widening"
       ],
-      "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "returned_hit": false,
+      "returned_wrong": [
+        "hyperinflation consistent with emphysema",
+        "hilar or mediastinal widening"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -2014,22 +2140,24 @@
           0.0001
         ]
       ],
-      "top1": "atelectasis",
-      "top1_score": 0.7384,
+      "top1": "pleural effusion",
+      "top1_score": 0.9705,
       "top3": [
-        "atelectasis",
         "pleural effusion",
-        "consolidation"
+        "atelectasis",
+        "pneumothorax"
       ],
-      "top1_ok": true,
+      "top1_ok": false,
       "top3_ok": true,
-      "truth_rank": 1,
+      "truth_rank": 2,
       "returned": [
-        "atelectasis"
+        "pleural effusion"
       ],
-      "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "returned_hit": false,
+      "returned_wrong": [
+        "pleural effusion"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -2058,28 +2186,27 @@
           0.0
         ]
       ],
-      "top1": "no significant abnormality",
-      "top1_score": 0.4316,
+      "top1": "rib fracture",
+      "top1_score": 0.395,
       "top3": [
+        "rib fracture",
         "no significant abnormality",
-        "normal chest X-ray, no acute findings",
         "hilar or mediastinal widening"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 4,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "no significant abnormality",
-        "normal chest X-ray, no acute findings"
+        "rib fracture",
+        "no significant abnormality"
       ],
-      "returned_hit": false,
+      "returned_hit": true,
       "returned_wrong": [
-        "no significant abnormality",
-        "normal chest X-ray, no acute findings"
+        "no significant abnormality"
       ],
-      "e2e_top1_ok": false,
+      "e2e_top1_ok": true,
       "true_abnormal": true,
-      "pred_abnormal": false
+      "pred_abnormal": true
     },
     {
       "file": "data/benchmarks/imaging_real/images/28_chest_x_ray_rib_fracture.jpg",
@@ -2108,11 +2235,11 @@
         ]
       ],
       "top1": "pleural effusion",
-      "top1_score": 0.9028,
+      "top1_score": 0.9982,
       "top3": [
         "pleural effusion",
-        "atelectasis",
-        "no significant abnormality"
+        "no significant abnormality",
+        "hyperinflation consistent with emphysema"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -2152,15 +2279,15 @@
         ]
       ],
       "top1": "pneumothorax",
-      "top1_score": 0.6863,
+      "top1_score": 0.7365,
       "top3": [
         "pneumothorax",
-        "atelectasis",
-        "normal chest X-ray, no acute findings"
+        "hyperinflation consistent with emphysema",
+        "pulmonary nodule or mass"
       ],
       "top1_ok": false,
       "top3_ok": false,
-      "truth_rank": 6,
+      "truth_rank": 4,
       "returned": [
         "pneumothorax"
       ],
@@ -2198,11 +2325,11 @@
         ]
       ],
       "top1": "hilar or mediastinal widening",
-      "top1_score": 0.9853,
+      "top1_score": 0.9107,
       "top3": [
         "hilar or mediastinal widening",
-        "atelectasis",
-        "pulmonary nodule or mass"
+        "pulmonary nodule or mass",
+        "no significant abnormality"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -2241,22 +2368,22 @@
           0.0026
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.7438,
+      "top1": "midline shift",
+      "top1_score": 0.9849,
       "top3": [
-        "acute infarct",
-        "hypodense lesion",
-        "ventricular enlargement"
+        "midline shift",
+        "calcification",
+        "hemorrhage"
       ],
       "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 5,
+      "top3_ok": true,
+      "truth_rank": 3,
       "returned": [
-        "acute infarct"
+        "midline shift"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "acute infarct"
+        "midline shift"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
@@ -2287,26 +2414,28 @@
           0.0031
         ]
       ],
-      "top1": "normal head CT, no acute findings",
-      "top1_score": 0.8553,
+      "top1": "calcification",
+      "top1_score": 0.3134,
       "top3": [
+        "calcification",
         "normal head CT, no acute findings",
-        "ventricular enlargement",
-        "acute infarct"
+        "no significant abnormality"
       ],
       "top1_ok": false,
       "top3_ok": false,
-      "truth_rank": 6,
+      "truth_rank": 7,
       "returned": [
+        "calcification",
         "normal head CT, no acute findings"
       ],
       "returned_hit": false,
       "returned_wrong": [
+        "calcification",
         "normal head CT, no acute findings"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
-      "pred_abnormal": false
+      "pred_abnormal": true
     },
     {
       "file": "data/benchmarks/imaging_real/images/33_ct_scan_hemorrhage.jpg",
@@ -2333,24 +2462,22 @@
           0.0003
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.9674,
+      "top1": "hemorrhage",
+      "top1_score": 0.916,
       "top3": [
-        "acute infarct",
         "hemorrhage",
-        "hypodense lesion"
+        "mass lesion",
+        "midline shift"
       ],
-      "top1_ok": false,
+      "top1_ok": true,
       "top3_ok": true,
-      "truth_rank": 2,
+      "truth_rank": 1,
       "returned": [
-        "acute infarct"
+        "hemorrhage"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "acute infarct"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -2379,23 +2506,21 @@
           0.0
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.9535,
+      "top1": "hemorrhage",
+      "top1_score": 0.4686,
       "top3": [
-        "acute infarct",
-        "hypodense lesion",
-        "ventricular enlargement"
+        "hemorrhage",
+        "calcification",
+        "mass lesion"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 4,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "acute infarct"
+        "hemorrhage"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "acute infarct"
-      ],
+      "returned_hit": true,
+      "returned_wrong": [],
       "e2e_top1_ok": false,
       "true_abnormal": true,
       "pred_abnormal": true
@@ -2425,24 +2550,22 @@
           0.0112
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.9904,
+      "top1": "hemorrhage",
+      "top1_score": 0.9449,
       "top3": [
-        "acute infarct",
         "hemorrhage",
+        "acute infarct",
         "hypodense lesion"
       ],
-      "top1_ok": false,
+      "top1_ok": true,
       "top3_ok": true,
-      "truth_rank": 2,
+      "truth_rank": 1,
       "returned": [
-        "acute infarct"
+        "hemorrhage"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "acute infarct"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -2472,22 +2595,24 @@
           0.0005
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.9529,
+      "top1": "midline shift",
+      "top1_score": 0.9696,
       "top3": [
-        "acute infarct",
+        "midline shift",
         "hemorrhage",
-        "hypodense lesion"
-      ],
-      "top1_ok": true,
-      "top3_ok": true,
-      "truth_rank": 1,
-      "returned": [
         "acute infarct"
       ],
-      "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "top1_ok": false,
+      "top3_ok": true,
+      "truth_rank": 3,
+      "returned": [
+        "midline shift"
+      ],
+      "returned_hit": false,
+      "returned_wrong": [
+        "midline shift"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -2518,10 +2643,10 @@
         ]
       ],
       "top1": "acute infarct",
-      "top1_score": 0.9951,
+      "top1_score": 0.981,
       "top3": [
         "acute infarct",
-        "normal head CT, no acute findings",
+        "hemorrhage",
         "hypodense lesion"
       ],
       "top1_ok": true,
@@ -2563,20 +2688,19 @@
         ]
       ],
       "top1": "ventricular enlargement",
-      "top1_score": 0.5899,
+      "top1_score": 0.5138,
       "top3": [
         "ventricular enlargement",
         "acute infarct",
-        "normal head CT, no acute findings"
+        "hypodense lesion"
       ],
       "top1_ok": false,
       "top3_ok": true,
       "truth_rank": 2,
       "returned": [
-        "ventricular enlargement",
-        "acute infarct"
+        "ventricular enlargement"
       ],
-      "returned_hit": true,
+      "returned_hit": false,
       "returned_wrong": [
         "ventricular enlargement"
       ],
@@ -2610,11 +2734,11 @@
         ]
       ],
       "top1": "ventricular enlargement",
-      "top1_score": 0.8429,
+      "top1_score": 0.9908,
       "top3": [
         "ventricular enlargement",
-        "normal head CT, no acute findings",
-        "acute infarct"
+        "no significant abnormality",
+        "normal head CT, no acute findings"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -2654,21 +2778,23 @@
         ]
       ],
       "top1": "normal head CT, no acute findings",
-      "top1_score": 0.99,
+      "top1_score": 0.5009,
       "top3": [
         "normal head CT, no acute findings",
-        "ventricular enlargement",
+        "no significant abnormality",
         "acute infarct"
       ],
       "top1_ok": false,
-      "top3_ok": true,
-      "truth_rank": 2,
+      "top3_ok": false,
+      "truth_rank": 4,
       "returned": [
-        "normal head CT, no acute findings"
+        "normal head CT, no acute findings",
+        "no significant abnormality"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "normal head CT, no acute findings"
+        "normal head CT, no acute findings",
+        "no significant abnormality"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
@@ -2699,21 +2825,23 @@
           0.0006
         ]
       ],
-      "top1": "ventricular enlargement",
-      "top1_score": 0.8043,
+      "top1": "hypodense lesion",
+      "top1_score": 0.4302,
       "top3": [
+        "hypodense lesion",
         "ventricular enlargement",
-        "acute infarct",
-        "hypodense lesion"
+        "acute infarct"
       ],
       "top1_ok": false,
       "top3_ok": false,
       "truth_rank": 7,
       "returned": [
+        "hypodense lesion",
         "ventricular enlargement"
       ],
       "returned_hit": false,
       "returned_wrong": [
+        "hypodense lesion",
         "ventricular enlargement"
       ],
       "e2e_top1_ok": false,
@@ -2745,22 +2873,22 @@
           0.0003
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.8629,
+      "top1": "ventricular enlargement",
+      "top1_score": 0.9857,
       "top3": [
-        "acute infarct",
         "ventricular enlargement",
-        "hypodense lesion"
+        "midline shift",
+        "mass lesion"
       ],
       "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 6,
+      "top3_ok": true,
+      "truth_rank": 3,
       "returned": [
-        "acute infarct"
+        "ventricular enlargement"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "acute infarct"
+        "ventricular enlargement"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
@@ -2791,22 +2919,24 @@
           0.0057
         ]
       ],
-      "top1": "normal head CT, no acute findings",
-      "top1_score": 0.7305,
+      "top1": "no significant abnormality",
+      "top1_score": 0.462,
       "top3": [
-        "normal head CT, no acute findings",
+        "no significant abnormality",
         "ventricular enlargement",
-        "no significant abnormality"
+        "normal head CT, no acute findings"
       ],
       "top1_ok": false,
       "top3_ok": false,
-      "truth_rank": 8,
+      "truth_rank": 9,
       "returned": [
-        "normal head CT, no acute findings"
+        "no significant abnormality",
+        "ventricular enlargement"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "normal head CT, no acute findings"
+        "no significant abnormality",
+        "ventricular enlargement"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
@@ -2837,26 +2967,24 @@
           0.0003
         ]
       ],
-      "top1": "normal head CT, no acute findings",
-      "top1_score": 0.9967,
+      "top1": "sinus abnormality",
+      "top1_score": 0.5859,
       "top3": [
-        "normal head CT, no acute findings",
+        "sinus abnormality",
         "no significant abnormality",
-        "hypodense lesion"
+        "normal head CT, no acute findings"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 8,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "normal head CT, no acute findings"
+        "sinus abnormality"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "normal head CT, no acute findings"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
-      "pred_abnormal": false
+      "pred_abnormal": true
     },
     {
       "file": "data/benchmarks/imaging_real/images/45_ct_scan_sinus_abnormality.jpg",
@@ -2883,24 +3011,22 @@
           0.0012
         ]
       ],
-      "top1": "hypodense lesion",
-      "top1_score": 0.6819,
+      "top1": "sinus abnormality",
+      "top1_score": 0.9916,
       "top3": [
+        "sinus abnormality",
         "hypodense lesion",
-        "no significant abnormality",
-        "mass lesion"
+        "calcification"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 9,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "hypodense lesion"
+        "sinus abnormality"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "hypodense lesion"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -2930,27 +3056,26 @@
           0.0002
         ]
       ],
-      "top1": "normal brain MRI, no acute findings",
-      "top1_score": 0.4884,
+      "top1": "sinus abnormality",
+      "top1_score": 0.5534,
       "top3": [
+        "sinus abnormality",
         "normal brain MRI, no acute findings",
-        "cerebral atrophy",
-        "white matter hyperintensity"
+        "cerebral atrophy"
       ],
-      "top1_ok": true,
+      "top1_ok": false,
       "top3_ok": true,
-      "truth_rank": 1,
+      "truth_rank": 2,
       "returned": [
-        "normal brain MRI, no acute findings",
-        "cerebral atrophy"
+        "sinus abnormality"
       ],
-      "returned_hit": true,
+      "returned_hit": false,
       "returned_wrong": [
-        "cerebral atrophy"
+        "sinus abnormality"
       ],
-      "e2e_top1_ok": true,
+      "e2e_top1_ok": false,
       "true_abnormal": false,
-      "pred_abnormal": false
+      "pred_abnormal": true
     },
     {
       "file": "data/benchmarks/imaging_real/images/47_mri_brain_scan_acute_infarct.jpg",
@@ -2978,11 +3103,11 @@
         ]
       ],
       "top1": "acute infarct",
-      "top1_score": 0.9884,
+      "top1_score": 0.9396,
       "top3": [
         "acute infarct",
         "chronic infarct",
-        "white matter hyperintensity"
+        "hemorrhage"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -3022,24 +3147,22 @@
           0.0
         ]
       ],
-      "top1": "white matter hyperintensity",
-      "top1_score": 0.9636,
+      "top1": "chronic infarct",
+      "top1_score": 0.6996,
       "top3": [
+        "chronic infarct",
         "white matter hyperintensity",
-        "normal brain MRI, no acute findings",
-        "acute infarct"
+        "edema"
       ],
-      "top1_ok": false,
+      "top1_ok": true,
       "top3_ok": true,
-      "truth_rank": 3,
+      "truth_rank": 1,
       "returned": [
-        "white matter hyperintensity"
+        "chronic infarct"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "white matter hyperintensity"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3069,15 +3192,15 @@
         ]
       ],
       "top1": "cerebral atrophy",
-      "top1_score": 0.9963,
+      "top1_score": 0.783,
       "top3": [
         "cerebral atrophy",
-        "chronic infarct",
+        "edema",
         "white matter hyperintensity"
       ],
       "top1_ok": false,
       "top3_ok": false,
-      "truth_rank": 10,
+      "truth_rank": 9,
       "returned": [
         "cerebral atrophy"
       ],
@@ -3114,24 +3237,22 @@
           0.0001
         ]
       ],
-      "top1": "cerebral atrophy",
-      "top1_score": 0.793,
+      "top1": "hemorrhage",
+      "top1_score": 0.5952,
       "top3": [
-        "cerebral atrophy",
-        "vascular malformation",
-        "mass lesion"
+        "hemorrhage",
+        "mass lesion",
+        "vascular malformation"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 5,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "cerebral atrophy"
+        "hemorrhage"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "cerebral atrophy"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3160,26 +3281,22 @@
           0.0
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.4676,
+      "top1": "mass lesion",
+      "top1_score": 0.901,
       "top3": [
-        "acute infarct",
-        "vascular malformation",
+        "mass lesion",
+        "hemorrhage",
+        "midline shift"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
         "mass lesion"
       ],
-      "top1_ok": false,
-      "top3_ok": true,
-      "truth_rank": 3,
-      "returned": [
-        "acute infarct",
-        "vascular malformation"
-      ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "acute infarct",
-        "vascular malformation"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3208,24 +3325,22 @@
           0.0
         ]
       ],
-      "top1": "chronic infarct",
-      "top1_score": 0.5826,
+      "top1": "mass lesion",
+      "top1_score": 0.8713,
       "top3": [
-        "chronic infarct",
-        "ventricular enlargement",
-        "cerebral atrophy"
+        "mass lesion",
+        "midline shift",
+        "hemorrhage"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 5,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "chronic infarct"
+        "mass lesion"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "chronic infarct"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3254,24 +3369,22 @@
           0.0002
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.683,
+      "top1": "mass lesion",
+      "top1_score": 0.835,
       "top3": [
-        "acute infarct",
-        "chronic infarct",
+        "mass lesion",
+        "midline shift",
+        "hemorrhage"
+      ],
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
+      "returned": [
         "mass lesion"
       ],
-      "top1_ok": false,
-      "top3_ok": true,
-      "truth_rank": 3,
-      "returned": [
-        "acute infarct"
-      ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "acute infarct"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3300,24 +3413,22 @@
           0.0
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.9287,
+      "top1": "mass lesion",
+      "top1_score": 0.8479,
       "top3": [
-        "acute infarct",
-        "chronic infarct",
-        "ventricular enlargement"
+        "mass lesion",
+        "hemorrhage",
+        "midline shift"
       ],
-      "top1_ok": false,
-      "top3_ok": false,
-      "truth_rank": 4,
+      "top1_ok": true,
+      "top3_ok": true,
+      "truth_rank": 1,
       "returned": [
-        "acute infarct"
+        "mass lesion"
       ],
-      "returned_hit": false,
-      "returned_wrong": [
-        "acute infarct"
-      ],
-      "e2e_top1_ok": false,
+      "returned_hit": true,
+      "returned_wrong": [],
+      "e2e_top1_ok": true,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3346,22 +3457,25 @@
           0.0
         ]
       ],
-      "top1": "white matter hyperintensity",
-      "top1_score": 0.6058,
+      "top1": "cerebral atrophy",
+      "top1_score": 0.3664,
       "top3": [
+        "cerebral atrophy",
         "white matter hyperintensity",
-        "normal brain MRI, no acute findings",
-        "cerebral atrophy"
+        "chronic infarct"
       ],
-      "top1_ok": true,
+      "top1_ok": false,
       "top3_ok": true,
-      "truth_rank": 1,
+      "truth_rank": 2,
       "returned": [
+        "cerebral atrophy",
         "white matter hyperintensity"
       ],
       "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "returned_wrong": [
+        "cerebral atrophy"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": true,
       "pred_abnormal": true
     },
@@ -3390,22 +3504,22 @@
           0.0
         ]
       ],
-      "top1": "acute infarct",
-      "top1_score": 0.8972,
+      "top1": "hemorrhage",
+      "top1_score": 0.5229,
       "top3": [
-        "acute infarct",
-        "chronic infarct",
-        "normal brain MRI, no acute findings"
+        "hemorrhage",
+        "sinus abnormality",
+        "edema"
       ],
       "top1_ok": false,
       "top3_ok": false,
-      "truth_rank": 5,
+      "truth_rank": 9,
       "returned": [
-        "acute infarct"
+        "hemorrhage"
       ],
       "returned_hit": false,
       "returned_wrong": [
-        "acute infarct"
+        "hemorrhage"
       ],
       "e2e_top1_ok": false,
       "true_abnormal": true,
@@ -3436,22 +3550,24 @@
           0.0
         ]
       ],
-      "top1": "normal chest X-ray, no acute findings",
-      "top1_score": 0.5492,
+      "top1": "no significant abnormality",
+      "top1_score": 0.4632,
       "top3": [
-        "normal chest X-ray, no acute findings",
-        "hilar or mediastinal widening",
-        "atelectasis"
+        "no significant abnormality",
+        "hyperinflation consistent with emphysema",
+        "pulmonary nodule or mass"
       ],
-      "top1_ok": true,
-      "top3_ok": true,
-      "truth_rank": 1,
+      "top1_ok": false,
+      "top3_ok": false,
+      "truth_rank": 4,
       "returned": [
-        "normal chest X-ray, no acute findings"
+        "no significant abnormality"
       ],
-      "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "returned_hit": false,
+      "returned_wrong": [
+        "no significant abnormality"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": false,
       "pred_abnormal": false
     },
@@ -3481,11 +3597,11 @@
         ]
       ],
       "top1": "pneumothorax",
-      "top1_score": 0.6814,
+      "top1_score": 0.8207,
       "top3": [
         "pneumothorax",
         "rib fracture",
-        "hilar or mediastinal widening"
+        "hyperinflation consistent with emphysema"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -3524,24 +3640,26 @@
           0.0004
         ]
       ],
-      "top1": "normal head CT, no acute findings",
-      "top1_score": 0.9987,
+      "top1": "sinus abnormality",
+      "top1_score": 0.8896,
       "top3": [
+        "sinus abnormality",
         "normal head CT, no acute findings",
-        "acute infarct",
-        "hypodense lesion"
+        "mass lesion"
       ],
-      "top1_ok": true,
+      "top1_ok": false,
       "top3_ok": true,
-      "truth_rank": 1,
+      "truth_rank": 2,
       "returned": [
-        "normal head CT, no acute findings"
+        "sinus abnormality"
       ],
-      "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "returned_hit": false,
+      "returned_wrong": [
+        "sinus abnormality"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": false,
-      "pred_abnormal": false
+      "pred_abnormal": true
     },
     {
       "file": "data/images/real/real_ct_scan_10.png",
@@ -3568,24 +3686,26 @@
           0.0006
         ]
       ],
-      "top1": "normal head CT, no acute findings",
-      "top1_score": 0.9989,
+      "top1": "sinus abnormality",
+      "top1_score": 0.7206,
       "top3": [
+        "sinus abnormality",
         "normal head CT, no acute findings",
-        "acute infarct",
         "no significant abnormality"
       ],
-      "top1_ok": true,
+      "top1_ok": false,
       "top3_ok": true,
-      "truth_rank": 1,
+      "truth_rank": 2,
       "returned": [
-        "normal head CT, no acute findings"
+        "sinus abnormality"
       ],
-      "returned_hit": true,
-      "returned_wrong": [],
-      "e2e_top1_ok": true,
+      "returned_hit": false,
+      "returned_wrong": [
+        "sinus abnormality"
+      ],
+      "e2e_top1_ok": false,
       "true_abnormal": false,
-      "pred_abnormal": false
+      "pred_abnormal": true
     },
     {
       "file": "data/images/real/real_ct_scan_14.png",
@@ -3613,11 +3733,11 @@
         ]
       ],
       "top1": "normal head CT, no acute findings",
-      "top1_score": 0.9919,
+      "top1_score": 0.6498,
       "top3": [
         "normal head CT, no acute findings",
-        "acute infarct",
-        "ventricular enlargement"
+        "no significant abnormality",
+        "acute infarct"
       ],
       "top1_ok": true,
       "top3_ok": true,
@@ -3658,11 +3778,11 @@
         ]
       ],
       "top1": "cerebral atrophy",
-      "top1_score": 0.7905,
+      "top1_score": 0.6674,
       "top3": [
         "cerebral atrophy",
-        "normal brain MRI, no acute findings",
-        "white matter hyperintensity"
+        "no significant abnormality",
+        "ventricular enlargement"
       ],
       "top1_ok": false,
       "top3_ok": true,

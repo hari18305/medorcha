@@ -48,6 +48,7 @@ import backend.rag.retriever as retriever
 import backend.rag.visual_memory as visual_memory
 import backend.services.orchestrator as orchestrator
 from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS
+from backend.agents.imaging_labels import finding_prompt
 from backend.main import app
 from backend.models.schemas import CaseInput, ClinicalFindings, FinalReport, ImagingFindings, Patient
 from backend.services import storage
@@ -393,9 +394,19 @@ def _install_evidence_mocks(
 # --------------------------------------------------------------------------
 
 
+# The classifier embeds finding CAPTIONS (imaging_labels.finding_prompt) but returns finding LABELS.
+# The fake model's canned embeddings are keyed by label, so the fake tokenizer maps a caption back
+# to its label; encode_text_calls then still records WHICH label set was scored.
+_CAPTION_TO_LABEL = {
+    finding_prompt(modality, label): label
+    for modality, labels in FINDING_LABELS_BY_MODALITY.items()
+    for label in labels
+}
+
+
 class _FakeImagingTokenizer:
-    def __call__(self, labels):
-        return list(labels)
+    def __call__(self, texts):
+        return [_CAPTION_TO_LABEL.get(t, t) for t in texts]
 
 
 class _FakeImagingModel:

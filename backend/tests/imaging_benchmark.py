@@ -200,7 +200,10 @@ def summarise(rows: list[dict]) -> dict:
     }
 
 
-def run(manifest: list[dict], rank_fn=rank_image, progress=None) -> dict:
+def run(manifest: list[dict], rank_fn=rank_image, progress=None, split: dict | None = None) -> dict:
+    """`split` = {group: 'dev'|'test'} (data/benchmarks/imaging_real/split.json). When given, the result
+    also reports the DEV and TEST halves separately: the finding prompts were chosen on DEV and judged
+    once on TEST (imaging_prompt_experiment.py), so only TEST is an unbiased read of the current prompts."""
     rows = []
     for i, entry in enumerate(manifest, 1):
         rows.append(score_entry(entry, rank_fn))
@@ -216,6 +219,11 @@ def run(manifest: list[dict], rank_fn=rank_image, progress=None) -> dict:
         "excluding annotated films": summarise([r for r in rows if not r["has_annotation"]]),
         "excluding both": summarise([r for r in rows if not r["possible_pretraining_overlap"] and not r["has_annotation"]]),
     }
+    if split:
+        for half, note in (("test", "TEST half: held out from the prompt choice"), ("dev", "DEV half: used to choose the prompt (optimistic)")):
+            sub = [r for r in rows if split.get(r["group"]) == half]
+            if sub:
+                result["subsets"][note] = summarise(sub)
     by_label = defaultdict(list)
     for r in rows:
         by_label[(r["modality"], r["accepted"][0])].append(r)
@@ -259,6 +267,9 @@ CAVEATS = [
     "articles are flagged by a keyword heuristic on their own description, which can miss. See the 'excluding' rows.",
     "**Not independent.** Slices of one patient/series share a `group`; the group-collapsed figure counts each once. "
     "There is exactly ONE normal head-CT subject (three slices), so CT specificity is close to meaningless.",
+    "**The finding prompts were tuned on this set.** The wording was chosen on the DEV half and judged once on the "
+    "TEST half (PROMPT_EXPERIMENT.md), so the all-image figures are partly in-sample. Quote the TEST-half row "
+    "(see 'Sensitivity to the weaknesses') as the unbiased read; it is ~25 images.",
     "**Not a clinical validation.** It characterises one zero-shot model's behaviour on a hand-picked set; it says "
     "nothing about the whole system's diagnostic accuracy.",
 ]
@@ -325,7 +336,9 @@ def main() -> int:
         print(f"[{i:>2}/{n}] {'OK ' if row['top1_ok'] else 'no '} {row['modality']:<15} true={row['accepted'][0][:28]:<28} "
               f"top1={row['top1'][:28]:<28} modality->{row['detected_modality']}", flush=True)
 
-    result = run(manifest, progress=progress)
+    split_path = BENCH_DIR / "split.json"
+    split = json.loads(split_path.read_text(encoding="utf-8"))["groups"] if split_path.exists() else None
+    result = run(manifest, progress=progress, split=split)
     md = render_md(result, raw.get("_provenance", {}).get("built", ""))
     print("\n" + md)
     if not args.limit:

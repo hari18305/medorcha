@@ -25,6 +25,7 @@ from PIL import Image, UnidentifiedImageError
 
 from backend.agents.imaging_labels import (
     FINDING_LABELS_BY_MODALITY,
+    finding_prompt,
     MODALITY_LABELS,
     SUPPORTED_FINDING_MODALITIES,
 )
@@ -199,10 +200,13 @@ def _validate_image_path(image_path: str) -> Path:
 
 
 def _zero_shot_scores(
-    model, tokenizer, image_features: torch.Tensor, labels: list[str]
+    model, tokenizer, image_features: torch.Tensor, labels: list[str], prompts: list[str] | None = None
 ) -> list[tuple[str, float]]:
-    """Cosine-similarity zero-shot scores between the image and each label, softmaxed."""
-    text_tokens = tokenizer(labels)
+    """Cosine-similarity zero-shot scores between the image and each label, softmaxed.
+
+    `prompts` are the captions actually embedded (same order as `labels`); the result is
+    still keyed by `labels`. Default: embed the labels themselves."""
+    text_tokens = tokenizer(prompts if prompts is not None else labels)
     text_features = model.encode_text(text_tokens)
     text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
@@ -247,7 +251,10 @@ def rank_image(path: Path, modality_hint: str | None = None) -> dict:
         finding_labels = FINDING_LABELS_BY_MODALITY.get(modality)
         finding_scores = None
         if finding_labels is not None:
-            finding_scores = _zero_shot_scores(model, tokenizer, image_features, finding_labels)
+            finding_scores = _zero_shot_scores(
+                model, tokenizer, image_features, finding_labels,
+                prompts=[finding_prompt(modality, lab) for lab in finding_labels],
+            )
 
     return {"modality": modality, "modality_scores": modality_scores, "finding_scores": finding_scores}
 

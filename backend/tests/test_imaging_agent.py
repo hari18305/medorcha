@@ -7,6 +7,7 @@ the actual cosine-similarity/softmax scoring logic in imaging_agent.py
 is still exercised end to end, just against canned embeddings.
 """
 
+import asyncio
 import math
 from pathlib import Path
 
@@ -19,7 +20,8 @@ from backend.agents.imaging_agent import (
     UnsupportedImageFormatError,
     analyze_image,
 )
-from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS
+import backend.agents.imaging_labels as imaging_labels
+from backend.agents.imaging_labels import FINDING_LABELS_BY_MODALITY, MODALITY_LABELS, finding_prompt
 
 BRAIN_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["MRI brain scan"]
 CT_FINDING_LABELS = FINDING_LABELS_BY_MODALITY["CT scan"]
@@ -33,11 +35,25 @@ DEMO_IMAGE_CT = Path("data/images/synthetic_demo_ct_scan_001.png")
 DEMO_IMAGE_CHEST = Path("data/images/synthetic_demo_chest_xray_001.png")
 
 
-class _RecordingTokenizer:
-    """Fake tokenizer: passes label strings straight through, unchanged."""
+# Finding captions (prompts) -> the label they stand for. The fake model's canned embeddings are
+# keyed by LABEL, so the fake tokenizer maps a finding prompt back to its label; modality labels
+# and anything else pass through unchanged. (test_finding_prompts_* check the real wording.)
+_PROMPT_TO_LABEL = {
+    finding_prompt(modality, label): label
+    for modality, labels in FINDING_LABELS_BY_MODALITY.items()
+    for label in labels
+}
 
-    def __call__(self, labels):
-        return list(labels)
+
+class _RecordingTokenizer:
+    """Fake tokenizer: records what was tokenized and returns the LABEL each caption stands for."""
+
+    def __init__(self):
+        self.seen: list[list[str]] = []
+
+    def __call__(self, texts):
+        self.seen.append(list(texts))
+        return [_PROMPT_TO_LABEL.get(t, t) for t in texts]
 
 
 class _RecordingModel:
@@ -364,3 +380,67 @@ async def test_the_absolute_floor_still_applies_on_top_of_the_relative_rule(monk
 async def test_empty_image_path_raises_value_error():
     with pytest.raises(ValueError):
         await analyze_image("")
+
+
+# --------------------------------------------------------------------------
+# Finding prompts: captions are embedded, labels are returned
+# --------------------------------------------------------------------------
+
+
+def test_finding_prompts_are_descriptive_captions_and_returned_names_are_still_labels(monkeypatch):
+    bundle = _make_bundle(torch.tensor([[1.0, 0.0]]), _uniform_text_embeddings(torch.tensor([1.0, 0.0])))
+    tokenizer = bundle[2]
+    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: bundle)
+
+    result = asyncio.run(imaging_agent.analyze_image(str(DEMO_IMAGE_CT), modality_hint="CT scan"))
+
+    (finding_call,) = tokenizer.seen                                          # a hint skips modality detection
+    labels = FINDING_LABELS_BY_MODALITY["CT scan"]
+    assert finding_call == [finding_prompt("CT scan", lab) for lab in labels]
+    assert finding_call != labels                                             # captions, not bare labels
+    assert "head CT scan showing intracranial hemorrhage" in finding_call[labels.index("hemorrhage")]
+    assert all(f in labels for f in result.findings)                          # what is returned is still a label
+
+
+def test_modality_prompts_are_unchanged(monkeypatch):
+    # The held-out experiment did not show a modality-wording gain (1 image, bar 2), so detection
+    # still embeds the bare MODALITY_LABELS.
+    bundle = _make_bundle(torch.tensor([[1.0, 0.0]]), _uniform_text_embeddings(torch.tensor([1.0, 0.0])))
+    monkeypatch.setattr(imaging_agent, "_get_model_bundle", lambda: bundle)
+
+    asyncio.run(imaging_agent.analyze_image(str(DEMO_IMAGE_CT)))
+
+    assert bundle[2].seen[0] == MODALITY_LABELS
+
+
+def test_every_finding_label_has_a_distinct_caption_with_its_modality():
+    seen = set()
+    for modality, labels in FINDING_LABELS_BY_MODALITY.items():
+        for label in labels:
+            prompt = finding_prompt(modality, label)
+            assert prompt not in seen and prompt != label
+            assert prompt.startswith(imaging_labels.MODALITY_PHRASE[modality] + " showing ")
+            seen.add(prompt)
+
+
+def test_label_style_env_restores_the_bare_labels(monkeypatch):
+    monkeypatch.setenv("IMAGING_FINDING_PROMPTS", "label")
+    assert finding_prompt("CT scan", "hemorrhage") == "hemorrhage"
+    monkeypatch.delenv("IMAGING_FINDING_PROMPTS")
+    assert finding_prompt("CT scan", "hemorrhage") != "hemorrhage"
+
+
+def test_a_label_without_a_description_falls_back_to_the_bare_label(monkeypatch):
+    monkeypatch.setitem(imaging_labels.FINDING_DESCRIPTIONS, "ultrasound", {})
+    assert finding_prompt("ultrasound", "anything") == "anything"
+    assert finding_prompt("CT scan", "a label added later with no description") == "a label added later with no description"
+
+
+def test_production_prompts_match_the_ones_the_held_out_experiment_selected():
+    # The experiment kept its own frozen copy of the wording it tested; production must say the
+    # same thing, or the held-out result would not describe what actually ships.
+    from backend.tests import imaging_prompt_experiment as pe
+
+    for modality, labels in FINDING_LABELS_BY_MODALITY.items():
+        for label in labels:
+            assert [finding_prompt(modality, label)] == pe.FINDING_CANDIDATES["T1_showing"](modality, label)
