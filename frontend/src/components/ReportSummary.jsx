@@ -30,10 +30,22 @@ export function isImageConflict(text) {
   return IMAGE_CONFLICT_RE.test(text);
 }
 
+// The backend's input-sufficiency gate (backend/services/confidence.py,
+// INSUFFICIENT_INPUT_NOTE) puts its explanation at the front of
+// report.conflicts. It is not a disagreement between evidence sources, so it
+// is shown with the review notice instead of under "Conflicting evidence".
+const INSUFFICIENT_INPUT_PREFIX = "Insufficient clinical input:";
+
+export function isInsufficientInputNote(text) {
+  return typeof text === "string" && text.startsWith(INSUFFICIENT_INPUT_PREFIX);
+}
+
 export default function ReportSummary({ report, imageSubmitted = false }) {
   const diagnoses = [...(report.diagnoses ?? [])].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
   const evidence = report.evidence ?? [];
-  const conflicts = report.conflicts ?? [];
+  const allConflicts = report.conflicts ?? [];
+  const inputNote = allConflicts.find(isInsufficientInputNote);
+  const conflicts = allConflicts.filter((c) => !isInsufficientInputNote(c));
   const iterations = report.iteration_count ?? 0;
 
   return (
@@ -51,6 +63,11 @@ export default function ReportSummary({ report, imageSubmitted = false }) {
               Confidence is below the review threshold — this case requires clinician review before
               acting on it.
             </p>
+            {inputNote && (
+              <p data-testid="insufficient-input-note" className="mt-2 text-sm text-amber-800">
+                {inputNote}
+              </p>
+            )}
           </div>
         )}
       </section>
