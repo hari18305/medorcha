@@ -960,3 +960,34 @@ evidence" path is still only tested with fakes; four cases are not the 31 and sa
 wording flaw, fixed afterwards: the empty-case note ended "Any diagnosis shown rests on the image and retrieved literature alone"
 although there was no diagnosis and no image; it now says "(there may be none) rests only on the image, if one was given, and on
 retrieved literature".
+
+---
+
+## Full 31-case live re-run on the final system (2026-11-13/14)
+
+All 31 cases through the real pipeline (Gemini `gemini-3.5-flash-lite`), isolated store (KB = 67, case memory emptied), in batches of
+4, 8, 7, 5 and 9 (the last two are one set of cases that was interrupted: the **backend process died once**, exit code 139 with no
+traceback, during CASE022, the second time this has happened in a long run; it was restarted and the nine unfinished cases re-run).
+**No quota errors at all**; every case returned a report. Reports are in `eval_run/reports_final/` (gitignored); the previous
+(pre-gate) run is `eval_run/reports/`.
+
+| | previous run (pre-gate, 42-passage KB) | this run |
+|---|---|---|
+| mean confidence | 0.69 | 0.632 |
+| sent for review | 3 / 31 | **13 / 31** |
+| the 6 "should abstain" cases sent for review | 1 / 6 | **6 / 6** (CASE003, 008, 013, 017, 021, REAL002) |
+| empty case (CASE013) | 0.79, no diagnosis, skipped review | 0.00, review |
+| optimizer ran | 14 cases | 10 cases (rounds: 0 x21, 1 x2, 2 x1, 3 x7) |
+| live evidence present | 28 / 31 | 30 / 31 (the empty case has none) |
+| CASE007 | invalid (429) | valid, 0.82 |
+| reports citing an evidence id that is not in the list | 1 of the 14 optimizer cases | **0 of the 10** |
+
+What this shows: the input-sufficiency gate and the general-symptom cap do what they were built for on the whole set, and the
+optimizer path now runs live. The citation row is a consistency check on the "return the winning round's evidence" change: no
+unresolved citation in any report, including the 10 that entered the optimizer; it cannot show that a later round's evidence was
+what got returned, only that nothing dangles.
+
+What it does not show: correctness. 7 of the 31 went through three optimizer rounds and still ended below the threshold. The real-image
+pneumothorax case with no text (REAL007) is now sent for review at 0.50 (the intended trade-off of the gate). The answer key is
+AI-drafted, so no accuracy figure is quoted here; the LLM-judge scoring is the next step and is not done. 13/31 reviewed is a
+behaviour of the current threshold and weights, which are still unvalidated.
