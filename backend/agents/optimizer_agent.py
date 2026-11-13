@@ -235,7 +235,10 @@ async def optimize(
     """`on_iteration(event: dict)` (optional) is told about each refinement round as it happens:
     {"event": "iteration_started" | "iteration_done" | "iteration_failed", "iteration": i,
     "max": MAX_ITERATIONS, ["confidence": c, "strategy": s]}. Used for live progress; a callback
-    that raises is ignored, it never affects the optimizer."""
+    that raises is ignored, it never affects the optimizer.
+
+    The result also carries `final_rag` / `final_live`: the evidence the returned fusion was
+    written from, or None when the first pass is still the best (use the evidence you passed in)."""
     # Step 1: stop immediately if Phase 5's fusion already cleared the
     # bar -- this must hold regardless of what the caller already
     # checked (see module docstring).
@@ -247,6 +250,8 @@ async def optimize(
             "iterations": 0,
             "review_required": False,
             "iteration_log": [],
+            "final_rag": None,
+            "final_live": None,
         }
 
     # Step 1b: with no clinical anchor (no symptoms, labs or report findings),
@@ -262,6 +267,8 @@ async def optimize(
             "iterations": 0,
             "review_required": True,
             "iteration_log": [],
+            "final_rag": None,
+            "final_live": None,
         }
 
     iteration_log: list[dict] = []
@@ -271,6 +278,12 @@ async def optimize(
     # just the final float, persisted alongside the report -- tracked
     # here the same way best_fusion/best_confidence already are.
     best_breakdown = initial_breakdown
+    # The evidence the best fusion was written from. A later round's fusion cites ITS OWN evidence
+    # ([RAG1], [LIVE2] number that round's lists), so the report must return that evidence, not the
+    # first pass's, or the citations point at the wrong items. None = the first pass is still best,
+    # i.e. the caller's own evidence is the right one.
+    best_rag: RAGEvidence | None = None
+    best_live: LiveEvidence | None = None
 
     current_query = _build_base_query(clinical, imaging)
     current_fusion = initial_fusion
@@ -320,6 +333,8 @@ async def optimize(
                 best_confidence = new_confidence
                 best_fusion = new_fusion
                 best_breakdown = new_breakdown
+                best_rag = new_rag
+                best_live = new_live
 
             if new_confidence >= THRESHOLD:
                 return {
@@ -329,6 +344,8 @@ async def optimize(
                     "iterations": i,
                     "review_required": False,
                     "iteration_log": iteration_log,
+                    "final_rag": new_rag,
+                    "final_live": new_live,
                 }
         except Exception as exc:  # noqa: BLE001 -- any failure in this iteration's steps
             # (strategy selection via RefinementError/ValidationError,
@@ -355,4 +372,6 @@ async def optimize(
         "iterations": iterations_run,
         "review_required": True,
         "iteration_log": iteration_log,
+        "final_rag": best_rag,
+        "final_live": best_live,
     }

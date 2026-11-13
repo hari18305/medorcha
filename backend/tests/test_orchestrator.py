@@ -515,6 +515,46 @@ def test_nonspecific_complaint_reports_the_reason_and_requires_review(monkeypatc
     assert report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses
 
 
+def test_the_report_returns_the_evidence_of_the_round_that_won(mock_agents):
+    # The optimizer's final fusion cites its own round's evidence, so the report must carry that evidence
+    # (before this, only the first pass's evidence came back and later-round citations pointed nowhere).
+    round_rag = RAGEvidence(evidence=[EvidenceItem(text="round-two passage", source="kb", score=0.9)])
+    round_live = LiveEvidence(
+        sources=[LiveEvidenceSource(title="round-two paper", source="PubMed", url="u", summary="s", evidence_level="high")],
+        sources_queried=1,
+    )
+    mock_agents["confidence_holder"]["value"] = 0.3
+    mock_agents["fuse"].return_value = LOW_CONFIDENCE_FUSION
+    mock_agents["optimize"].return_value = {
+        "final_fusion": HIGH_CONFIDENCE_FUSION, "final_confidence": 0.7,
+        "final_breakdown": {"s_rag": 0.9, "s_web": 1.0, "agreement": 1.0, "confidence": 0.7},
+        "iterations": 2, "review_required": False, "iteration_log": [],
+        "final_rag": round_rag, "final_live": round_live,
+    }
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    texts = [e.get("text") or e.get("title") for e in report.evidence]
+    assert "round-two passage" in texts and "round-two paper" in texts
+    assert "live evidence" not in texts  # the first pass's live item is gone, not mixed in
+
+
+def test_the_first_pass_evidence_stays_when_the_optimizer_returns_none(mock_agents):
+    mock_agents["confidence_holder"]["value"] = 0.3
+    mock_agents["fuse"].return_value = LOW_CONFIDENCE_FUSION
+    mock_agents["optimize"].return_value = {
+        "final_fusion": LOW_CONFIDENCE_FUSION, "final_confidence": 0.3,
+        "final_breakdown": {"s_rag": 0.1, "s_web": 0.1, "agreement": 1.0, "confidence": 0.3},
+        "iterations": 3, "review_required": True, "iteration_log": [],
+        "final_rag": None, "final_live": None,
+    }
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    assert any(e["type"] == "live" for e in report.evidence)
+    assert report.iteration_count == 3
+
+
 def test_structured_history_and_labs_reach_the_pipeline(mock_agents):
     # The extractor only sees the text, so the typed history/labs used to be
     # dropped before retrieval and fusion (17 of the 31 test cases carry them).

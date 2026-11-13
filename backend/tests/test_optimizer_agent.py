@@ -169,6 +169,61 @@ async def test_best_result_can_beat_initial_but_still_below_threshold(mock_pipel
 
 
 # --------------------------------------------------------------------------
+# The evidence the returned fusion was written from comes back with it
+# --------------------------------------------------------------------------
+
+
+async def test_the_winning_rounds_evidence_is_returned_with_its_fusion(mock_pipeline, monkeypatch):
+    # A later round's fusion cites ITS OWN [RAG1]/[LIVE1], so the report needs that round's evidence,
+    # not the first pass's, or the citations would point at the wrong items.
+    mock_pipeline["select_strategy"].return_value = _refinement("expand", "q")
+    iter_rag, iter_live = _rag(0.7), LiveEvidence(sources=[], sources_queried=1)
+    mock_pipeline["run_rag"].return_value = iter_rag
+    mock_pipeline["gather_live_evidence"].return_value = iter_live
+    mock_pipeline["fuse"].return_value = _fusion(0.7)
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: 0.7)
+
+    result = await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3)
+
+    assert result["final_rag"] is iter_rag
+    assert result["final_live"] is iter_live
+
+
+async def test_the_best_of_several_rounds_supplies_the_evidence_not_the_last(mock_pipeline, monkeypatch):
+    rag1, rag2, rag3 = _rag(0.5), _rag(0.6), _rag(0.4)
+    mock_pipeline["select_strategy"].return_value = _refinement("expand", "q")
+    mock_pipeline["run_rag"].side_effect = [rag1, rag2, rag3]
+    mock_pipeline["fuse"].side_effect = [_fusion(0.5), _fusion(0.6), _fusion(0.4)]
+    confidences = iter([0.5, 0.6, 0.4])  # round 2 is the best and still below THRESHOLD
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: next(confidences))
+
+    result = await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3)
+
+    assert result["final_confidence"] == 0.6
+    assert result["final_rag"] is rag2
+
+
+async def test_no_evidence_is_returned_when_the_first_pass_is_still_best(mock_pipeline, monkeypatch):
+    mock_pipeline["select_strategy"].return_value = _refinement("expand", "q")
+    mock_pipeline["run_rag"].return_value = _rag(0.1)
+    mock_pipeline["fuse"].return_value = _fusion(0.1)
+    monkeypatch.setattr(optimizer_agent, "compute_confidence", lambda rag, live, fusion, clinical=None: 0.1)
+
+    result = await optimize(CASE, CLINICAL, None, _fusion(0.3), initial_confidence=0.3)
+
+    assert result["final_confidence"] == 0.3  # no round beat the first pass
+    assert result["final_rag"] is None and result["final_live"] is None
+
+
+async def test_short_circuits_carry_no_replacement_evidence(mock_pipeline):
+    above = await optimize(CASE, CLINICAL, None, _fusion(0.9), initial_confidence=0.9)
+    assert above["final_rag"] is None and above["final_live"] is None
+    empty = ClinicalFindings(demographics={}, symptoms=[], history=[], labs={}, imaging_text_findings=[])
+    gated = await optimize(CASE, empty, None, _fusion(0.4), initial_confidence=0.5)
+    assert gated["final_rag"] is None and gated["final_live"] is None
+
+
+# --------------------------------------------------------------------------
 # (c) one iteration raises -> loop terminates safely, still bounded by 3
 # --------------------------------------------------------------------------
 

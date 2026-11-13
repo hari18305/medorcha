@@ -375,6 +375,12 @@ class OptimizerTool(BaseTool):
                 )
             )
             ctx.fusion = result["final_fusion"]
+            # The final fusion cites the evidence of the round that produced it; return that evidence in the
+            # report so every citation resolves (None = the first pass is still the best).
+            if result.get("final_rag") is not None:
+                ctx.rag = result["final_rag"]
+            if result.get("final_live") is not None:
+                ctx.live = result["final_live"]
             ctx.confidence = result["final_confidence"]
             ctx.confidence_breakdown = result.get("final_breakdown")
             ctx.review_required = result["review_required"]

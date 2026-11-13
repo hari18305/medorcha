@@ -53,8 +53,8 @@ export function isInsufficientInputNote(text) {
 // numbers the offline items and the live items separately, in list order),
 // and FinalReport.evidence preserves that order. Reproducing the numbering
 // here is what lets a citation link to the item it refers to. If a report
-// cites an ID that no longer exists (the optimizer's later-iteration
-// evidence is not returned), the chip is shown but not linked.
+// cites an ID that is not in the evidence list (a model slip: the optimizer now returns the evidence of the round that
+// produced the final differential), the chip is shown but not linked.
 const CITATION_RE = /\[((?:RAG|LIVE|MEM|VIS)\d+)\]/g;
 
 export function assignEvidenceIds(evidence) {
