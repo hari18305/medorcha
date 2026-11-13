@@ -17,7 +17,7 @@ caption. They are NOT re-read by a radiologist for this project, and the develop
 who picked them is not one. Treat them as "labelled by the uploader".
 
 KNOWN WEAKNESSES (also recorded in the manifest and the results):
-  * Small: a few images per finding, so every per-finding number has a wide
+  * Small (79 images after the 2026-11-13 extension; 62 before): a few images per finding, so every per-finding number has a wide
     confidence interval. A handful of findings (MRI atrophy) had no usable image and
     are not covered. There is exactly ONE normal head-CT subject.
   * Possible training-data overlap: BiomedCLIP was trained on PubMed Central
@@ -126,6 +126,32 @@ SELECTION = [
     ("NPH MRI 010.png", MRI, ["ventricular enlargement"], "dilmen_nph_mri"),
 ]
 
+# EXTENSION SET (added 2026-11-13, after the prompt experiment had been decided and its held-out half spent).
+# None of these images was seen while choosing the finding captions, so they are a second, fresh test of that
+# choice. They target the gaps in the first 62: more normal films, and findings with no image at all (midline shift,
+# chronic infarct, edema, vascular malformation). Still uncovered: cerebral atrophy and CT calcification (every
+# usable Commons image was a multi-panel composite or carried arrows). They are kept OUT of split.json and out of
+# the prompt experiment on purpose (manifest entries carry "set": "extension").
+EXTENSION = [
+    ("Chest x-ray plain film normal.jpg", CXR, [NORMAL_CXR], None),
+    ("Chest X-ray.jpg", CXR, [NORMAL_CXR], None),
+    ("Normal PA chest x-ray (5414485536).jpg", CXR, [NORMAL_CXR], None),
+    ("Normal posteroanterior (PA) chest radiograph (X-ray).jpg", CXR, [NORMAL_CXR], None),
+    ("LeftsidedstrokeNo.png", CT, ["midline shift", "acute infarct"], None),
+    ("Subfalcine-herniation-001.jpg", CT, ["midline shift", "hemorrhage"], None),
+    ("INFARCT.jpg", CT, ["acute infarct", "hypodense lesion"], None),
+    ("CT of a normal brain, coronal 27.png", CT, [NORMAL_CT], "uppsala_normal_ct"),
+    ("CT of a normal brain, sagittal 16.png", CT, [NORMAL_CT], "uppsala_normal_ct"),
+    ("001 Arteriovenous Malformation MRT T1KM axial.png", MRI, ["vascular malformation"], "avm_001_mri"),
+    ("001 Arteriovenous Malformation MRT HAEM axial.png", MRI, ["vascular malformation"], "avm_001_mri"),
+    ("001 Arteriovenous Malformation MRT T1KM coronar.png", MRI, ["vascular malformation"], "avm_001_mri"),
+    ("Lacunar stroke MRI.jpg", MRI, ["chronic infarct"], None),
+    ("Posterior reversible encephalopathy syndrome MRI.jpg", MRI, ["edema"], None),
+    ("Leucoaraiose.jpg", MRI, ["white matter hyperintensity"], None),
+    ("Brain-T2-axial.png", MRI, [NORMAL_MRI, "no significant abnormality"], None),
+    ("Normal axial T2-weighted MR image of the brain.jpg", MRI, [NORMAL_MRI, "no significant abnormality"], None),
+]
+
 # The six real images already in the repo (data/images/real, see its ATTRIBUTION.md).
 EXISTING = [
     ("data/images/real/real_chest_xray_normal_pa.jpg", CXR, [NORMAL_CXR], None, "CC0 1.0", False),
@@ -175,10 +201,10 @@ def _slug(i: int, modality: str, label: str, ext: str) -> str:
 
 def build() -> None:
     IMG_DIR.mkdir(parents=True, exist_ok=True)
-    meta = fetch_metadata([t for t, *_ in SELECTION])
+    meta = fetch_metadata([t for t, *_ in SELECTION + EXTENSION])
     entries = []
     with httpx.Client(headers=UA, timeout=60, follow_redirects=True) as c:
-        for i, (title, modality, labels, group) in enumerate(SELECTION, 1):
+        for i, (title, modality, labels, group) in enumerate(SELECTION + EXTENSION, 1):
             m = meta[title]
             if not ALLOWED_LICENSE.match(m["license"]):
                 raise SystemExit(f"{title}: licence {m['license']!r} is not an allowed open licence")
@@ -195,6 +221,7 @@ def build() -> None:
                 "source": "wikimedia_commons", "commons_title": title, "page": m["page"], "license": m["license"],
                 "artist": m["artist"], "description": m["description"], "original_size": [m["orig_w"], m["orig_h"]],
                 "possible_pretraining_overlap": overlap, "changes": f"downscaled to <= {MAX_WIDTH}px wide by Wikimedia's thumbnail service",
+                **({"set": "extension"} if i > len(SELECTION) else {}),
             })
     for path, modality, labels, group, lic, overlap in EXISTING:
         entries.append({

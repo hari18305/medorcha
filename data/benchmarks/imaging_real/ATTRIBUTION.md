@@ -65,5 +65,22 @@ changes**: every Commons image here was **downscaled to at most 768 px wide by W
 | `54_mri_brain_scan_mass_lesion.png` | [Butterfly glioblastoma.png](https://commons.wikimedia.org/wiki/File:Butterfly_glioblastoma.png) | John H. Rossmeisl, Kemba Clapp, Theresa E. Pancotto, Samantha Emch, John L. Robertson, Waldemar Debinski | CC BY 4.0 |
 | `55_mri_brain_scan_white_matter_hyperintensity.png` | [MSMRI.png](https://commons.wikimedia.org/wiki/File:MSMRI.png) | James Heilman, MD | CC BY-SA 4.0 |
 | `56_mri_brain_scan_ventricular_enlargement.png` | [NPH MRI 010.png](https://commons.wikimedia.org/wiki/File:NPH_MRI_010.png) | Nevit Dilmen (talk) | CC BY-SA 3.0 |
+| `57_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg` | [Chest x-ray plain film normal.jpg](https://commons.wikimedia.org/wiki/File:Chest_x-ray_plain_film_normal.jpg) | Ptrump16 | CC BY-SA 4.0 |
+| `58_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg` | [Chest X-ray.jpg](https://commons.wikimedia.org/wiki/File:Chest_X-ray.jpg) | Ptrump16 | CC BY-SA 4.0 |
+| `59_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg` | [Normal PA chest x-ray (5414485536).jpg](https://commons.wikimedia.org/wiki/File:Normal_PA_chest_x-ray_(5414485536).jpg) | Yale Rosen from USA | CC BY-SA 2.0 |
+| `60_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg` | [Normal posteroanterior (PA) chest radiograph (X-ray).jpg](https://commons.wikimedia.org/wiki/File:Normal_posteroanterior_(PA)_chest_radiograph_(X-ray).jpg) | Mikael Häggström | CC0 |
+| `61_ct_scan_midline_shift.png` | [LeftsidedstrokeNo.png](https://commons.wikimedia.org/wiki/File:LeftsidedstrokeNo.png) | James Heilman, MD | CC BY-SA 4.0 |
+| `62_ct_scan_midline_shift.jpg` | [Subfalcine-herniation-001.jpg](https://commons.wikimedia.org/wiki/File:Subfalcine-herniation-001.jpg) | RadsWiki | CC BY-SA 3.0 |
+| `63_ct_scan_acute_infarct.jpg` | [INFARCT.jpg](https://commons.wikimedia.org/wiki/File:INFARCT.jpg) | Lucien Monfils | CC BY-SA 3.0 |
+| `64_ct_scan_normal_head_ct_no_acute_findings.png` | [CT of a normal brain, coronal 27.png](https://commons.wikimedia.org/wiki/File:CT_of_a_normal_brain,_coronal_27.png) | Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D.Consent note: Wri | CC0 |
+| `65_ct_scan_normal_head_ct_no_acute_findings.png` | [CT of a normal brain, sagittal 16.png](https://commons.wikimedia.org/wiki/File:CT_of_a_normal_brain,_sagittal_16.png) | Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D.Consent note: Wri | CC0 |
+| `66_mri_brain_scan_vascular_malformation.png` | [001 Arteriovenous Malformation MRT T1KM axial.png](https://commons.wikimedia.org/wiki/File:001_Arteriovenous_Malformation_MRT_T1KM_axial.png) | Hellerhoff | CC BY-SA 3.0 |
+| `67_mri_brain_scan_vascular_malformation.png` | [001 Arteriovenous Malformation MRT HAEM axial.png](https://commons.wikimedia.org/wiki/File:001_Arteriovenous_Malformation_MRT_HAEM_axial.png) | Hellerhoff | CC BY-SA 3.0 |
+| `68_mri_brain_scan_vascular_malformation.png` | [001 Arteriovenous Malformation MRT T1KM coronar.png](https://commons.wikimedia.org/wiki/File:001_Arteriovenous_Malformation_MRT_T1KM_coronar.png) | Hellerhoff | CC BY-SA 3.0 |
+| `69_mri_brain_scan_chronic_infarct.jpg` | [Lacunar stroke MRI.jpg](https://commons.wikimedia.org/wiki/File:Lacunar_stroke_MRI.jpg) | Ptrump16 | CC BY-SA 4.0 |
+| `70_mri_brain_scan_edema.jpg` | [Posterior reversible encephalopathy syndrome MRI.jpg](https://commons.wikimedia.org/wiki/File:Posterior_reversible_encephalopathy_syndrome_MRI.jpg) | Rashmi Chawla, Daniel Smith and Paul E Marik | CC BY 3.0 |
+| `71_mri_brain_scan_white_matter_hyperintensity.jpg` | [Leucoaraiose.jpg](https://commons.wikimedia.org/wiki/File:Leucoaraiose.jpg) | Yakafaucon | CC BY-SA 3.0 |
+| `72_mri_brain_scan_normal_brain_mri_no_acute_findings.png` | [Brain-T2-axial.png](https://commons.wikimedia.org/wiki/File:Brain-T2-axial.png) | Sean Novak | CC BY-SA 4.0 |
+| `73_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg` | [Normal axial T2-weighted MR image of the brain.jpg](https://commons.wikimedia.org/wiki/File:Normal_axial_T2-weighted_MR_image_of_the_brain.jpg) | Novaksean | CC BY-SA 4.0 |
 
 The six images from `data/images/real/` are credited in that folder's `ATTRIBUTION.md`.

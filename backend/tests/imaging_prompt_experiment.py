@@ -309,7 +309,7 @@ def decide_modality(base: dict, cand: dict, pair: dict, chosen: str, baseline: s
 
 
 def _setup():
-    manifest = load_manifest()
+    manifest = load_manifest(only="original")  # the extension set is never used for tuning
     split = load_split(manifest)
     model, preprocess, tokenizer = _get_model_bundle()
     feats = {e["file"]: image_features(model, preprocess, e["file"]) for e in manifest}

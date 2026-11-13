@@ -87,8 +87,13 @@ def _prop(k: int, n: int) -> dict:
 # --------------------------------------------------------------------------
 
 
-def load_manifest(path: Path = MANIFEST) -> list[dict]:
-    return json.loads(Path(path).read_text(encoding="utf-8"))["images"]
+def load_manifest(path: Path = MANIFEST, only: str | None = None) -> list[dict]:
+    """`only` = "original" (the first 62 images) or "extension" (added later, never used for tuning);
+    None = all. The prompt experiment is frozen on "original"."""
+    images = json.loads(Path(path).read_text(encoding="utf-8"))["images"]
+    if only is None:
+        return images
+    return [e for e in images if e.get("set", "original") == only]
 
 
 def validate_manifest(entries: list[dict]) -> list[str]:
@@ -146,6 +151,7 @@ def score_entry(entry: dict, rank_fn=rank_image) -> dict:
         "file": entry["file"], "modality": entry["modality"], "accepted": accepted, "group": entry["group"],
         "possible_pretraining_overlap": bool(entry.get("possible_pretraining_overlap")),
         "has_annotation": bool(entry.get("has_annotation")),
+        "set": entry.get("set", "original"),
         "detected_modality": det_modality, "modality_ok": det_ok,
         "modality_scores": [[lab, round(s, 4)] for lab, s in (detected["modality_scores"] or [])[:3]],
         "top1": ranked[0], "top1_score": round(scores[ranked[0]], 4), "top3": ranked[:3],
@@ -219,6 +225,11 @@ def run(manifest: list[dict], rank_fn=rank_image, progress=None, split: dict | N
         "excluding annotated films": summarise([r for r in rows if not r["has_annotation"]]),
         "excluding both": summarise([r for r in rows if not r["possible_pretraining_overlap"] and not r["has_annotation"]]),
     }
+    for part, note in (("original", "ORIGINAL 62 images (the set the prompts were tuned on)"),
+                       ("extension", "EXTENSION set (added after the prompt choice, never used for tuning)")):
+        sub = [r for r in rows if r["set"] == part]
+        if sub and len(sub) < len(rows):
+            result["subsets"][note] = summarise(sub)
     if split:
         for half, note in (("test", "TEST half: held out from the prompt choice"), ("dev", "DEV half: used to choose the prompt (optimistic)")):
             sub = [r for r in rows if split.get(r["group"]) == half]
@@ -321,6 +332,7 @@ def render_md(result: dict, manifest_built: str = "") -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, help="score only the first N images (smoke run; writes nothing)")
+    ap.add_argument("--tag", help="write results_<tag>.json only (for a comparison run, e.g. IMAGING_FINDING_PROMPTS=label); RESULTS.md and results.json are left alone")
     args = ap.parse_args()
 
     raw = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -341,7 +353,12 @@ def main() -> int:
     result = run(manifest, progress=progress, split=split)
     md = render_md(result, raw.get("_provenance", {}).get("built", ""))
     print("\n" + md)
-    if not args.limit:
+    if not args.limit and args.tag:
+        out = BENCH_DIR / f"results_{args.tag}.json"
+        out.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"
+wrote {out}")
+    elif not args.limit:
         RESULTS_JSON.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
         RESULTS_MD.write_text(md, encoding="utf-8")
         print(f"\nwrote {RESULTS_MD} and {RESULTS_JSON}")

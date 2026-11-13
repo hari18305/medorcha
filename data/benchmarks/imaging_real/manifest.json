@@ -1133,6 +1133,368 @@
       "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service"
     },
     {
+      "file": "data/benchmarks/imaging_real/images/57_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest x-ray plain film normal.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest x-ray plain film normal.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest_x-ray_plain_film_normal.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Ptrump16",
+      "description": "Plain film chest x-ray, normal. Acquired digitally.",
+      "original_size": [
+        1753,
+        1885
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/58_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Chest X-ray.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Chest X-ray.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Chest_X-ray.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Ptrump16",
+      "description": "Standard posteroanterior (PA) erect view chest x-ray demonstrating normal anatomy. Device: Philips DigitalDiagnost Optimus",
+      "original_size": [
+        4113,
+        4613
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/59_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Normal PA chest x-ray (5414485536).jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Normal PA chest x-ray (5414485536).jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Normal_PA_chest_x-ray_(5414485536).jpg",
+      "license": "CC BY-SA 2.0",
+      "artist": "Yale Rosen from USA",
+      "description": "Normal PA chest x-ray",
+      "original_size": [
+        2499,
+        1874
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/60_chest_x_ray_normal_chest_x_ray_no_acute_findings.jpg",
+      "modality": "chest X-ray",
+      "labels": [
+        "normal chest X-ray, no acute findings"
+      ],
+      "group": "Normal posteroanterior (PA) chest radiograph (X-ray).jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Normal posteroanterior (PA) chest radiograph (X-ray).jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Normal_posteroanterior_(PA)_chest_radiograph_(X-ray).jpg",
+      "license": "CC0",
+      "artist": "Mikael Häggström",
+      "description": "Posteroanterior chest radiograph (\"X-ray\") taken of a 21 year old woman who presented with pain on the left side of her thorax after colliding with another player during a soccer game. It shows a normal chest without any signs of injury. Dx and Sin stand for \"right\" and \"left\" respectively.",
+      "original_size": [
+        1929,
+        2207
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/61_ct_scan_midline_shift.png",
+      "modality": "CT scan",
+      "labels": [
+        "midline shift",
+        "acute infarct"
+      ],
+      "group": "LeftsidedstrokeNo.png",
+      "source": "wikimedia_commons",
+      "commons_title": "LeftsidedstrokeNo.png",
+      "page": "https://commons.wikimedia.org/wiki/File:LeftsidedstrokeNo.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "James Heilman, MD",
+      "description": "Left sided stroke with midline shift due to edema",
+      "original_size": [
+        667,
+        792
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/62_ct_scan_midline_shift.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "midline shift",
+        "hemorrhage"
+      ],
+      "group": "Subfalcine-herniation-001.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Subfalcine-herniation-001.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Subfalcine-herniation-001.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "RadsWiki",
+      "description": "subfalcine herniation, CT",
+      "original_size": [
+        476,
+        469
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/63_ct_scan_acute_infarct.jpg",
+      "modality": "CT scan",
+      "labels": [
+        "acute infarct",
+        "hypodense lesion"
+      ],
+      "group": "INFARCT.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "INFARCT.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:INFARCT.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Lucien Monfils",
+      "description": "CT-scan of the brain with a RIGHT MCA infarct.",
+      "original_size": [
+        327,
+        409
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/64_ct_scan_normal_head_ct_no_acute_findings.png",
+      "modality": "CT scan",
+      "labels": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "source": "wikimedia_commons",
+      "commons_title": "CT of a normal brain, coronal 27.png",
+      "page": "https://commons.wikimedia.org/wiki/File:CT_of_a_normal_brain,_coronal_27.png",
+      "license": "CC0",
+      "artist": "Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D.Consent note: Wri",
+      "description": "edit Computed tomography of the head, without intravenous contrast, here presented in the coronal plane with 4 mm slice thickness. It shows normal anatomy, with no injuries. The subject is an 18 year old male who had blunt trauma to the head after a 25 m long jump during motocross.",
+      "original_size": [
+        640,
+        426
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/65_ct_scan_normal_head_ct_no_acute_findings.png",
+      "modality": "CT scan",
+      "labels": [
+        "normal head CT, no acute findings"
+      ],
+      "group": "uppsala_normal_ct",
+      "source": "wikimedia_commons",
+      "commons_title": "CT of a normal brain, sagittal 16.png",
+      "page": "https://commons.wikimedia.org/wiki/File:CT_of_a_normal_brain,_sagittal_16.png",
+      "license": "CC0",
+      "artist": "Mikael Häggström, M.D. Author info - Reusing images- Conflicts of interest: None Mikael Häggström, M.D.Consent note: Wri",
+      "description": "edit Computed tomography of the head, without intravenous contrast, here presented in the sagittal plane with 4 mm slice thickness. It shows normal anatomy, with no injuries. The subject is an 18 year old male who had blunt trauma to the head after a 25 m long jump during motocross.",
+      "original_size": [
+        770,
+        430
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/66_mri_brain_scan_vascular_malformation.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "vascular malformation"
+      ],
+      "group": "avm_001_mri",
+      "source": "wikimedia_commons",
+      "commons_title": "001 Arteriovenous Malformation MRT T1KM axial.png",
+      "page": "https://commons.wikimedia.org/wiki/File:001_Arteriovenous_Malformation_MRT_T1KM_axial.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Arteriovenous malformation of the brain on MRI T1 KM axial",
+      "original_size": [
+        824,
+        1072
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/67_mri_brain_scan_vascular_malformation.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "vascular malformation"
+      ],
+      "group": "avm_001_mri",
+      "source": "wikimedia_commons",
+      "commons_title": "001 Arteriovenous Malformation MRT HAEM axial.png",
+      "page": "https://commons.wikimedia.org/wiki/File:001_Arteriovenous_Malformation_MRT_HAEM_axial.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Arteriovenous malformation of the brain on MRI HAEM axial",
+      "original_size": [
+        820,
+        1090
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/68_mri_brain_scan_vascular_malformation.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "vascular malformation"
+      ],
+      "group": "avm_001_mri",
+      "source": "wikimedia_commons",
+      "commons_title": "001 Arteriovenous Malformation MRT T1KM coronar.png",
+      "page": "https://commons.wikimedia.org/wiki/File:001_Arteriovenous_Malformation_MRT_T1KM_coronar.png",
+      "license": "CC BY-SA 3.0",
+      "artist": "Hellerhoff",
+      "description": "Arteriovenous malformation of the brain in MRI T1 KM coronal",
+      "original_size": [
+        820,
+        932
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/69_mri_brain_scan_chronic_infarct.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "chronic infarct"
+      ],
+      "group": "Lacunar stroke MRI.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Lacunar stroke MRI.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Lacunar_stroke_MRI.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Ptrump16",
+      "description": "MRI image showing a chronic infarct in the left Corona radiata (perforator occlusion infarct). Device: Siemens MAGNETOM Aera 1.5T",
+      "original_size": [
+        628,
+        688
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/70_mri_brain_scan_edema.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "edema"
+      ],
+      "group": "Posterior reversible encephalopathy syndrome MRI.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Posterior reversible encephalopathy syndrome MRI.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Posterior_reversible_encephalopathy_syndrome_MRI.jpg",
+      "license": "CC BY 3.0",
+      "artist": "Rashmi Chawla, Daniel Smith and Paul E Marik",
+      "description": "Magnetic resonance image showing multiple cortico-subcortical areas of hyperintense signal involving the occipital and parietal lobes bilaterally and pons in a patient with posterior reversible encephalopathy syndrome",
+      "original_size": [
+        600,
+        725
+      ],
+      "possible_pretraining_overlap": true,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/71_mri_brain_scan_white_matter_hyperintensity.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "white matter hyperintensity"
+      ],
+      "group": "Leucoaraiose.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Leucoaraiose.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Leucoaraiose.jpg",
+      "license": "CC BY-SA 3.0",
+      "artist": "Yakafaucon",
+      "description": "leukoaraiosis : Magnetic resonance imaging (T2-FLAIR) : lacunar infarcts, Multi-infarct dementia (Leukoaraiosis)",
+      "original_size": [
+        455,
+        386
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/72_mri_brain_scan_normal_brain_mri_no_acute_findings.png",
+      "modality": "MRI brain scan",
+      "labels": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "Brain-T2-axial.png",
+      "source": "wikimedia_commons",
+      "commons_title": "Brain-T2-axial.png",
+      "page": "https://commons.wikimedia.org/wiki/File:Brain-T2-axial.png",
+      "license": "CC BY-SA 4.0",
+      "artist": "Sean Novak",
+      "description": "Normal axial T2-weighted MR image of the brain.",
+      "original_size": [
+        724,
+        851
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
+      "file": "data/benchmarks/imaging_real/images/73_mri_brain_scan_normal_brain_mri_no_acute_findings.jpg",
+      "modality": "MRI brain scan",
+      "labels": [
+        "normal brain MRI, no acute findings",
+        "no significant abnormality"
+      ],
+      "group": "Normal axial T2-weighted MR image of the brain.jpg",
+      "source": "wikimedia_commons",
+      "commons_title": "Normal axial T2-weighted MR image of the brain.jpg",
+      "page": "https://commons.wikimedia.org/wiki/File:Normal_axial_T2-weighted_MR_image_of_the_brain.jpg",
+      "license": "CC BY-SA 4.0",
+      "artist": "Novaksean",
+      "description": "This axial T2-weighted MR image shows a normal brain at the level of the lateral ventricles.",
+      "original_size": [
+        359,
+        449
+      ],
+      "possible_pretraining_overlap": false,
+      "changes": "downscaled to <= 768px wide by Wikimedia's thumbnail service",
+      "set": "extension"
+    },
+    {
       "file": "data/images/real/real_chest_xray_normal_pa.jpg",
       "modality": "chest X-ray",
       "labels": [

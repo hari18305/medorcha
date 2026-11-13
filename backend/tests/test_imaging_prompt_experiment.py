@@ -12,7 +12,7 @@ from backend.tests.imaging_benchmark import load_manifest
 
 @pytest.fixture(scope="module")
 def manifest():
-    return load_manifest()
+    return load_manifest(only="original")
 
 
 # --------------------------------------------------------------------------
