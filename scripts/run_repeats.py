@@ -2,6 +2,9 @@
 
     python -m scripts.run_repeats [--rounds 3] [--arms off on] [--root eval_run/repeats]
 
+The cross-check can only change a case that has an image, so the "on" arm runs ONLY the image cases (the "off"
+arm runs all 31): the comparison is made on those cases, the rest are untouched code paths.
+
 Per (round, arm) it: copies the isolated store (KB = 67 passages, case memory empty) and a fresh SQLite file, so no
 run sees another's saved cases; starts the real backend on them; posts all 31 cases (scripts/run_cases_live.py, one
 retry for any case that failed); stops the backend; judges the 31 reports (backend/tests/run_llm_judge.py). Arms differ
@@ -21,8 +24,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STORE = ROOT / "eval_run" / "qdrant_live4"
-PORT = 8000
+PORT = 8000  # overridden by --port so several rounds can run side by side
+RPM_BUDGET = None  # overridden by --rpm-budget
 N_CASES = 31
+
+
+def case_stems(images_only: bool) -> list[str]:
+    files = sorted((ROOT / "data/test_cases").glob("CASE*.json")) + sorted((ROOT / "data/test_cases/real").glob("REAL*.json"))
+    return [f.stem for f in files if not images_only or json.loads(f.read_text(encoding="utf-8")).get("image_path")]
 
 
 def wait_health(proc: subprocess.Popen, timeout: int = 240) -> None:
@@ -39,23 +48,21 @@ def wait_health(proc: subprocess.Popen, timeout: int = 240) -> None:
     raise RuntimeError("backend did not become healthy")
 
 
-def run_cases(out: Path, env: dict) -> int:
-    cmd = [sys.executable, "scripts/run_cases_live.py", str(out)]
-    subprocess.run(cmd, cwd=ROOT, env=env)
-    missing = N_CASES - len(list(out.glob("*.json")))
-    if missing:  # one retry of whatever failed
-        have = {p.stem for p in out.glob("*.json")}
-        cases = sorted((ROOT / "data/test_cases").glob("CASE*.json")) + sorted((ROOT / "data/test_cases/real").glob("REAL*.json"))
-        todo = [c.stem for c in cases if c.stem not in have]
+def run_cases(out: Path, env: dict, stems: list[str]) -> int:
+    cmd = [sys.executable, "-u", "scripts/run_cases_live.py", str(out), "--url", f"http://127.0.0.1:{PORT}"]
+    subprocess.run(cmd + ["--only", *stems], cwd=ROOT, env=env)
+    todo = [c for c in stems if not (out / f"{c}.json").exists()]
+    if todo:  # one retry of whatever failed
         print(f"retrying {len(todo)} case(s): {todo}", flush=True)
         subprocess.run(cmd + ["--only", *todo], cwd=ROOT, env=env)
-    return N_CASES - len(list(out.glob("*.json")))
+    return len([c for c in stems if not (out / f"{c}.json").exists()])
 
 
 def one_run(name: str, cross_check: str, root: Path) -> None:
     run_dir = root / name
     reports = run_dir / "reports"
-    if len(list(reports.glob("*.json"))) == N_CASES and (run_dir / "judge.json").exists():
+    stems = case_stems(images_only=(cross_check == "on"))
+    if len(list(reports.glob("*.json"))) == len(stems) and (run_dir / "judge.json").exists():
         print(f"[{name}] already complete, skipping", flush=True)
         return
     if run_dir.exists():
@@ -69,9 +76,10 @@ def one_run(name: str, cross_check: str, root: Path) -> None:
         "IMAGING_CROSS_CHECK": cross_check,
         "IMAGING_FINDING_PROMPTS": "label",
         "PYTHONFAULTHANDLER": "1",
+        **({"GEMINI_RPM_BUDGET": str(RPM_BUDGET)} if RPM_BUDGET else {}),
     }
     t0 = time.time()
-    print(f"[{name}] starting backend (cross-check {cross_check})", flush=True)
+    print(f"[{name}] starting backend (cross-check {cross_check}, {len(stems)} cases)", flush=True)
     with (run_dir / "server.log").open("w") as log:
         server = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "backend.main:app", "--port", str(PORT)],
@@ -79,7 +87,7 @@ def one_run(name: str, cross_check: str, root: Path) -> None:
         )
         try:
             wait_health(server)
-            failed = run_cases(reports, env)
+            failed = run_cases(reports, env, stems)
             print(f"[{name}] cases done in {(time.time() - t0) / 60:.1f} min, {failed} missing", flush=True)
         finally:
             server.terminate()
@@ -102,9 +110,14 @@ def main() -> None:
     ap.add_argument("--rounds", type=int, default=3)
     ap.add_argument("--arms", nargs="+", default=["off", "on"], choices=["off", "on"])
     ap.add_argument("--root", type=Path, default=ROOT / "eval_run" / "repeats")
+    ap.add_argument("--only-round", type=int, help="run just this round (start one process per round to run them in parallel)")
+    ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--rpm-budget", type=int, help="per-process Gemini request budget (default: the .env value, 12)")
     args = ap.parse_args()
+    global PORT, RPM_BUDGET
+    PORT, RPM_BUDGET = args.port, args.rpm_budget
     args.root.mkdir(parents=True, exist_ok=True)
-    for r in range(1, args.rounds + 1):
+    for r in ([args.only_round] if args.only_round else range(1, args.rounds + 1)):
         for arm in args.arms:
             one_run(f"{arm}{r}", arm, args.root)
     print("ALL DONE", flush=True)
