@@ -27,6 +27,11 @@ import os
 import pytest
 
 os.environ["LLM_PROVIDER"] = "anthropic"
+# Same reason for the two imaging switches a demo profile sets in .env: the caption tests assume the
+# default captions, and with the cross-check on every analyze_image() would make a real LLM call.
+# Tests that exercise either setting turn it on with monkeypatch.setenv.
+os.environ["IMAGING_FINDING_PROMPTS"] = "showing"
+os.environ["IMAGING_CROSS_CHECK"] = "off"
 
 
 @pytest.fixture(autouse=True)
