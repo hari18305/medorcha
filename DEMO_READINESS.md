@@ -1117,3 +1117,25 @@ live steps with real timings (extraction 2.6 s, retrieval 12 s, live evidence 1.
 ending on the Review screen at 62% with chronic subdural hematoma first (model-stated 90%), supporting passages cited, and the
 "clinician review required" notice. Two cases, watched by the developer; not a usability study. The review submission itself was not
 repeated here (it is covered by the browser end-to-end tests).
+
+---
+
+## Demo CT wording: decision taken (2026-11-14) - use the bare labels for the demonstration
+
+**Evidence.** All seven real demo images, read both ways (no LLM involved): with the descriptive captions (`showing`) the two normal head-CT
+slices of REAL001 and REAL003 are called "sinus abnormality" (0.72, 0.89) and the REAL001 differential lists sinusitis; with the bare labels
+(`label`) all three real CTs read as normal (0.99 to 1.0) and the MRI, normal chest film and both pneumothorax films read the same or better
+(chest X-ray normal 0.55 as "normal chest X-ray", pneumothorax 0.68). Beyond the demo images, the later fresh-image sets did not favour the captions
+overall (15/26 vs 14/26 top-1) and again cost specificity (7/12 vs 10/12), while the raw image the fusion step also sees is read with sensitivity 66/67,
+so the zero-shot labels are not the only safety net for missed abnormalities, whereas a false "abnormal" label does steer retrieval and the
+differential. For a demonstration that must not show a normal scan as abnormal, the bare labels are the better choice.
+
+**What was changed.** The demonstration profile sets `IMAGING_FINDING_PROMPTS=label`: appended to the local `.env`, and documented in `.env.example` and the
+README. **The code default stays `showing`** on purpose: the adoption of the captions was a pre-registered decision, the whole evaluation and the report
+describe the captions as the default, and flipping a scientific default because of seven demo images would not be defensible; the team can decide that
+after clinician input. (Anyone running the demo must have `IMAGING_FINDING_PROMPTS=label` in their own `.env`.)
+
+**Live check with the demo profile** (real backend and Gemini, isolated store, no crash): REAL001 imaging "normal head CT, no acute findings" (1.0), sinusitis
+gone from the differential, 0.67 and no review (was 0.58, review); REAL002 normal CT, image-only, 0.50 with review as the gate requires; REAL003 normal CT
+read 1.0, 0.79; REAL005 normal chest film read "normal chest X-ray" and, with the extractor fix, the top diagnosis is now rib contusion / chest-wall
+musculoskeletal pain (the key's answer) at 0.62 with review; REAL006 pneumothorax first at 0.72. Differentials vary a little from run to run (see the repeat run).
