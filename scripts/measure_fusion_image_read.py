@@ -30,28 +30,8 @@ from backend.services.llm_client import call_multimodal, throttle_llm_call_sync 
 from backend.tests.imaging_benchmark import NORMAL_LABELS, load_manifest, wilson  # noqa: E402
 from backend.tests.imaging_prompt_experiment import mcnemar_exact  # noqa: E402
 
-SYSTEM = ("You are a careful radiology image reader helping to evaluate an AI system. Look only at the image. "
-          "Reply with one JSON object and nothing else.")
-
-
-def build_prompt(modality: str) -> str:
-    labels = FINDING_LABELS_BY_MODALITY[modality]
-    return (
-        f"This image is a {modality}. From this closed list choose the SINGLE label that best describes the main finding "
-        f"(use a 'normal' label only if you see nothing abnormal):\n- " + "\n- ".join(labels) +
-        '\nReply as {"label": "<exactly one label from the list>", "confidence": <0 to 1>}.'
-    )
-
-
-def parse(text: str, modality: str) -> str | None:
-    m = re.search(r"\{.*\}", text or "", re.S)
-    if not m:
-        return None
-    try:
-        label = json.loads(m.group(0)).get("label")
-    except json.JSONDecodeError:
-        return None
-    return label if label in FINDING_LABELS_BY_MODALITY[modality] else None
+# The prompt, system message and parser are shared with the production cross-check, so this measures exactly it.
+from backend.agents.image_crosscheck import SYSTEM, build_prompt, parse  # noqa: E402
 
 
 async def main() -> int:

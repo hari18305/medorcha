@@ -327,3 +327,13 @@ def test_an_inconclusive_image_read_does_not_enter_the_query():
     assert "headache" in query and "hypertension" in query
     assert "imaging findings" not in query
     assert "edema" not in query
+
+
+def test_a_contested_image_read_does_not_enter_the_query():
+    contested = ImagingFindings(modality="MRI brain scan", findings=["cerebral atrophy"], confidence=0.65,
+                                contested=True, cross_check_label="normal brain MRI, no acute findings")
+
+    query = _build_query(CASE001_FINDINGS, contested)
+
+    assert "headache" in query and "hypertension" in query
+    assert "imaging findings" not in query and "atrophy" not in query

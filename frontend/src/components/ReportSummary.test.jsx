@@ -188,6 +188,17 @@ describe("ReportSummary: imaging", () => {
     expect(screen.getByText("Inconclusive")).toBeInTheDocument(); // the run-summary line
   });
 
+  it("shows a read the second image check contradicted as contested, not as a finding", () => {
+    renderReport({ imaging: { modality: "CT scan", findings: ["sinus abnormality"], confidence: 0.89, contested: true, cross_check_label: "normal head CT, no acute findings" } }, { imageSubmitted: true });
+    const section = document.querySelector('[data-imaging-state="contested"]');
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent("Contested read");
+    expect(section).toHaveTextContent("normal head CT, no acute findings");
+    expect(section).toHaveTextContent("Neither was used in the evidence search");
+    expect(document.querySelector('[data-imaging-state="assessed"]')).toBeNull();
+    expect(screen.getByText("Contested")).toBeInTheDocument(); // the run-summary line
+  });
+
   it("explains an image that produced no findings", () => {
     renderReport({ imaging: null }, { imageSubmitted: true });
     expect(screen.getByText(/no imaging findings were recorded/)).toBeInTheDocument();

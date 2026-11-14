@@ -88,6 +88,14 @@ FINDING_LABELS_BY_MODALITY: dict[str, list[str]] = {
 # accurate if this list grows.
 SUPPORTED_FINDING_MODALITIES = list(FINDING_LABELS_BY_MODALITY.keys())
 
+# Labels that all say "nothing abnormal"; two reads that land on different ones still agree.
+NORMAL_FINDING_LABELS = {
+    "normal chest X-ray, no acute findings",
+    "normal head CT, no acute findings",
+    "normal brain MRI, no acute findings",
+    "no significant abnormality",
+}
+
 
 # --------------------------------------------------------------------------
 # Finding PROMPTS (what is actually embedded as text) vs. finding LABELS (what is returned)

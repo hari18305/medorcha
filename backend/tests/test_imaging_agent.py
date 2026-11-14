@@ -490,3 +490,99 @@ def test_the_threshold_is_overridable_by_environment(monkeypatch):
     assert imaging_agent._indecisive_threshold_from_env() == 0.7
     monkeypatch.setenv("IMAGING_MIN_TOP_SCORE", "not a number")
     assert imaging_agent._indecisive_threshold_from_env() == 0.40
+
+
+# --------------------------------------------------------------------------
+# Cross-check against the multimodal LLM's own reading (IMAGING_CROSS_CHECK=on)
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def cross_check_on(monkeypatch):
+    monkeypatch.setenv("IMAGING_CROSS_CHECK", "on")
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setattr(imaging_agent.image_crosscheck, "throttle_llm_call_sync", lambda: None)
+
+
+def _llm_says(monkeypatch, text, calls=None):
+    async def fake(prompt, image_path, provider=None, role="deep", system=None):
+        if calls is not None:
+            calls.append((prompt, image_path))
+        if isinstance(text, Exception):
+            raise text
+        return text
+
+    monkeypatch.setattr(imaging_agent.image_crosscheck, "call_multimodal", fake)
+
+
+async def test_the_cross_check_is_off_by_default(dominant_finding_bundle, monkeypatch):
+    calls = []
+    _llm_says(monkeypatch, '{"label": "mass lesion"}', calls)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert calls == [] and result.contested is False and result.cross_check_label is None
+    assert result.drives_retrieval is True
+
+
+async def test_a_disagreeing_second_reading_contests_a_confident_read(dominant_finding_bundle, cross_check_on, monkeypatch):
+    top = (await analyze_image(str(DEMO_IMAGE_1))).findings[0]
+    other = next(l for l in BRAIN_FINDING_LABELS if l != top and l not in imaging_agent.image_crosscheck.NORMAL_FINDING_LABELS)
+    calls = []
+    _llm_says(monkeypatch, '{"label": "%s", "confidence": 0.9}' % other, calls)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert len(calls) == 1 and calls[0][1] == str(DEMO_IMAGE_1) and "MRI brain scan" in calls[0][0]
+    assert result.confidence > 0.9 and result.inconclusive is False  # a confident zero-shot read ...
+    assert result.contested is True and result.cross_check_label == other
+    assert result.drives_retrieval is False  # ... that no longer steers retrieval or the differential
+    assert result.findings  # still kept for display
+
+
+async def test_an_agreeing_second_reading_leaves_the_read_alone(dominant_finding_bundle, cross_check_on, monkeypatch):
+    top = (await analyze_image(str(DEMO_IMAGE_1))).findings[0]
+    _llm_says(monkeypatch, '{"label": "%s"}' % top)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.contested is False and result.cross_check_label == top
+    assert result.drives_retrieval is True
+
+
+@pytest.mark.parametrize("failure", [RuntimeError("quota exhausted"), "not json at all", '{"label": "made-up label"}'])
+async def test_the_cross_check_fails_open(dominant_finding_bundle, cross_check_on, monkeypatch, failure):
+    _llm_says(monkeypatch, failure)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert result.contested is False and result.cross_check_label is None
+    assert result.drives_retrieval is True
+
+
+async def test_a_provider_without_vision_is_never_asked(dominant_finding_bundle, cross_check_on, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "mistral")
+    calls = []
+    _llm_says(monkeypatch, '{"label": "mass lesion"}', calls)
+
+    result = await analyze_image(str(DEMO_IMAGE_1))
+
+    assert calls == [] and result.contested is False  # a text-only fallback would be guessing, not reading
+
+
+async def test_an_inconclusive_or_unsupported_read_is_not_cross_checked(cross_check_on, dominant_finding_bundle, monkeypatch):
+    calls = []
+    _llm_says(monkeypatch, '{"label": "mass lesion"}', calls)
+
+    result = await analyze_image(str(DEMO_IMAGE_1), modality_hint="unspecified medical image")
+
+    assert result.unsupported_modality is True and calls == [] and result.contested is False
+
+
+def test_two_different_normal_labels_agree():
+    from backend.agents.image_crosscheck import agrees
+
+    assert agrees("no significant abnormality", ["normal brain MRI, no acute findings"])
+    assert agrees("hemorrhage", ["edema", "hemorrhage"])  # any label the zero-shot read reported
+    assert not agrees("hemorrhage", ["normal brain MRI, no acute findings"])
+    assert not agrees("mass lesion", ["edema"])

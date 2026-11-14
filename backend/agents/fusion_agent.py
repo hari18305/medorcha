@@ -207,6 +207,14 @@ def _format_imaging(imaging: ImagingFindings | None) -> str:
             "decide from the clinical information and the evidence, and treat any look at the image itself "
             "as a sanity check only."
         )
+    if imaging.contested:
+        return (
+            f"Modality: {imaging.modality}\n"
+            "Findings: CONTESTED -- the zero-shot classifier and a second reading of the raw image gave "
+            "different answers. Do not use either label as a finding or let them shape the differential; "
+            "decide from the clinical information and the evidence, and treat any look at the image itself "
+            "as a sanity check only."
+        )
     caution = (
         "Reliability: these are candidate labels from a fast zero-shot classifier over a "
         "small fixed label set -- hypotheses to check against the rest of the evidence, not "

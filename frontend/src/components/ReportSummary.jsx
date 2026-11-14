@@ -319,7 +319,9 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
                     ? "Not assessed"
                     : report.imaging.inconclusive
                       ? "Inconclusive"
-                      : report.imaging.modality
+                      : report.imaging.contested
+                        ? "Contested"
+                        : report.imaging.modality
               }
             />
           </dl>

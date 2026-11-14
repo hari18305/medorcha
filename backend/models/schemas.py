@@ -46,12 +46,22 @@ class ImagingFindings(BaseModel):
     # live: a generated picture whose three labels scored 0.34/0.23/0.22 pulled a headache case
     # toward TIA, vertebrobasilar insufficiency and PRES). Consumers use `drives_retrieval`.
     inconclusive: bool = False
+    # True when the multimodal LLM's own look at the raw image (IMAGING_CROSS_CHECK=on, see
+    # agents/image_crosscheck.py) disagreed with the zero-shot read, so a confident zero-shot label can no
+    # longer steer retrieval or the differential on its own. `cross_check_label` is what the LLM said.
+    contested: bool = False
+    cross_check_label: str | None = None
 
     @property
     def drives_retrieval(self) -> bool:
         """Whether the findings may be used as evidence: there are some, the modality has a findings
-        model, and the read was decisive."""
-        return bool(self.findings) and not self.unsupported_modality and not self.inconclusive
+        model, the read was decisive, and the LLM's own reading of the image did not contradict it."""
+        return (
+            bool(self.findings)
+            and not self.unsupported_modality
+            and not self.inconclusive
+            and not self.contested
+        )
 
 
 class EvidenceItem(BaseModel):

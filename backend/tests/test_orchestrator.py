@@ -722,3 +722,18 @@ def test_the_progress_detail_says_when_the_image_read_was_inconclusive(mock_agen
 
     detail = next(e[3] for e in sink.of("finished") if e[1] == "imaging")
     assert "inconclusive" in detail and "34%" in detail and "not used" in detail
+
+
+def test_the_progress_detail_says_when_the_image_read_was_contested(mock_agents):
+    from backend.models.schemas import ImagingFindings
+
+    mock_agents["analyze_image"].return_value = ImagingFindings(
+        modality="CT scan", findings=["sinus abnormality"], confidence=0.89, contested=True,
+        cross_check_label="normal head CT, no acute findings",
+    )
+    sink = _Sink()
+
+    run_case(CASE_TEXT_AND_IMAGE, progress=sink)
+
+    detail = next(e[3] for e in sink.of("finished") if e[1] == "imaging")
+    assert "contested" in detail and "normal head CT" in detail and "not used" in detail

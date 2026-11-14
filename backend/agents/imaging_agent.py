@@ -23,6 +23,7 @@ import open_clip
 import torch
 from PIL import Image, UnidentifiedImageError
 
+from backend.agents import image_crosscheck
 from backend.agents.imaging_labels import (
     FINDING_LABELS_BY_MODALITY,
     finding_prompt,
@@ -331,10 +332,22 @@ async def analyze_image(image_path: str, modality_hint: str | None = None) -> Im
         None, _run_zero_shot_classification, path, modality_hint
     )
 
+    inconclusive = (not unsupported) and confidence < INDECISIVE_SCORE_THRESHOLD
+
+    # Second opinion for a read that would otherwise steer the case: the multimodal LLM answers the same
+    # closed-set question about the raw image. Disagreement marks the zero-shot read contested (kept out of
+    # retrieval and the differential). Off by default; fails open (see image_crosscheck.py).
+    contested, cross_check_label = False, None
+    if not unsupported and not inconclusive and image_crosscheck.cross_check_enabled():
+        cross_check_label = await image_crosscheck.read_label(str(path), modality)
+        contested = cross_check_label is not None and not image_crosscheck.agrees(cross_check_label, findings)
+
     return ImagingFindings(
         modality=modality,
         findings=findings,
         confidence=confidence,
         unsupported_modality=unsupported,
-        inconclusive=(not unsupported) and confidence < INDECISIVE_SCORE_THRESHOLD,
+        inconclusive=inconclusive,
+        contested=contested,
+        cross_check_label=cross_check_label,
     )

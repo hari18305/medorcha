@@ -487,3 +487,13 @@ def test_format_imaging_inconclusive_tells_the_llm_not_to_use_the_labels():
     assert "0.34" in formatted
     assert "edema" not in formatted and "cerebral atrophy" not in formatted  # the labels never reach the prompt
     assert "Do not use its labels" in formatted
+
+
+def test_format_imaging_contested_tells_the_llm_not_to_use_either_label():
+    contested = ImagingFindings(modality="CT scan", findings=["sinus abnormality"], confidence=0.89,
+                                contested=True, cross_check_label="normal head CT, no acute findings")
+
+    formatted = _format_imaging(contested)
+
+    assert "CONTESTED" in formatted
+    assert "sinus abnormality" not in formatted and "normal head CT" not in formatted  # neither label anchors it
