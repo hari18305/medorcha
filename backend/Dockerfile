@@ -10,6 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
+# torch + torchvision first (they must come from the same index, or torchvision's compiled ops
+# fail against torch), from the CPU-only wheel index: the plain `pip install torch` on Linux pulls the CUDA build
+# plus ~3 GB of nvidia-* libraries, which this container can never use (compose requests no GPU). Once
+# they are installed, requirements.txt's unpinned `torch` (and open_clip's torchvision) are already satisfied.
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

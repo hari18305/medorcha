@@ -1153,3 +1153,29 @@ musculoskeletal pain (the key's answer) at 0.62 with review; REAL006 pneumothora
 **Judge (same family, so a consistency check only).** off1, all 31: diagnosis correct 0.968 (earlier run 0.903), faithfulness 0.41 (0.453), context precision 0.611 (0.616), 1 case with unsupported claims. On the 18 image cases, off1 vs on1: diagnosis 0.944 vs 1.000, faithfulness 0.333 vs 0.299, context precision 0.597 vs 0.639, cases with unsupported claims 1 vs 3. The extra unsupported claims are about clinical wording (CASE001_with_image, CASE016, CASE018), none in a contested case: judge variation, not a cross-check effect. Differences of one case or a few hundredths; nothing here is a significant change.
 
 **What is still not known.** A real spread (three or more runs per arm): this is one more data point beside two earlier runs under a different caption setting. Whether the contested reads were truly wrong (labels are the developer's; the three contested images are two generated pictures and one plain T1 MRI). Tests: the root `conftest.py` now pins `IMAGING_FINDING_PROMPTS=showing` and `IMAGING_CROSS_CHECK=off`, so a demo-profile `.env` no longer breaks three caption tests or triggers real LLM calls.
+
+---
+
+## Container build and rehearsal (2026-11-14, this machine)
+
+**Built and run for real** with Docker Desktop: `docker compose build`, `up -d`, ingest, then 7 demo cases through the container's backend and
+one example case through the browser UI (live steps, then the report: 3-item differential, 5 offline + 16 live evidence items, citations).
+No traceback or quota error in the backend log.
+
+**Problems found and fixed.** (1) The image installed the CUDA build of torch and about 3 GB of `nvidia-*` libraries the container can never use;
+`backend/Dockerfile` now installs `torch` and `torchvision` from the CPU-only index first (torchvision from PyPI against that torch failed at
+start with "operator torchvision::nms does not exist", so both come from the same index): image 3.4 GB to 1.0 GB, build much faster. (2) The
+models (about 2.4 GB) were downloaded into the container's writable layer and lost on every recreate, so a recreated container on an offline machine would
+not start; `docker-compose.yml` now has an `hf_cache` volume, and all three models load with `HF_HUB_OFFLINE=1` from it (checked). (3) The environment:
+Docker Desktop would not start (stale socket files left by an unclean shutdown), and the system drive was 100% full (1.4 GB free), which silently
+froze the engine; 6.7 GB of pip/npm caches were cleared. See the README Docker section for both symptoms.
+
+**Rehearsal results in the container (demonstration profile, cross-check on):** CASE002 text only 0.66 (no review); CASE013 empty input 0.00 with review;
+REAL001 normal head CT read "normal head CT" 1.00, 0.66; REAL006 pneumothorax read correctly, Pneumothorax first, 0.74; the three contested reads
+reproduced (CASE004 generated picture 0.49 "acute infarct" vs "no significant abnormality", CASE022 generated film 0.80 "pneumothorax" vs
+"pulmonary nodule or mass", REAL004 real normal T1 MRI 0.79 "cerebral atrophy" vs "ventricular enlargement", which went to review at 0.64 after 3 optimizer
+rounds). Case memory in the container starts empty (it is a separate Qdrant server), so the stale "Dr. Demo" and "Dr. Lee" entries in the
+local embedded store cannot appear in a Docker demo; they only matter when the demo is run directly with `uvicorn`.
+
+**Not done:** the rehearsal was on THIS machine, not the presenting one; image upload through the browser UI was not driven (the browser pane
+has no file dialog), the same cases went through the API instead; Docker's requirements are unpinned, so a rebuild in future may pull newer packages.

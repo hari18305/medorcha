@@ -27,6 +27,10 @@ services:
       # the local Qdrant store persist across container restarts.
       - ./backend:/app/backend
       - ./data:/app/data
+      # The embedding, reranker and image models (BioBERT, MedCPT, BiomedCLIP; ~1.3 GB) download from Hugging
+      # Face on first use. Without this volume they are lost whenever the container is recreated, and a
+      # machine with no internet at demo time cannot start. The first run on a new machine still needs the net.
+      - hf_cache:/root/.cache/huggingface
     depends_on:
       qdrant:
         condition: service_started
@@ -60,3 +64,4 @@ services:
 
 volumes:
   qdrant_data:
+  hf_cache:
