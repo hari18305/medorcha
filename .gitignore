@@ -57,3 +57,6 @@ eval_run/
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+
+# Live-demo images and case texts (local only)
+demo_assets/
