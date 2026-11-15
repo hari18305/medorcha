@@ -1,61 +1,50 @@
-# Live demo deployment (for judges)
+# Live demo for judges: your laptop + a free tunnel (no Docker, no cost)
 
-Purpose: let a judge open one link, enter a shared password, and try MedOrchestrate themselves.
-It is a demonstration of a research prototype, not a clinical service.
+One program serves the website and the API on one address (`backend/demo_app.py`), behind a shared password and the
+demo limits. A free tunnel then gives that address a public https link. Nothing is installed on a server and nothing is
+rented. The link works only while this laptop is on, awake and online.
 
 ## What protects it
 
 | Risk | Protection |
 |---|---|
-| Strangers using the site | One shared password (HTTP basic auth at the front door) |
-| Someone looping the app and burning the Gemini quota | `DEMO_MAX_PER_IP_HOUR` (default 6 cases per visitor per hour) and `DEMO_MAX_CASES_TOTAL` (default 150 cases for the whole run) |
-| Huge uploads | 8 MB limit with a clear message (backend), 10 MB hard stop (proxy) |
-| Cross-site / open API | The browser only ever talks to one address; the backend, Qdrant and the model cache are not published |
-| Real patient data | The page says it is a demo; tell judges to use only the supplied or made-up cases |
+| Strangers using the link | One shared password (user `judge`); the link alone shows nothing |
+| Someone looping the app and burning the Gemini quota | 6 cases per visitor per hour and 150 cases in total for the run (`DEMO_MAX_PER_IP_HOUR`, `DEMO_MAX_CASES_TOTAL`) |
+| Huge uploads | 8 MB limit with a clear message (`DEMO_MAX_UPLOAD_MB`) |
+| Open API / other ports | Only port 8000 on this laptop is tunnelled; the browser only talks to that one address |
+| Real patient data | Tell judges to use only the supplied or made-up cases |
 
-The limits live in `backend/demo_guard.py` (off unless `DEMO_MODE=on`, so normal use is unchanged) and are covered by
-`backend/tests/test_demo_guard.py`. A refused request returns a plain message the app shows as-is.
-The case counter resets when the backend restarts.
+The limits are in `backend/demo_guard.py` (inactive unless `DEMO_MODE=on`, which `demo_app.py` sets) and the password
+gate is in `backend/demo_app.py`. The case counter resets whenever the server restarts.
 
-## What was tested here, and what was not
+## Before the review day (one dry run)
 
-- Tested: the guard (unit tests, plus against the real backend: 3rd request from one visitor gets the "2 cases per hour"
-  message, an oversized upload gets the 413 message, `/health` stays open); the frontend builds with the API under `/api`
-  and no `localhost:8000` left in the bundle.
-- **Not tested: the Docker/Caddy stack as a whole** (`docker-compose.demo.yml`, `deploy/Caddyfile`). The development
-  laptop's C: drive was too full to build the images safely. Do one full dry run on the machine that will host it
-  (steps below) and open the site from a phone on mobile data before the review day.
+1. Close anything else using port 8000 or the local Qdrant store (a normal backend started with `uvicorn backend.main:app`
+   locks the store; two backends cannot run at once).
+2. Run `scripts\start_demo.bat`. It asks for the password to share, builds the website the first time, and starts the
+   server on `http://localhost:8000`. Leave the window open.
+3. Open `http://localhost:8000`, sign in as `judge`, and run one warm-up case (the first request after a start is the
+   slowest). The laptop must not sleep: Settings > System > Power > Screen and sleep > "When plugged in, put my
+   device to sleep" = Never.
+4. Start a tunnel in a second terminal. Either one works, both are free and need no account:
+   - Already installed on Windows (OpenSSH): `ssh -R 80:localhost:8000 nokey@localhost.run`. It prints an
+     `https://xxxx.lhr.life` link.
+   - Or Cloudflare's `cloudflared tunnel --url http://localhost:8000` (needs a one-time download of `cloudflared.exe`);
+     it prints an `https://xxxx.trycloudflare.com` link.
+5. Open that link from a phone on mobile data, sign in, and run a case. If that works, the judges' experience works.
+   The link changes every time the tunnel restarts, so start it right before sharing and keep the window open.
 
-## Set-up (any machine with Docker and ~8 GB RAM, ~10 GB disk)
+## Presenting from the same machine
 
-1. Normal `.env` as for the local demo (Gemini key, `LLM_PROVIDER`, `IMAGING_CROSS_CHECK=on`).
-2. Make the shared password hash and the settings file:
-   ```bash
-   docker run --rm caddy:2-alpine caddy hash-password --plaintext "choose-a-password"
-   cp deploy/demo.env.example .env.demo
-   ```
-   Paste the hash into `.env.demo` as `DEMO_PASSWORD_HASH=...` with every `$` written as `$$`.
-3. Start it:
-   ```bash
-   docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
-   ```
-4. One-time, after the first start (fills the knowledge base; the first case also downloads about 2.4 GB of models, so run
-   one warm-up case yourself):
-   ```bash
-   docker compose -f docker-compose.demo.yml exec backend python -m backend.rag.ingest
-   ```
-5. Check `http://localhost:8080` asks for the password, then run Case 1 from your demo notes.
+The demo server is the same pipeline as the normal one. You can present from `http://localhost:8000` in your own
+browser (sign in once), so judges and you are on one server. Your own cases count toward the same limits, so for a
+10-minute live demo (3 cases) that is fine, but rehearsing first can use up your own 6 an hour: in that case run
+`set DEMO_MAX_PER_IP_HOUR=20` before `scripts\start_demo.bat`, and set it back to 6 before sharing the link.
 
-## Making it reachable by judges (pick one; each needs an account or a host only you can provide)
+## After the review
 
-- **Your own laptop plus a tunnel (simplest, free).** Install Cloudflare's `cloudflared` and run
-  `cloudflared tunnel --url http://localhost:8080`. It prints an `https://....trycloudflare.com` link that works while
-  the laptop and Docker are running. Nothing to rent, the link changes each time, and it dies if the laptop sleeps.
-- **A small rented VM (steadier).** Any provider with 4 CPU / 8 GB RAM. Point a domain at it, set `SITE_ADDRESS` to that
-  domain in `.env.demo` (Caddy then gets an https certificate by itself), open ports 80 and 443.
-- A free Hugging Face Space is possible but its 16 GB / 2 CPU free tier makes each case slow; not recommended.
-
-Switch it off after the review: `docker compose -f docker-compose.demo.yml down`. Rotate the Gemini key afterwards.
+Close the tunnel window and the server window (the link dies immediately), and rotate the Gemini key if you want to be
+safe.
 
 ## Text to give the judges
 
@@ -64,3 +53,11 @@ Switch it off after the review: `docker compose -f docker-compose.demo.yml down`
 > 30 to 60 seconds. The report shows the diagnoses, the evidence, the confidence and whether it was flagged for doctor
 > review. This is a research prototype: please do not enter real patient information. Each visitor can run 6 cases an
 > hour.
+
+## What was tested
+
+Guard unit tests (including the `/api` mount); the real server: no password and a wrong password get 401, the right one
+gets the site and API, the 3rd request in an hour from one visitor is refused with a clear message, and a case submitted
+through `/api` returned its status and report. Not tested: the tunnels themselves (starting one publishes the laptop,
+which is your call), and a full clean case through the combined server (my test run collided with a normal backend that
+was already holding the Qdrant store, which is why step 1 exists).

@@ -86,7 +86,11 @@ class DemoGuard:
             return {"cases_used": self._total, "cases_cap": self.max_total}
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"].rstrip("/") != "/diagnose":
+        path = scope.get("path", "")
+        root = scope.get("root_path", "")  # when mounted under /api the full path still starts with it
+        if root and path.startswith(root):
+            path = path[len(root):]
+        if scope["type"] != "http" or scope["method"] != "POST" or path.rstrip("/") != "/diagnose":
             await self.app(scope, receive, send)
             return
         headers = {k.lower(): v for k, v in scope.get("headers", [])}

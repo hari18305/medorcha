@@ -98,3 +98,21 @@ def test_window_expires(monkeypatch):
     assert client.post("/diagnose").status_code == 429
     now[0] = 3601.0
     assert client.post("/diagnose").status_code == 200
+
+
+def test_limits_still_apply_when_the_api_is_mounted_under_api(monkeypatch):
+    """backend.demo_app serves the API under /api; the guard must recognise /api/diagnose."""
+    monkeypatch.setenv("DEMO_MAX_PER_IP_HOUR", "1")
+    monkeypatch.setenv("DEMO_MAX_CASES_TOTAL", "100")
+    inner = FastAPI()
+
+    @inner.post("/diagnose")
+    def diagnose():
+        return {"ok": True}
+
+    inner.add_middleware(DemoGuard)
+    outer = FastAPI()
+    outer.mount("/api", inner)
+    client = TestClient(outer)
+    assert client.post("/api/diagnose").status_code == 200
+    assert client.post("/api/diagnose").status_code == 429
