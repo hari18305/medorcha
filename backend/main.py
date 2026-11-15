@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.routes import router
+from backend.demo_guard import DemoGuard, demo_mode_enabled
 
 app = FastAPI(title="MedOrchestrate")
 
@@ -18,6 +19,11 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+# Public-demo protections (rate limit, total case cap, upload size). Off unless DEMO_MODE=on; see backend/demo_guard.py.
+# Added last so it is the outermost layer: refused requests never reach the pipeline.
+if demo_mode_enabled():
+    app.add_middleware(DemoGuard)
 
 
 @app.get("/health")

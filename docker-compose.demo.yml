@@ -1,0 +1,56 @@
+# Public demo stack: ONE address (Caddy) -> password -> site + /api -> backend. Nothing else is published.
+#   1. cp deploy/demo.env.example .env.demo   and fill in the values
+#   2. docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
+# See DEPLOY_DEMO.md for hosting options and the judge instructions.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    # Production command: no --reload, no bind mounts, one worker (the models live in one process).
+    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file:
+      - .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      DEMO_MODE: "on"
+      DEMO_TRUST_PROXY: "on"
+      DEMO_MAX_PER_IP_HOUR: ${DEMO_MAX_PER_IP_HOUR:-6}
+      DEMO_MAX_CASES_TOTAL: ${DEMO_MAX_CASES_TOTAL:-150}
+      DEMO_MAX_UPLOAD_MB: ${DEMO_MAX_UPLOAD_MB:-8}
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.proxy
+    ports:
+      - "${DEMO_PORT:-8080}:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      DEMO_USER: ${DEMO_USER:-judge}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?set DEMO_PASSWORD_HASH in .env.demo (see deploy/demo.env.example)}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+  hf_cache:

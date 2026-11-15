@@ -60,3 +60,6 @@ frontend/playwright-report/
 
 # Live-demo images and case texts (local only)
 demo_assets/
+
+# Demo deployment secrets (password hash, domain)
+.env.demo
