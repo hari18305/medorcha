@@ -63,3 +63,6 @@ demo_assets/
 
 # Demo deployment secrets (password hash, domain)
 .env.demo
+
+# Office lock files
+~$*
