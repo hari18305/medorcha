@@ -299,12 +299,12 @@ describe("ReportSummary: clinician explanation", () => {
     expect(screen.queryAllByTestId("score-cap")).toHaveLength(1); // only the capped render above has one
   });
 
-  it("flags review in the score header from the report, not from the number", () => {
+  it("flags review in the status chip from the report, not from the number", () => {
     const { unmount } = renderReport({ explanation: EXPLANATION, review_required: true });
-    expect(within(screen.getByTestId("score-ledger")).getByText("Review required")).toBeInTheDocument();
+    expect(screen.getByTestId("status-chip")).toHaveTextContent("Review required");
     unmount();
     renderReport({ explanation: EXPLANATION, review_required: false });
-    expect(within(screen.getByTestId("score-ledger")).getByText("Above the review line")).toBeInTheDocument();
+    expect(screen.getByTestId("status-chip")).toHaveTextContent("Above the review line");
   });
 
   it("puts the differential straight after the result, before the supporting detail", () => {
@@ -366,5 +366,69 @@ describe("ReportSummary: clinician explanation", () => {
     for (const jargon of ["BiomedCLIP", "zero-shot", "RAG1", "LIVE1", "Offline KB"]) {
       expect(text).not.toContain(jargon);
     }
+  });
+});
+
+const LEADING = { name: "Hypertensive emergency", cited_sources: 2 };
+
+describe("ReportSummary: reading order and progressive disclosure", () => {
+  it("leads with the leading diagnosis and the review status, ahead of any score detail", () => {
+    renderReport({
+      explanation: { ...EXPLANATION, leading: LEADING, status_line: "This result needs clinician review before it is relied on." },
+      review_required: true,
+    });
+    const card = screen.getByTestId("explanation-summary");
+    expect(screen.getByTestId("leading-diagnosis")).toHaveTextContent("Hypertensive emergency");
+    expect(card).toHaveTextContent("Supported by 2 cited sources");
+    expect(card).toHaveTextContent("This result needs clinician review before it is relied on.");
+    // the headline comes before the score, which comes before the reasons
+    const pos = (el) => [...card.querySelectorAll("*")].indexOf(el);
+    expect(pos(screen.getByTestId("leading-diagnosis"))).toBeLessThan(pos(screen.getByTestId("score-ledger")));
+  });
+
+  it("keeps the score breakdown one click away rather than open by default", () => {
+    renderReport({ explanation: { ...EXPLANATION, leading: LEADING }, review_required: true });
+    const details = screen.getByTestId("score-details");
+    expect(details.open).toBe(false);
+    expect(details).toHaveTextContent("How was this score made, and what do the other 42 points mean?");
+    // the number, the bar and the not-a-probability line are visible without opening it
+    expect(screen.getByTestId("score-final")).toHaveTextContent("58");
+    expect(screen.getByTestId("score-bar")).toBeInTheDocument();
+    expect(screen.getByTestId("score-ledger")).toHaveTextContent("not the chance that the diagnosis is correct");
+  });
+
+  it("opens the first diagnosis and leaves the others collapsed", () => {
+    renderReport();
+    const cards = [...document.querySelectorAll("details[data-rank]")];
+    expect(cards.map((d) => d.getAttribute("data-rank"))).toEqual(["1", "2"]);
+    expect(cards.map((d) => d.open)).toEqual([true, false]);
+  });
+
+  it("collapses the evidence list until it is wanted, and a citation click opens it", async () => {
+    renderReport();
+    const evidence = screen.getByTestId("evidence-section").querySelector("details");
+    expect(evidence.open).toBe(false);
+    expect(evidence).toHaveTextContent("Supporting evidence");
+    await userEvent.click(screen.getByRole("button", { name: "Library 1" }));
+    await waitFor(() => expect(evidence.open).toBe(true));
+  });
+
+  it("keeps the unavailable-literature warning visible even though the evidence list is collapsed", () => {
+    renderReport({ live_evidence_available: false });
+    const warning = screen.getByText(/Live literature evidence was unavailable/);
+    expect(warning.closest("details")).toBeNull();
+  });
+
+  it("opens everything for printing and restores the on-screen state afterwards", () => {
+    renderReport();
+    const all = () => [...document.querySelectorAll("details")];
+    const before = all().map((d) => d.open);
+    expect(before.some((open) => !open)).toBe(true);
+
+    window.dispatchEvent(new Event("beforeprint"));
+    expect(all().every((d) => d.open)).toBe(true);
+
+    window.dispatchEvent(new Event("afterprint"));
+    expect(all().map((d) => d.open)).toEqual(before);
   });
 });

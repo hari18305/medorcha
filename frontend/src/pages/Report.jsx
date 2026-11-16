@@ -1,5 +1,33 @@
+import { useState } from "react";
 import ReportSummary from "../components/ReportSummary.jsx";
-import { PlusIcon, UserCheckIcon } from "../components/icons.jsx";
+import { CheckIcon, CopyIcon, PlusIcon, PrintIcon, UserCheckIcon } from "../components/icons.jsx";
+import { buildSummaryText } from "../utils/plainLanguage.js";
+
+/** Copy text to the clipboard; falls back to a hidden textarea where the async API is unavailable (http, older browsers). */
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to the textarea route */
+  }
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(area);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * report: the FinalReport JSON from POST/GET /diagnose (includes the
@@ -11,6 +39,12 @@ import { PlusIcon, UserCheckIcon } from "../components/icons.jsx";
  * onNewCase / onReviewCase: navigation callbacks from App.jsx.
  */
 export default function Report({ report, submittedSummary, onNewCase, onReviewCase }) {
+  const [copyState, setCopyState] = useState("idle"); // idle | copied | failed
+  async function handleCopy() {
+    const ok = await copyToClipboard(buildSummaryText(report, submittedSummary));
+    setCopyState(ok ? "copied" : "failed");
+    setTimeout(() => setCopyState("idle"), 2500);
+  }
   const labEntries = Object.entries(submittedSummary?.labs ?? {});
   const patient = submittedSummary && (
     <section className="card card-pad">
@@ -67,6 +101,10 @@ export default function Report({ report, submittedSummary, onNewCase, onReviewCa
 
   return (
     <div className="animate-rise">
+      <p className="mb-3 hidden text-xs text-slate-600 print:block">
+        MedOrchestrate decision-support report. Research prototype: supports, never replaces, clinical judgement.
+        Not a medical device. Printed {new Date().toLocaleString()}.
+      </p>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Clinician report</p>
@@ -79,15 +117,26 @@ export default function Report({ report, submittedSummary, onNewCase, onReviewCa
             <span className="font-mono text-xs text-slate-500">Case {report.case_id}</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="no-print flex flex-wrap gap-2">
           <button type="button" onClick={onReviewCase} className="btn-primary">
             <UserCheckIcon className="h-4 w-4" />
             Review case
+          </button>
+          <button type="button" onClick={handleCopy} className="btn-secondary" data-testid="copy-summary">
+            {copyState === "copied" ? <CheckIcon className="h-4 w-4 text-emerald-600" strokeWidth="2.5" /> : <CopyIcon className="h-4 w-4" />}
+            {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy summary"}
+          </button>
+          <button type="button" onClick={() => window.print()} className="btn-secondary" data-testid="print-report">
+            <PrintIcon className="h-4 w-4" />
+            Print / save PDF
           </button>
           <button type="button" onClick={onNewCase} className="btn-secondary">
             <PlusIcon className="h-4 w-4" />
             New case
           </button>
+          <span role="status" aria-live="polite" className="sr-only">
+            {copyState === "copied" ? "Summary copied to the clipboard" : copyState === "failed" ? "Could not copy the summary" : ""}
+          </span>
         </div>
       </div>
 

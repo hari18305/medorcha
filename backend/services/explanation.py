@@ -370,13 +370,22 @@ def build_explanation(
     if review_required:
         next_steps.append("Confirm, override or annotate the differential on the review screen. Your decision is recorded.")
 
-    # ---- one-sentence headline -------------------------------------------------------------------
+    # ---- headline, leading diagnosis and status line ----------------------------------------------
+    # `headline` is the full sentence (used for copying a summary); the interface shows `leading` as the
+    # page title and `status_line` beneath it, so the answer is the first thing read.
+    leading = None
+    if review_required:
+        status_line = "This result needs clinician review before it is relied on."
+    else:
+        status_line = (f"The evidence score ({_pct(confidence)}) is above the {threshold_pct}-point review line; "
+                       "clinical judgement still applies.")
     if not diagnoses:
         headline = "No diagnosis could be proposed from the information provided."
     else:
         ordered = sorted(diagnoses, key=lambda d: d.get("rank", 0))
         top = str(ordered[0].get("name", "")).strip() or "the first-ranked diagnosis"
         cited = len(ordered[0].get("supporting_evidence") or [])
+        leading = {"name": top, "cited_sources": cited}
         support = (f"supported by {cited} cited source{'s' if cited != 1 else ''}" if cited
                    else "with no cited source")
         if review_required:
@@ -387,6 +396,8 @@ def build_explanation(
 
     return {
         "headline": headline,
+        "leading": leading,
+        "status_line": status_line,
         "review_required": bool(review_required),
         "review_reasons": review_reasons,
         "cautions": cautions,

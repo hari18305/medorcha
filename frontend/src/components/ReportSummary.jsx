@@ -108,11 +108,33 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
   const iterations = report.iteration_count ?? 0;
 
   const [filter, setFilter] = useState("all");
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [highlightId, setHighlightId] = useState(null);
   const highlightTimer = useRef(null);
   useEffect(() => () => clearTimeout(highlightTimer.current), []);
 
+  // A printed or saved-as-PDF report must show everything, not only what happens to be expanded on screen:
+  // open every collapsible block for printing and put each back afterwards.
+  useEffect(() => {
+    let touched = [];
+    const open = () => {
+      touched = [...document.querySelectorAll("details:not([open])")];
+      touched.forEach((d) => d.setAttribute("open", ""));
+    };
+    const restore = () => {
+      touched.forEach((d) => d.removeAttribute("open"));
+      touched = [];
+    };
+    window.addEventListener("beforeprint", open);
+    window.addEventListener("afterprint", restore);
+    return () => {
+      window.removeEventListener("beforeprint", open);
+      window.removeEventListener("afterprint", restore);
+    };
+  }, []);
+
   function jumpTo(eid) {
+    setEvidenceOpen(true); // the list is collapsed until wanted; a citation click must reveal its source
     setFilter("all");
     setHighlightId(eid);
     clearTimeout(highlightTimer.current);
@@ -175,12 +197,13 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
               <div className="card card-pad text-sm text-slate-600">No diagnoses were produced for this case.</div>
             )}
             {diagnoses.map((diagnosis, index) => (
-              <article
+              <details
                 key={index}
-                className={`card card-pad ${index === 0 ? "ring-1 ring-brand-200" : ""}`}
+                open={index === 0}
+                className={`group card ${index === 0 ? "ring-1 ring-brand-200" : ""}`}
                 data-rank={diagnosis.rank ?? index + 1}
               >
-                <div className="flex items-start gap-3">
+                <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-2 rounded-xl p-4 hover:bg-slate-50/60 sm:px-6 [&::-webkit-details-marker]:hidden">
                   <span
                     className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-sm font-semibold ${
                       index === 0 ? "bg-brand-700 text-white" : "bg-slate-100 text-slate-600"
@@ -188,37 +211,35 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
                   >
                     {diagnosis.rank ?? index + 1}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    {index === 0 && <p className="eyebrow mb-0.5">Leading consideration</p>}
-                    <h4 className="text-base font-semibold leading-snug text-slate-900">{diagnosis.name}</h4>
-                    <p className="mt-1.5">
-                      <span
-                        data-support={citationSupport(diagnosis).level}
-                        title="How many evidence items the system cited for this diagnosis. A count, not a measure of how likely it is."
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${SUPPORT_STYLES[citationSupport(diagnosis).level]}`}
-                      >
-                        {citationSupport(diagnosis).label}
-                      </span>
+                  <h4 className="min-w-[10rem] flex-1 text-base font-semibold leading-snug text-slate-900">{diagnosis.name}</h4>
+                  <span
+                    data-support={citationSupport(diagnosis).level}
+                    title="How many evidence items the system cited for this diagnosis. A count, not a measure of how likely it is."
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${SUPPORT_STYLES[citationSupport(diagnosis).level]}`}
+                  >
+                    {citationSupport(diagnosis).label}
+                  </span>
+                  <span className="text-slate-400 transition group-open:rotate-90" aria-hidden="true">▸</span>
+                </summary>
+
+                <div className="border-t border-slate-100 px-4 pb-5 pt-1 sm:px-6">
+                  <WhyThisRanking diagnosis={diagnosis} />
+
+                  {diagnosis.supporting_evidence?.length > 0 ? (
+                    <ul className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                      {diagnosis.supporting_evidence.map((item, i) => (
+                        <li key={i} className="text-sm leading-relaxed text-slate-700">
+                          <CitedText text={item} knownIds={knownIds} byId={byId} onJump={jumpTo} />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-4 border-t border-slate-100 pt-3 text-sm italic text-slate-400">
+                      No cited supporting evidence.
                     </p>
-                  </div>
+                  )}
                 </div>
-
-                <WhyThisRanking diagnosis={diagnosis} />
-
-                {diagnosis.supporting_evidence?.length > 0 ? (
-                  <ul className="mt-4 space-y-2 border-t border-slate-100 pt-3">
-                    {diagnosis.supporting_evidence.map((item, i) => (
-                      <li key={i} className="text-sm leading-relaxed text-slate-700">
-                        <CitedText text={item} knownIds={knownIds} byId={byId} onJump={jumpTo} />
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-4 border-t border-slate-100 pt-3 text-sm italic text-slate-400">
-                    No cited supporting evidence.
-                  </p>
-                )}
-              </article>
+              </details>
             ))}
           </div>
         </section>
@@ -252,36 +273,11 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
 
         <ImagingSection imaging={report.imaging} imageSubmitted={imageSubmitted} />
 
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-base font-semibold text-slate-900">Supporting evidence</h3>
-            {evidence.length > 0 && (
-              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter evidence by source">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={filter === f.id}
-                    onClick={() => setFilter(f.id)}
-                    disabled={counts[f.id] === 0 && f.id !== "all"}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-40 ${
-                      filter === f.id
-                        ? "bg-ink-800 text-white"
-                        : "bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:ring-slate-400"
-                    }`}
-                  >
-                    {f.label} <span className="tabular-nums opacity-70">{counts[f.id]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
+        <section data-testid="evidence-section">
           {report.live_evidence_available === false && (
             <p
               role="status"
-              className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900"
+              className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900"
             >
               <AlertIcon className="mt-0.5 h-4 w-4 text-amber-700" />
               <span>
@@ -292,14 +288,55 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
             </p>
           )}
 
-          <ul className="mt-3 space-y-2.5">
-            {visibleEvidence.map((item) => (
-              <EvidenceCard key={item.eid} item={item} highlighted={highlightId === item.eid} />
-            ))}
-            {evidence.length === 0 && (
-              <li className="card card-pad text-sm text-slate-600">No supporting evidence was retrieved for this case.</li>
-            )}
-          </ul>
+          <details
+            className="group card"
+            open={evidenceOpen}
+            onToggle={(event) => setEvidenceOpen(event.currentTarget.open)}
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl p-4 hover:bg-slate-50/60 sm:px-6 [&::-webkit-details-marker]:hidden">
+              <h3 className="flex items-center gap-2.5 text-base font-semibold text-slate-900">
+                Supporting evidence
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600">{evidence.length}</span>
+              </h3>
+              <span className="flex items-center gap-2 text-xs font-medium text-brand-800">
+                <span className="hidden sm:inline">{evidenceOpen ? "Hide" : "Show the passages and studies behind the citations"}</span>
+                <span className="text-slate-400 transition group-open:rotate-90" aria-hidden="true">▸</span>
+              </span>
+            </summary>
+
+            <div className="border-t border-slate-100 p-4 sm:px-6">
+              {evidence.length > 0 && (
+                <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter evidence by source">
+                  {FILTERS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={filter === f.id}
+                      onClick={() => setFilter(f.id)}
+                      disabled={counts[f.id] === 0 && f.id !== "all"}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition disabled:opacity-40 ${
+                        filter === f.id
+                          ? "bg-ink-800 text-white"
+                          : "bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:ring-slate-400"
+                      }`}
+                    >
+                      {f.label} <span className="tabular-nums opacity-70">{counts[f.id]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <ul className="mt-3 space-y-2.5">
+                {visibleEvidence.map((item) => (
+                  <EvidenceCard key={item.eid} item={item} highlighted={highlightId === item.eid} />
+                ))}
+                {evidence.length === 0 && (
+                  <li className="text-sm text-slate-600">No supporting evidence was retrieved for this case.</li>
+                )}
+              </ul>
+            </div>
+          </details>
         </section>
       </div>
 

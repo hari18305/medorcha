@@ -193,3 +193,67 @@ describe("CaseSubmission: examples and errors", () => {
     expect(screen.getByLabelText("Lab 1 name")).toHaveValue("hemoglobin");
   });
 });
+
+
+describe("CaseSubmission: helping the user get it right", () => {
+  it("marks the missing fields themselves, not only the banner, and clears each as it is fixed", async () => {
+    setup();
+    await submit();
+    expect(screen.getByRole("alert")).toHaveTextContent("Age and sex are required.");
+    expect(screen.getByLabelText("Age")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Sex")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Enter the patient's age.")).toBeInTheDocument();
+    expect(screen.getByText("Choose a sex.")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Age"), "45");
+    expect(screen.getByLabelText("Age")).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByText("Enter the patient's age.")).not.toBeInTheDocument();
+    expect(screen.getByText("Choose a sex.")).toBeInTheDocument(); // only the fixed field clears
+  });
+
+  it("brings an error into view and moves focus to it, so a click at the bottom never looks like nothing happened", async () => {
+    setup();
+    await submit();
+    const banner = screen.getByRole("alert").parentElement;
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(banner).toHaveFocus();
+  });
+
+  it("explains what goes in each text box", () => {
+    setup();
+    expect(screen.getByLabelText("Presenting complaint and history")).toHaveAccessibleDescription(/relevant negatives/);
+    expect(screen.getByLabelText("Medical or imaging report text")).toHaveAccessibleDescription(/radiology, laboratory or clinic report/);
+  });
+
+  it("reminds the user to use de-identified cases only", () => {
+    setup();
+    expect(screen.getByTestId("privacy-note")).toHaveTextContent(/made-up or de-identified/);
+  });
+
+  it("tells the user what makes the result stronger and how long it takes", () => {
+    setup();
+    expect(screen.getByTestId("input-tips")).toHaveTextContent(/relevant negatives/);
+    expect(screen.getByTestId("submit-bar")).toHaveTextContent(/30 to 60 seconds/);
+  });
+
+  it("keeps the Analyze button in a sticky bar so it is reachable on a long form", () => {
+    setup();
+    const bar = screen.getByTestId("submit-bar");
+    expect(bar.className).toContain("sticky");
+    expect(bar.contains(screen.getByRole("button", { name: /Analyze case/ }))).toBe(true);
+  });
+
+  it("submits with Ctrl+Enter from the text box", async () => {
+    const onSubmit = setup();
+    await fillPatient();
+    await userEvent.type(screen.getByLabelText("Presenting complaint and history"), "headache{Control>}{Enter}{/Control}");
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not submit on a plain Enter in the text box", async () => {
+    const onSubmit = setup();
+    await fillPatient();
+    await userEvent.type(screen.getByLabelText("Presenting complaint and history"), "headache{Enter}more");
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});

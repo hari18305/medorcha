@@ -108,35 +108,37 @@ function PartRow({ part }) {
   );
 }
 
-/** "What does 80% mean?": the number, what it is not, and where the missing points went. */
-function ScoreLedger({ score, reviewRequired }) {
+function StatusChip({ reviewRequired }) {
+  return (
+    <span
+      data-testid="status-chip"
+      className={`inline-flex flex-none items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${
+        reviewRequired ? "bg-amber-50 text-amber-900 ring-amber-600/25" : "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
+      }`}
+    >
+      {reviewRequired ? <AlertIcon className="h-3.5 w-3.5" /> : <CheckIcon className="h-3.5 w-3.5" strokeWidth="2.5" />}
+      {reviewRequired ? "Review required" : "Above the review line"}
+    </span>
+  );
+}
+
+/** The score at a glance (number, bar, one line), with the full breakdown behind a toggle. */
+function ScoreSummary({ score }) {
   const lostTotal = 100 - score.final;
   return (
     <div className="mt-5 border-t border-slate-100 pt-5" data-testid="score-ledger">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Evidence score</p>
-          <p className="mt-1 flex items-baseline gap-1.5 leading-none">
-            <span className="text-5xl font-semibold tracking-tight tabular-nums text-slate-900" data-testid="score-final">{score.final}</span>
-            <span className="text-xl font-medium text-slate-400">/ 100</span>
-          </p>
-        </div>
-        <span
-          className={`mb-1 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
-            reviewRequired ? "bg-amber-50 text-amber-900 ring-amber-600/25" : "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
-          }`}
-        >
-          {reviewRequired ? "Review required" : "Above the review line"}
-        </span>
-      </div>
+      <p className="eyebrow">Evidence score</p>
+      <p className="mt-1 flex items-baseline gap-1.5 leading-none">
+        <span className="text-4xl font-semibold tracking-tight tabular-nums text-slate-900" data-testid="score-final">{score.final}</span>
+        <span className="text-lg font-medium text-slate-400">/ 100</span>
+      </p>
 
       <ScoreBar score={score} />
 
-      <ul className="divide-y divide-slate-100" data-testid="score-parts">
-        {score.parts.map((part) => (
-          <PartRow key={part.key} part={part} />
-        ))}
-      </ul>
+      <p className="text-sm leading-relaxed text-slate-600">
+        How well the evidence the system found supports this result. It is <span className="font-medium text-slate-800">not</span> the
+        chance that the diagnosis is correct.
+      </p>
 
       {score.cap && (
         <div data-testid="score-cap" className="mt-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50/70 px-3 py-2.5 text-sm text-rose-900">
@@ -147,40 +149,66 @@ function ScoreLedger({ score, reviewRequired }) {
         </div>
       )}
 
-      <dl className="mt-4 space-y-3 rounded-lg bg-slate-50 px-4 py-3 text-sm leading-relaxed" data-testid="score-meaning">
-        <div>
-          <dt className="font-semibold text-slate-900">What {score.final} means</dt>
-          <dd className="text-slate-700">{score.meaning.is}</dd>
+      <details data-testid="score-details" className="group mt-4 rounded-lg border border-slate-200">
+        <summary className="flex cursor-pointer select-none items-center gap-2 px-4 py-3 text-sm font-medium text-brand-800 hover:bg-slate-50">
+          <span className="inline-block transition group-open:rotate-90" aria-hidden="true">▸</span>
+          How was this score made, and what {lostTotal === 1 ? "does the other point" : `do the other ${lostTotal} points`} mean?
+        </summary>
+        <div className="border-t border-slate-100 px-4 py-4">
+          <ul className="divide-y divide-slate-100" data-testid="score-parts">
+            {score.parts.map((part) => (
+              <PartRow key={part.key} part={part} />
+            ))}
+          </ul>
+          <dl className="mt-4 space-y-3 rounded-lg bg-slate-50 px-4 py-3 text-sm leading-relaxed" data-testid="score-meaning">
+            <div>
+              <dt className="font-semibold text-slate-900">What {score.final} means</dt>
+              <dd className="text-slate-700">{score.meaning.is}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-900">What it does not mean</dt>
+              <dd className="text-slate-700">{score.meaning.is_not}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-900">What about the other {lostTotal}?</dt>
+              <dd className="text-slate-700">{score.meaning.remainder}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-900">The review line</dt>
+              <dd className="text-slate-700">{score.meaning.review_line}</dd>
+            </div>
+          </dl>
         </div>
-        <div>
-          <dt className="font-semibold text-slate-900">What it does not mean</dt>
-          <dd className="text-slate-700">{score.meaning.is_not}</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-slate-900">What about the other {lostTotal}?</dt>
-          <dd className="text-slate-700">{score.meaning.remainder}</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-slate-900">The review line</dt>
-          <dd className="text-slate-700">{score.meaning.review_line}</dd>
-        </div>
-      </dl>
+      </details>
     </div>
   );
 }
 
 /**
- * The top card of the report: what the system concluded, how far to trust it (the evidence score taken
- * apart, so "80%" is never an unexplained number), why review is needed and what would help.
+ * The top card of the report, in the order a clinician reads it: the leading consideration and whether it
+ * needs review, the evidence score (compact), then why review is needed and what would help. The full
+ * score breakdown is one click away, so "80%" is never an unexplained number but does not push the
+ * differential off the first screen.
  */
 export function ResultOverview({ explanation, reviewRequired }) {
   if (!hasExplanation(explanation)) return null;
-  const { headline, review_reasons: reasons = [], cautions = [], next_steps: steps = [], score } = explanation;
+  const { headline, leading, status_line: statusLine, review_reasons: reasons = [], cautions = [], next_steps: steps = [], score } = explanation;
   return (
     <section className="card card-pad" data-testid="explanation-summary">
-      <p className="eyebrow">Result</p>
-      <p className="mt-1 text-lg font-medium leading-snug text-slate-900">{headline}</p>
-      {score && <ScoreLedger score={score} reviewRequired={reviewRequired} />}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-[14rem] flex-1">
+          <p className="eyebrow">{leading ? "Leading consideration" : "Result"}</p>
+          <h3 data-testid="leading-diagnosis" className="mt-1 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+            {leading ? leading.name : "No diagnosis could be proposed"}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            {leading ? `Supported by ${leading.cited_sources} cited source${leading.cited_sources === 1 ? "" : "s"}. ` : ""}
+            {statusLine ?? headline}
+          </p>
+        </div>
+        <StatusChip reviewRequired={reviewRequired} />
+      </div>
+      {score && <ScoreSummary score={score} />}
       {reasons.length > 0 && (
         <Block title="Why review is needed">
           <Bullets items={reasons} />

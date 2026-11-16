@@ -107,6 +107,19 @@ export const ExternalIcon = (p) => (
   </Icon>
 );
 
+export const CopyIcon = (p) => (
+  <Icon {...p}>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V6.5A1.5 1.5 0 016.5 5H15" />
+  </Icon>
+);
+export const PrintIcon = (p) => (
+  <Icon {...p}>
+    <path d="M7 9V4h10v5M7 17H5.5A1.5 1.5 0 014 15.5v-5A1.5 1.5 0 015.5 9h13a1.5 1.5 0 011.5 1.5v5a1.5 1.5 0 01-1.5 1.5H17" />
+    <rect x="7" y="14" width="10" height="6" rx="1" />
+  </Icon>
+);
+
 /** Brand mark: a central node with three orbiting evidence nodes. */
 export function BrandMark({ className = "h-8 w-8" }) {
   return (

@@ -60,3 +60,30 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Printing / saving as PDF: the report only, on white, nothing cut across pages, no app chrome or buttons. */
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .animate-rise {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  aside {
+    position: static !important;
+  }
+  summary::marker,
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}

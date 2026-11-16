@@ -245,3 +245,21 @@ def test_a_breakdown_without_stored_weights_falls_back_to_the_current_weights():
     breakdown = {"s_rag": 0.65, "s_web": 0.8, "agreement": 1.0, "confidence": 0.8, "input_quality": "ok"}
     score = _build(breakdown=breakdown, confidence=0.8)["score"]
     assert [p["max"] for p in score["parts"]] == [40, 30, 30]
+
+
+def test_the_leading_diagnosis_and_status_line_are_given_separately_for_the_page_title():
+    e = _build()
+    assert e["leading"] == {"name": "Primary spontaneous pneumothorax", "cited_sources": 2}
+    assert "above the 65-point review line" in e["status_line"] and "clinical judgement" in e["status_line"]
+    needs = _build(review_required=True)
+    assert needs["status_line"] == "This result needs clinician review before it is relied on."
+    none = _build(diagnoses=[], confidence=0.0, review_required=True)
+    assert none["leading"] is None
+
+
+def test_the_leading_diagnosis_is_the_rank_one_entry_even_when_listed_later():
+    diagnoses = [
+        {"name": "Second", "rank": 2, "confidence": 0.3, "supporting_evidence": []},
+        {"name": "First", "rank": 1, "confidence": 0.6, "supporting_evidence": ["[RAG1] a"]},
+    ]
+    assert _build(diagnoses=diagnoses)["leading"] == {"name": "First", "cited_sources": 1}

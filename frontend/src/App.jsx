@@ -70,6 +70,40 @@ export default function App() {
     (path === ROUTES.PROCESSING && !submitting) ||
     ((path === ROUTES.REPORT || path === ROUTES.REVIEW) && !report);
   const screen = invalid ? ROUTES.SUBMISSION : path;
+  const mainRef = useRef(null);
+
+  // Each screen gets its own title (browser tabs, history and screen readers), starts at the top, and takes
+  // focus, so that a long form scrolled to its button does not leave the next screen scrolled to the bottom
+  // and so that a screen reader announces the new content instead of staying on the old button.
+  const leadingName = report?.explanation?.leading?.name;
+  useEffect(() => {
+    const titles = {
+      [ROUTES.SUBMISSION]: "New case",
+      [ROUTES.PROCESSING]: "Analysing case…",
+      [ROUTES.REPORT]: leadingName ? `Report: ${leadingName}` : "Report",
+      [ROUTES.REVIEW]: "Review case",
+    };
+    document.title = `${titles[screen] ?? "MedOrchestrate"} · MedOrchestrate`;
+    try {
+      window.scrollTo({ top: 0 });
+    } catch {
+      /* not available in every environment */
+    }
+    mainRef.current?.focus({ preventScroll: true });
+  }, [screen, leadingName]);
+
+  // Case data lives only in this tab's memory by design, so a refresh or an accidental close would silently
+  // throw away a finished report or a run in progress. Ask first.
+  const holdsWork = Boolean(report) || submitting;
+  useEffect(() => {
+    if (!holdsWork) return undefined;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [holdsWork]);
 
   useEffect(() => {
     if (invalid) navigate(ROUTES.SUBMISSION, { replace: true });
@@ -119,6 +153,16 @@ export default function App() {
     if (lastSubmission.current) runSubmission(lastSubmission.current);
   }
 
+  // Stop waiting for the analysis and return to the form with everything still filled in (unlike "New case",
+  // which clears it). The server may finish the run in the background; its result is simply not shown.
+  function handleCancel() {
+    runToken.current += 1;
+    setSubmitting(false);
+    setProgress(null);
+    setError(null);
+    navigate(ROUTES.SUBMISSION, { replace: true });
+  }
+
   function handleNewCase() {
     runToken.current += 1; // abandon any analysis still being followed
     setSubmitting(false);
@@ -132,6 +176,14 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-slate-900">
+      {/* A button, not an href="#main": hash links would be read as a route change by the hash router. */}
+      <button
+        type="button"
+        onClick={() => mainRef.current?.focus()}
+        className="sr-only z-50 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-ink-900 shadow focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to main content
+      </button>
       <header className="bg-ink-900 text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-3.5 sm:px-8">
           <button
@@ -158,7 +210,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-10">
+      <main ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 outline-none sm:px-8 sm:py-10">
         {screen === ROUTES.SUBMISSION && (
           <CaseSubmission
             onSubmit={handleSubmit}
@@ -170,7 +222,7 @@ export default function App() {
           />
         )}
 
-        {screen === ROUTES.PROCESSING && <Processing progress={progress} />}
+        {screen === ROUTES.PROCESSING && <Processing progress={progress} onCancel={handleCancel} />}
 
         {screen === ROUTES.REPORT && report && (
           <Report

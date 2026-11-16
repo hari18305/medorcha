@@ -172,3 +172,68 @@ describe("App: navigation and new cases", () => {
     expect(screen.getByText(/Research prototype/)).toBeInTheDocument();
   });
 });
+
+
+describe("App: titles, leaving the page, and cancelling", () => {
+  it("gives each screen its own title", async () => {
+    startDiagnosis.mockResolvedValue(REPORT);
+    render(<App />);
+    expect(document.title).toBe("New case · MedOrchestrate");
+    await fillAndSubmit();
+    await screen.findByRole("heading", { name: "Hypertensive emergency" });
+    expect(document.title).toBe("Report · MedOrchestrate");
+  });
+
+  it("names the leading diagnosis in the report title when the report has one", async () => {
+    startDiagnosis.mockResolvedValue({ ...REPORT, explanation: { headline: "h", leading: { name: "Hypertensive emergency", cited_sources: 1 } } });
+    render(<App />);
+    await fillAndSubmit();
+    await screen.findByRole("heading", { name: "Hypertensive emergency", level: 4 });
+    expect(document.title).toBe("Report: Hypertensive emergency · MedOrchestrate");
+  });
+
+  it("starts each screen at the top", async () => {
+    startDiagnosis.mockResolvedValue(REPORT);
+    render(<App />);
+    window.scrollTo.mockClear();
+    await fillAndSubmit();
+    await screen.findByRole("heading", { name: "Hypertensive emergency" });
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0 });
+  });
+
+  it("asks before the page is closed or refreshed once there is a report, but not before", async () => {
+    startDiagnosis.mockResolvedValue(REPORT);
+    render(<App />);
+    const idle = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(idle);
+    expect(idle.defaultPrevented).toBe(false); // nothing to lose on an empty form
+
+    await fillAndSubmit();
+    await screen.findByRole("heading", { name: "Hypertensive emergency" });
+    const withReport = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(withReport);
+    expect(withReport.defaultPrevented).toBe(true);
+  });
+
+  it("lets the user cancel a running analysis and returns to the form with everything still filled in", async () => {
+    startDiagnosis.mockResolvedValue({ case_id: "c-1", status: "queued" });
+    getDiagnosisStatus.mockResolvedValue({ status: "running", steps: [{ name: "clinical", status: "running" }] });
+    render(<App />);
+    await fillAndSubmit();
+    await screen.findByTestId("progress-steps");
+
+    await userEvent.click(screen.getByTestId("cancel-analysis"));
+
+    expect(await screen.findByRole("heading", { name: "Describe the patient" })).toBeInTheDocument();
+    expect(window.location.hash).toBe("#/");
+    expect(screen.getByLabelText("Age")).toHaveValue(52);
+    expect(screen.getByLabelText("Presenting complaint and history")).toHaveValue("headache and dizziness");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument(); // cancelling is not an error
+  });
+
+  it("has a skip link that moves focus to the main content", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("button", { name: "Skip to main content" }));
+    expect(document.querySelector("main")).toHaveFocus();
+  });
+});

@@ -14,7 +14,7 @@ function formatElapsed(totalSeconds) {
  * rounds are what the server's pipeline actually reported, not an animation. The elapsed clock is the
  * browser's own.
  */
-export default function Processing({ progress = null }) {
+export default function Processing({ progress = null, onCancel }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const clock = setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
@@ -53,9 +53,17 @@ export default function Processing({ progress = null }) {
           </ol>
         )}
 
-        <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
-          Live progress from the server. Cases that need refinement take longer; you can leave this page open.
-        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+          <p className="max-w-sm text-xs text-slate-500">
+            Live progress from the server. Cases that need re-checking take longer; keep this page open. Refreshing
+            would lose the case.
+          </p>
+          {onCancel && (
+            <button type="button" onClick={onCancel} className="btn-secondary" data-testid="cancel-analysis">
+              Cancel and edit case
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

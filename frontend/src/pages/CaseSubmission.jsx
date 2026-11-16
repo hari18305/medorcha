@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import HistoryInput from "../components/HistoryInput.jsx";
 import LabRows, { newLabRow } from "../components/LabRows.jsx";
@@ -10,6 +10,7 @@ import {
   DocIcon,
   GlobeIcon,
   ImageIcon,
+  InfoIcon,
   UploadIcon,
   UserCheckIcon,
   XIcon,
@@ -90,6 +91,8 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
   const [historyDraft, setHistoryDraft] = useState("");
   const [labRows, setLabRows] = useState(() => labsToRows(initialValues?.labs));
   const [formError, setFormError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({}); // {age?: string, sex?: string}: shown beside the field itself
+  const errorRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -131,9 +134,11 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
     setFormError(null);
 
     if (!age || !sex) {
+      setFieldErrors({ age: age ? undefined : "Enter the patient's age.", sex: sex ? undefined : "Choose a sex." });
       setFormError("Age and sex are required.");
       return;
     }
+    setFieldErrors({});
     const labResult = buildLabs(labRows);
     if (labResult.error) {
       setFormError(labResult.error);
@@ -179,6 +184,22 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
   // server error until the user submits again.
   const displayedError = formError || error;
 
+  // The banner sits at the top of a long form while the button that triggers it sits at the bottom, so a
+  // message must be brought into view and announced, or the click looks like it did nothing.
+  useEffect(() => {
+    if (!displayedError || !errorRef.current) return;
+    errorRef.current.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    errorRef.current.focus({ preventScroll: true });
+  }, [displayedError]);
+
+  // Ctrl/Cmd+Enter submits from any field, so a long case need not be followed by a trip to the button.
+  function handleKeyDown(event) {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      event.currentTarget.requestSubmit();
+    }
+  }
+
   // Mirrors the backend's input-sufficiency gate (confidence.py): confidence is capped at 50% and review
   // is required unless the case has a symptom, a lab value or a finding extracted from a report. Clinical
   // text or a report supplies those (the server extracts them); a lab row supplies one directly. An image or
@@ -197,13 +218,21 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
           context you give, the more the result can be grounded in evidence.
         </p>
 
+        <p className="mt-3 flex max-w-xl items-start gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600" data-testid="privacy-note">
+          <InfoIcon className="mt-0.5 h-3.5 w-3.5 text-slate-500" />
+          <span>
+            Use made-up or de-identified cases only. Do not enter names, record numbers or other identifiers: this is a
+            research prototype, not a medical record.
+          </span>
+        </p>
+
         {displayedError && (
-          <div className="mt-5">
+          <div className="mt-5 rounded-xl outline-none" ref={errorRef} tabIndex={-1}>
             <ErrorBanner error={displayedError} onRetry={formError ? undefined : onRetry} />
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="mt-6 space-y-5">
           <section className="card card-pad">
             <h3 className="text-sm font-semibold text-slate-900">Patient</h3>
             <div className="mt-3 grid grid-cols-2 gap-4">
@@ -218,15 +247,35 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
                   max="120"
                   inputMode="numeric"
                   value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  className="field"
+                  onChange={(e) => {
+                    setAge(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, age: undefined }));
+                  }}
+                  aria-invalid={fieldErrors.age ? "true" : undefined}
+                  aria-describedby={fieldErrors.age ? "age-error" : undefined}
+                  className={`field ${fieldErrors.age ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/25" : ""}`}
                 />
+                {fieldErrors.age && (
+                  <p id="age-error" className="mt-1 text-xs font-medium text-rose-700">
+                    {fieldErrors.age}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="field-label" htmlFor="sex">
                   Sex
                 </label>
-                <select id="sex" value={sex} onChange={(e) => setSex(e.target.value)} className="field">
+                <select
+                  id="sex"
+                  value={sex}
+                  onChange={(e) => {
+                    setSex(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, sex: undefined }));
+                  }}
+                  aria-invalid={fieldErrors.sex ? "true" : undefined}
+                  aria-describedby={fieldErrors.sex ? "sex-error" : undefined}
+                  className={`field ${fieldErrors.sex ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/25" : ""}`}
+                >
                   <option value="">Select…</option>
                   {SEX_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -234,6 +283,11 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
                     </option>
                   ))}
                 </select>
+                {fieldErrors.sex && (
+                  <p id="sex-error" className="mt-1 text-xs font-medium text-rose-700">
+                    {fieldErrors.sex}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -267,7 +321,12 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
                 onChange={(e) => setClinicalText(e.target.value)}
                 placeholder="e.g. headache and dizziness, history of hypertension"
                 className="field"
+                aria-describedby="clinical_text_hint"
               />
+              <p id="clinical_text_hint" className="field-hint">
+                What the patient reports and what you found: symptoms, onset and duration, and relevant negatives (for
+                example “no fever”). The more specific, the stronger the evidence match.
+              </p>
             </div>
 
             <div className="mt-4">
@@ -281,7 +340,12 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
                 onChange={(e) => setMedicalReport(e.target.value)}
                 placeholder="Paste relevant report text here, if available"
                 className="field"
+                aria-describedby="medical_report_hint"
               />
+              <p id="medical_report_hint" className="field-hint">
+                Optional. Text copied from a radiology, laboratory or clinic report. The patient's own story goes in the
+                box above.
+              </p>
             </div>
           </section>
 
@@ -369,14 +433,31 @@ export default function CaseSubmission({ onSubmit, error, onRetry, initialValues
             </div>
           )}
 
-          <button type="submit" className="btn-primary w-full py-3 text-base">
-            Analyze case
-            <ArrowRightIcon className="h-4 w-4" />
-          </button>
+          <div
+            data-testid="submit-bar"
+            className="sticky bottom-0 z-10 -mx-5 border-t border-slate-200 bg-canvas/95 px-5 pb-3 pt-3 backdrop-blur sm:-mx-0 sm:rounded-xl sm:border sm:px-4"
+          >
+            <button type="submit" className="btn-primary w-full py-3 text-base">
+              Analyze case
+              <ArrowRightIcon className="h-4 w-4" />
+            </button>
+            <p className="mt-2 text-center text-xs text-slate-500">
+              Usually 30 to 60 seconds; a case that needs re-checking can take a few minutes. Ctrl+Enter also works.
+            </p>
+          </div>
         </form>
       </div>
 
-      <aside className="animate-rise lg:pt-[3.75rem]" style={{ animationDelay: "80ms" }}>
+      <aside className="animate-rise space-y-4 lg:pt-[3.75rem]" style={{ animationDelay: "80ms" }}>
+        <div className="card card-pad" data-testid="input-tips">
+          <p className="eyebrow">For a stronger result</p>
+          <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-700">
+            <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-brand-500" />Name the specific symptoms, with onset and duration.</li>
+            <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-brand-500" />State relevant negatives, such as “no fever” or “no trauma”.</li>
+            <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-brand-500" />Add key laboratory values with their units.</li>
+            <li className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-brand-500" />An image supports the result but cannot replace the history.</li>
+          </ul>
+        </div>
         <div className="card card-pad lg:sticky lg:top-6">
           <p className="eyebrow">What happens next</p>
           <ol className="mt-4 space-y-4">

@@ -66,3 +66,53 @@ export function findingGroups(explanation) {
   ];
   return groups.filter((g) => g.items.length > 0);
 }
+
+/**
+ * Plain-text summary of a report for pasting into notes. Mirrors what the screen says, including the
+ * safety wording, so a copied result never loses the "research prototype" and "review required" context.
+ */
+export function buildSummaryText(report, submitted = {}) {
+  const ex = report?.explanation;
+  const score = ex?.score;
+  const who = [submitted?.sex, submitted?.age ? `${submitted.age} years` : null].filter(Boolean).join(", ");
+  const lines = [
+    "MedOrchestrate decision-support summary",
+    "Research prototype: supports, never replaces, clinical judgement. Not a medical device.",
+    "",
+    `Case: ${report?.case_id ?? "unknown"}`,
+  ];
+  if (who) lines.push(`Patient: ${who}`);
+  lines.push(
+    report?.review_required
+      ? "Review: REQUIRED. A clinician must check this result before it is used."
+      : "Review: not flagged by the system; clinical judgement still applies."
+  );
+  if (score) {
+    lines.push(
+      `Evidence score: ${score.final} of 100 (review line ${score.review_line}). ` +
+        "This is how well the evidence supports the result, not the chance it is correct."
+    );
+  } else if (typeof report?.confidence === "number") {
+    lines.push(`Evidence confidence: ${Math.round(report.confidence * 100)}% (not a probability).`);
+  }
+  if (ex?.headline) lines.push("", ex.headline);
+
+  const diagnoses = [...(report?.diagnoses ?? [])].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+  if (diagnoses.length) {
+    lines.push("", "Differential diagnosis:");
+    diagnoses.forEach((d, i) => {
+      lines.push(`${i + 1}. ${d.name} (${citationSupport(d).label})`);
+      if (d.findings_for?.length) lines.push(`   Fits this case: ${d.findings_for.join("; ")}`);
+      if (d.findings_against?.length) lines.push(`   Against, or not reported: ${d.findings_against.join("; ")}`);
+    });
+  }
+  const section = (title, items) => {
+    if (items?.length) lines.push("", `${title}:`, ...items.map((item) => `- ${item}`));
+  };
+  section("Why review is needed", ex?.review_reasons);
+  section("Worth knowing", ex?.cautions);
+  section("What would help", ex?.next_steps);
+  const normals = findingGroups(ex).find((g) => g.id === "normal");
+  section("Normal findings and pertinent negatives", normals?.items);
+  return lines.join("\n");
+}

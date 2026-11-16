@@ -38,9 +38,9 @@ test("an ordinary case runs end to end: progress, report, citations that jump, p
   await expect(page.getByTestId("progress-steps")).toBeVisible();
 
   // then the report
-  await expect(page.getByRole("heading", { name: "Hypertension-related headache" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hypertension-related headache" }).first()).toBeVisible();
   await expect(page).toHaveURL(/#\/report/);
-  await expect(page.getByTestId("score-ledger")).toContainText("Above the review line");
+  await expect(page.getByTestId("status-chip")).toContainText("Above the review line");
   await expect(page.getByTestId("score-meaning")).toContainText("It is not the chance that the diagnosis is correct");
   await expect(page.getByText("Patient summary")).toBeVisible();
   await expect(page.locator('[data-summary="history"]')).toContainText("hypertension");
@@ -106,7 +106,7 @@ test("an override is recorded and the case is closed; the report can be reopened
   await fillPatient(page, { age: "40" });
   await page.getByLabel("Presenting complaint and history", { exact: true }).fill("headache and dizziness");
   await analyze(page);
-  await expect(page.getByRole("heading", { name: "Hypertension-related headache" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hypertension-related headache" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: /Review case/i }).click();
   await expect(page.getByRole("heading", { name: "Review case" })).toBeVisible();
@@ -124,7 +124,56 @@ test("a reloaded report page falls back to the form (case data lives only in mem
   await fillPatient(page, { age: "40" });
   await page.getByLabel("Presenting complaint and history", { exact: true }).fill("headache and dizziness");
   await analyze(page);
-  await expect(page.getByRole("heading", { name: "Hypertension-related headache" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hypertension-related headache" }).first()).toBeVisible();
+
+  // Leaving with a finished report now asks first (the report is only in memory). The user confirms.
+  let warned = false;
+  page.on("dialog", async (dialog) => {
+    warned = dialog.type() === "beforeunload";
+    await dialog.accept();
+  });
   await page.reload();
   await expect(page.getByRole("heading", { name: "Describe the patient" })).toBeVisible();
+  expect(warned).toBe(true);
+});
+
+test("the report leads with the diagnosis and keeps the score breakdown, differential and evidence one click away", async ({ page }) => {
+  await fillPatient(page, { age: "40" });
+  await page.getByLabel("Presenting complaint and history", { exact: true }).fill("headache and dizziness");
+  await analyze(page);
+
+  // the answer is the first thing on the page, with the number, the bar and its meaning in one line
+  await expect(page.getByTestId("leading-diagnosis")).toContainText("Hypertension-related headache");
+  await expect(page.getByTestId("score-bar")).toBeVisible();
+  await expect(page.getByTestId("score-ledger")).toContainText("not the chance that the diagnosis is correct");
+
+  // the breakdown is collapsed, and opens to say what the missing points are
+  const details = page.getByTestId("score-details");
+  await expect(details).not.toHaveAttribute("open", "");
+  await details.locator("summary").first().click();
+  await expect(page.getByTestId("score-meaning")).toBeVisible();
+  await expect(page.getByTestId("score-meaning")).toContainText("What about the other");
+
+  // the first diagnosis is open, the evidence list is collapsed until wanted
+  await expect(page.locator("details[data-rank]").first()).toHaveAttribute("open", "");
+  await expect(page.getByTestId("evidence-section").locator("details")).not.toHaveAttribute("open", "");
+  await page.getByTestId("evidence-section").locator("summary").click();
+  await expect(page.locator("[data-evidence-id]").first()).toBeVisible();
+});
+
+test("an analysis can be cancelled and the case is still filled in", async ({ page }) => {
+  await fillPatient(page, { age: "40" });
+  await page.getByLabel("Presenting complaint and history", { exact: true }).fill("ambiguous headache and dizziness");
+  await analyze(page);
+  await page.getByTestId("cancel-analysis").click();
+  await expect(page.getByRole("heading", { name: "Describe the patient" })).toBeVisible();
+  await expect(page.getByLabel("Presenting complaint and history", { exact: true })).toHaveValue("ambiguous headache and dizziness");
+});
+
+test("a missing field is marked at the field, and the page scrolls to the message", async ({ page }) => {
+  await page.getByLabel("Presenting complaint and history", { exact: true }).fill("headache");
+  await analyze(page);
+  await expect(page.getByText("Enter the patient's age.")).toBeVisible();
+  await expect(page.getByText("Choose a sex.")).toBeVisible();
+  await expect(page.getByRole("alert")).toBeInViewport();
 });

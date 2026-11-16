@@ -7,6 +7,7 @@ let urlCounter = 0;
 URL.createObjectURL = vi.fn(() => `blob:test-${urlCounter++}`);
 URL.revokeObjectURL = vi.fn();
 Element.prototype.scrollIntoView = vi.fn();
+window.scrollTo = vi.fn();
 window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 0);
 
 afterEach(() => {

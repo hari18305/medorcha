@@ -26,6 +26,23 @@ describe("Processing", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it("offers to cancel and edit the case, and only when it can", () => {
+    const onCancel = vi.fn();
+    const { unmount } = render(<Processing progress={null} onCancel={onCancel} />);
+    const button = screen.getByTestId("cancel-analysis");
+    expect(button).toHaveTextContent("Cancel and edit case");
+    button.click();
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    unmount();
+    render(<Processing progress={null} />);
+    expect(screen.queryByTestId("cancel-analysis")).not.toBeInTheDocument();
+  });
+
+  it("warns that refreshing would lose the case", () => {
+    render(<Processing progress={null} />);
+    expect(screen.getByText(/Refreshing would lose the case/)).toBeInTheDocument();
+  });
+
   it("says the case is being sent before the server has answered", () => {
     render(<Processing progress={null} />);
     expect(screen.getByTestId("progress-message")).toHaveTextContent("Sending the case to the server…");
