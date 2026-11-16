@@ -597,6 +597,51 @@ async def search_clinicaltrials(query: str, max_results: int = 3) -> list[dict]:
 # Public entry point
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# The query actually sent to the literature sources
+# --------------------------------------------------------------------------
+# The pipeline's clinical query is written for the local retrieval model (symptoms, "history of ...", stated
+# negatives such as "absence of fever"). Public literature search treats every word as a required term, so that
+# text is a poor search string: spelled-out negatives and a long history make it match nothing. Measured on the
+# 14 real agent queries (live, 2026-11-17): as sent, PubMed found something for 7 of 14 and the four sources
+# returned 110 items in total; with negations removed and the query cut to its first 8 words, PubMed found
+# something for 11 of 14 and the total was 142. (Counts of items, not a judgement of their relevance.)
+# Only the live search is changed; the local retrieval query is left as it was measured.
+LIVE_QUERY_MAX_WORDS = int(os.getenv("LIVE_QUERY_MAX_WORDS", "8") or "8")
+_NEGATED_TERM_RE = re.compile(r"^(absence of|no|not|denies|denied|without|negative for|free of)\b", re.IGNORECASE)
+_CLAUSE_PREFIX_RE = re.compile(r"^\s*(history of|imaging findings:)\s*", re.IGNORECASE)
+
+
+def live_search_query(query: str, max_words: int | None = None) -> str:
+    """The clinical `query` turned into a literature search string: clause labels ("history of", "imaging
+    findings:") and negated terms ("absence of fever", "no trauma") dropped, then the first `max_words` words
+    kept, cutting between terms (symptoms come first, so they survive). Falls back to the original query
+    when nothing is left, so a query made only of negatives still searches."""
+    limit = LIVE_QUERY_MAX_WORDS if max_words is None else max_words
+    terms: list[str] = []
+    for clause in (query or "").split(";"):
+        clause = _CLAUSE_PREFIX_RE.sub("", clause)
+        for term in clause.split(","):
+            term = term.strip()
+            if term and not _NEGATED_TERM_RE.match(term):
+                terms.append(term)
+    if not terms:
+        return (query or "").strip()
+    kept: list[str] = []
+    used = 0
+    for term in terms:
+        words = term.split()
+        if not kept:
+            kept.append(" ".join(words[:limit]))  # the first term always stays, shortened if it alone is too long
+            used = min(len(words), limit)
+        elif used + len(words) <= limit:
+            kept.append(term)
+            used += len(words)
+        else:
+            break
+    return ", ".join(kept)
+
+
 _TITLE_NORMALIZE_RE = re.compile(r"[^a-z0-9 ]+")
 
 
@@ -648,7 +693,8 @@ async def gather_live_evidence(query: str) -> LiveEvidence:
         ("Europe PMC", search_europepmc),
         ("ClinicalTrials.gov", search_clinicaltrials),
     ]
-    outcomes = await asyncio.gather(*(_run_source(name, fn, query) for name, fn in source_searches))
+    search_query = live_search_query(query)
+    outcomes = await asyncio.gather(*(_run_source(name, fn, search_query) for name, fn in source_searches))
 
     failed_sources = [name for name, _, error in outcomes if error is not None]
     merged = _dedupe_by_title([item for _, items, _ in outcomes for item in items])
@@ -658,8 +704,8 @@ async def gather_live_evidence(query: str) -> LiveEvidence:
         failed_sources=failed_sources,
     )
     logger.info(
-        "Live evidence for %r: %d item(s) from %d/%d source(s); failed: %s",
-        query, len(result.sources), len(source_searches) - len(failed_sources), len(source_searches),
+        "Live evidence for %r (searched as %r): %d item(s) from %d/%d source(s); failed: %s",
+        query, search_query, len(result.sources), len(source_searches) - len(failed_sources), len(source_searches),
         failed_sources or "none",
     )
 

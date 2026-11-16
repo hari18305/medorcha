@@ -849,3 +849,73 @@ async def test_rate_limit_and_server_errors_are_still_retried(monkeypatch, statu
     with pytest.raises(EvidenceSourceUnavailableError):
         await search_clinicaltrials("anything")
     assert calls == evidence_agent.MAX_ATTEMPTS
+
+
+# --------------------------------------------------------------------------
+# The query sent to the literature sources (live_search_query)
+# --------------------------------------------------------------------------
+
+from backend.agents.evidence_agent import live_search_query  # noqa: E402
+
+
+def test_negated_findings_are_not_searched_for():
+    q = "sudden sharp chest pain, shortness of breath, absence of fever, absence of cough"
+    assert live_search_query(q) == "sudden sharp chest pain, shortness of breath"
+
+
+def test_every_negation_form_is_dropped_but_words_that_merely_start_with_no_are_kept():
+    q = "headache, no trauma, denies fever, without nausea, negative for aura, not eating, free of rash, nocturia, nodule"
+    assert live_search_query(q, max_words=50) == "headache, nocturia, nodule"
+
+
+def test_clause_labels_are_removed_so_the_search_has_no_filler():
+    q = "gradual gait unsteadiness; history of hypertension, on warfarin; imaging findings: subdural hematoma"
+    assert live_search_query(q, max_words=50) == "gradual gait unsteadiness, hypertension, on warfarin, subdural hematoma"
+
+
+def test_the_query_is_cut_between_terms_and_symptoms_survive_because_they_come_first():
+    q = "sudden sharp chest pain, shortness of breath, pleuritic chest pain; history of otherwise healthy, tall and slim"
+    out = live_search_query(q)  # default: 8 words
+    assert out == "sudden sharp chest pain, shortness of breath"
+    assert len(out.replace(",", "").split()) <= 8
+
+
+def test_a_single_long_first_term_is_shortened_rather_than_dropped():
+    q = "one two three four five six seven eight nine ten eleven twelve"
+    assert live_search_query(q, max_words=8) == "one two three four five six seven eight"
+
+
+def test_a_query_made_only_of_negatives_still_searches():
+    q = "absence of fever, no cough"
+    assert live_search_query(q) == q
+
+
+def test_an_empty_query_is_returned_empty():
+    assert live_search_query("") == ""
+    assert live_search_query("   ") == ""
+
+
+def test_the_word_limit_can_be_changed():
+    q = "alpha beta, gamma delta, epsilon zeta"
+    assert live_search_query(q, max_words=4) == "alpha beta, gamma delta"
+    assert live_search_query(q, max_words=100) == q
+
+
+async def test_the_sources_receive_the_cleaned_query_but_the_cache_still_keys_on_the_original(monkeypatch):
+    seen = {}
+
+    async def fake(name):
+        async def _search(query, *a, **k):
+            seen[name] = query
+            return []
+        return _search
+
+    for attr, name in (("search_pubmed", "PubMed"), ("search_medlineplus_guidelines", "MedlinePlus"),
+                       ("search_europepmc", "Europe PMC"), ("search_clinicaltrials", "ClinicalTrials.gov")):
+        monkeypatch.setattr(evidence_agent, attr, await fake(name))
+    original = "chest pain, shortness of breath, absence of fever, absence of cough; history of tall and slim, otherwise healthy"
+
+    await gather_live_evidence(original)
+
+    assert set(seen.values()) == {"chest pain, shortness of breath, tall and slim"}  # negatives gone, cut at 8 words
+    assert original in evidence_agent._live_evidence_cache  # a repeat of the same case is still served from the cache
