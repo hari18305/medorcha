@@ -66,3 +66,6 @@ demo_assets/
 
 # Office lock files
 ~$*
+
+# Usability study: participant answers (never committed)
+usability/data/
