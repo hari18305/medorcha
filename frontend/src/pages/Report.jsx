@@ -71,7 +71,13 @@ export default function Report({ report, submittedSummary, onNewCase, onReviewCa
         <div>
           <p className="eyebrow">Clinician report</p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Decision-support report</h2>
-          <p className="mt-1 font-mono text-xs text-slate-500">Case {report.case_id}</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {[submittedSummary?.sex && String(submittedSummary.sex)[0].toUpperCase() + String(submittedSummary.sex).slice(1), submittedSummary?.age && `${submittedSummary.age} years`]
+              .filter(Boolean)
+              .join(", ")}
+            {submittedSummary?.sex || submittedSummary?.age ? " · " : ""}
+            <span className="font-mono text-xs text-slate-500">Case {report.case_id}</span>
+          </p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={onReviewCase} className="btn-primary">

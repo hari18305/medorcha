@@ -156,6 +156,28 @@ def test_text_only_full_run(mock_agents):
     mock_agents["optimize"].assert_not_called()  # confidence already >= THRESHOLD
 
 
+def test_the_report_carries_a_clinician_explanation_that_matches_the_run(mock_agents):
+    report = run_case(CASE_TEXT_AND_IMAGE)
+
+    explanation = report.explanation
+    assert explanation is not None and explanation["review_required"] is False
+    assert explanation["headline"].startswith("Leading consideration:")
+    assert explanation["findings"]["present"] == ["headache", "dizziness"]
+    assert explanation["imaging"]["status"] == "abnormal"
+    assert [s["key"] for s in explanation["signals"]] == ["reference", "literature", "agreement"]
+
+
+def test_a_failure_building_the_explanation_never_breaks_the_report(mock_agents, monkeypatch):
+    def boom(**kwargs):
+        raise RuntimeError("explanation bug")
+
+    monkeypatch.setattr(orchestrator, "build_explanation", boom)
+
+    report = run_case(CASE_TEXT_ONLY)
+
+    assert report.explanation is None and report.diagnoses == HIGH_CONFIDENCE_FUSION.diagnoses
+
+
 def test_text_and_image_full_run(mock_agents):
     report = run_case(CASE_TEXT_AND_IMAGE)
 

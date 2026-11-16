@@ -55,11 +55,11 @@ const EXAMPLES = [
 // agents (clinical, imaging, rag, evidence, fusion, optimizer) and the real
 // sources they query.
 const PIPELINE = [
-  { icon: DocIcon, title: "Structure the case", text: "Symptoms, history and labs are extracted from your text and report." },
-  { icon: ImageIcon, title: "Read the image", text: "BiomedCLIP gives a fast zero-shot read of CT, MRI or chest X-ray." },
-  { icon: BookIcon, title: "Retrieve offline evidence", text: "A curated MedlinePlus and PubMed knowledge base, plus past clinician precedents." },
-  { icon: GlobeIcon, title: "Check live literature", text: "PubMed, Europe PMC, ClinicalTrials.gov and MedlinePlus, queried per case." },
-  { icon: UserCheckIcon, title: "Score, refine, hand over", text: "Confidence below 65% triggers query refinement, then mandatory clinician review." },
+  { icon: DocIcon, title: "Read the case", text: "Symptoms, history and laboratory values are picked out of your text and report." },
+  { icon: ImageIcon, title: "Review the image", text: "An automated screening read of a CT, MRI or chest X-ray, used as a sanity check only." },
+  { icon: BookIcon, title: "Search the reference library", text: "Curated MedlinePlus and PubMed texts, plus past clinician decisions on similar cases." },
+  { icon: GlobeIcon, title: "Search recent research", text: "PubMed, Europe PMC, ClinicalTrials.gov and MedlinePlus, searched for each case." },
+  { icon: UserCheckIcon, title: "Weigh, re-check, hand over", text: "If the evidence is weak the search is repeated, and the case then goes to a clinician for review." },
 ];
 
 /**

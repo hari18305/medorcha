@@ -59,6 +59,7 @@ from backend.models.schemas import (
     RAGEvidence,
 )
 from backend.services import storage
+from backend.services.explanation import build_explanation
 from backend.services.errors import reasoning_failed_message
 from backend.services.confidence import (
     INSUFFICIENT_INPUT_NOTE,
@@ -731,17 +732,39 @@ def run_case(case: CaseInput, progress=None) -> FinalReport:
     elif quality == "nonspecific":
         conflicts.insert(0, NONSPECIFIC_INPUT_NOTE)
 
+    # Never present a below-threshold result as not needing review, even
+    # if the optimizer step could not run (e.g. the provider was down).
+    review_required = context.review_required or insufficient or confidence < THRESHOLD
+
+    # Plain-language explanation for the clinician. Never allowed to break the report: on any failure
+    # the report is returned without it and the interface falls back to the plain differential.
+    try:
+        explanation = build_explanation(
+            clinical=context.clinical,
+            imaging=context.imaging,
+            breakdown=context.confidence_breakdown,
+            diagnoses=fusion.diagnoses,
+            conflicts=list(fusion.conflicts),  # evidence conflicts only, before the input notes below
+            rag=context.rag,
+            live=context.live,
+            confidence=confidence,
+            review_required=review_required,
+            iteration_count=context.iterations,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("run_case(): could not build the clinician explanation: %s", exc)
+        explanation = None
+
     return FinalReport(
         case_id=case.case_id,
         diagnoses=fusion.diagnoses,
         confidence=confidence,
         evidence=_combine_evidence(context.rag, context.live),
-        # Never present a below-threshold result as not needing review, even
-        # if the optimizer step could not run (e.g. the provider was down).
-        review_required=context.review_required or insufficient or confidence < THRESHOLD,
+        review_required=review_required,
         conflicts=conflicts,
         iteration_count=context.iterations,
         imaging=context.imaging,
+        explanation=explanation,
         # False only when live evidence was genuinely unavailable: no live
         # search was attempted at all (sources_queried == 0), or EVERY
         # source failed (Phase 4: "signal unavailable only if ALL sources

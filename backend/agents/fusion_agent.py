@@ -51,7 +51,7 @@ from backend.services.llm_client import call_multimodal, get_llm_client, get_mod
 logger = logging.getLogger(__name__)
 
 MODEL = get_model_name()
-MAX_TOKENS = 2048
+MAX_TOKENS = 3072  # was 2048; the per-diagnosis findings_for/findings_against lists add output
 
 _PRECEDENT_FRAMING = (
     "Evidence tagged with a source starting with 'clinician_verified' or "
@@ -106,12 +106,19 @@ no explanation -- matching exactly this shape:
 
 {{
   "diagnoses": [
-    {{"name": "<diagnosis name>", "confidence": <number 0-1>, "supporting_evidence": ["[RAG1] ...", "[LIVE2] ..."], "rank": 1}},
+    {{"name": "<diagnosis name>", "confidence": <number 0-1>, "supporting_evidence": ["[RAG1] ...", "[LIVE2] ..."], "rank": 1, "findings_for": ["<finding in this case that favours it>", ...], "findings_against": ["<finding or missing feature that argues against it>", ...]}},
     ...
   ],
   "overall_confidence": <number 0-1>,
   "conflicts": ["<short description of a disagreement between sources>", ...]
 }}
+
+For every diagnosis also give "findings_for": up to 3 short phrases, in plain clinical language, naming \
+findings of THIS case (symptoms, history, laboratory values, imaging) that favour it; and \
+"findings_against": up to 2 short phrases naming findings of THIS case that argue against it, or typical \
+features that are absent or not reported. Use only what the case actually states -- never invent a \
+finding -- and use an empty list when nothing applies. These two lists explain the ranking to the \
+reviewing clinician; they are not evidence and must not contain citation IDs.
 
 Rank diagnoses from most to least likely (rank 1 = most likely). \
 "overall_confidence" is your own raw confidence in this differential \
@@ -332,12 +339,27 @@ def _validate_diagnosis(entry, valid_ids: set[str]) -> dict:
                 "Dropping ungrounded supporting_evidence citation for %r: %r", name, citation
             )
 
-    return {
+    validated = {
         "name": name.strip(),
         "confidence": float(confidence),
         "supporting_evidence": grounded,
         "rank": rank,
     }
+    # Optional explanation lists (see SYSTEM_PROMPT). Tolerant on purpose: a model that omits them or
+    # returns the wrong shape must never fail the whole fusion call, so bad values are dropped.
+    for key, limit in (("findings_for", 3), ("findings_against", 2)):
+        phrases = _clean_phrases(entry.get(key), limit)
+        if phrases:
+            validated[key] = phrases
+    return validated
+
+
+def _clean_phrases(value, limit: int) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    phrases = [v.strip()[:200] for v in value if isinstance(v, str) and v.strip()]
+    # A phrase carrying a citation tag would look like evidence; these lists are explanation only.
+    return [p for p in phrases if not _TAG_RE.match(p)][:limit]
 
 
 def _parse_response(text: str, valid_ids: set[str]) -> FusionResult:

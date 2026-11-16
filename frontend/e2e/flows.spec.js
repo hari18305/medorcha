@@ -40,7 +40,8 @@ test("an ordinary case runs end to end: progress, report, citations that jump, p
   // then the report
   await expect(page.getByRole("heading", { name: "Hypertension-related headache" })).toBeVisible();
   await expect(page).toHaveURL(/#\/report/);
-  await expect(page.getByTestId("confidence-gauge").first()).toContainText("Above threshold");
+  await expect(page.getByTestId("score-ledger")).toContainText("Above the review line");
+  await expect(page.getByTestId("score-meaning")).toContainText("It is not the chance that the diagnosis is correct");
   await expect(page.getByText("Patient summary")).toBeVisible();
   await expect(page.locator('[data-summary="history"]')).toContainText("hypertension");
 
@@ -60,7 +61,8 @@ test("a vague complaint is sent straight to review with the non-specific-input n
   await expect(page.getByRole("heading", { name: "Review case" })).toBeVisible();
   await expect(page).toHaveURL(/#\/review/);
   await expect(page.getByTestId("insufficient-input-note")).toContainText("Non-specific clinical input");
-  await expect(page.getByTestId("confidence-gauge").first()).toContainText("60%");
+  await expect(page.getByTestId("score-final")).toHaveText("60");
+  await expect(page.getByTestId("score-cap")).toContainText("Capped at 60"); // the points the safety rule removed are shown
   await expect(page.getByText("Clinician review required")).toBeVisible();
 
   // the clinician closes the case with an annotation
@@ -81,7 +83,8 @@ test("an image with no clinical text is held at 50% and says why", async ({ page
 
   await expect(page.getByRole("heading", { name: "Review case" })).toBeVisible();
   await expect(page.getByTestId("insufficient-input-note")).toContainText("Insufficient clinical input");
-  await expect(page.getByTestId("confidence-gauge").first()).toContainText("50%");
+  await expect(page.getByTestId("score-final")).toHaveText("50");
+  await expect(page.getByTestId("score-cap")).toContainText("Capped at 50");
   await expect(page.getByText("Pneumothorax").first()).toBeVisible(); // the imaging-led differential is still shown
 });
 

@@ -81,7 +81,7 @@ describe("App: the case-to-report flow", () => {
     await fillAndSubmit();
 
     expect(await screen.findByTestId("progress-steps")).toBeInTheDocument();
-    expect(screen.getByTestId("progress-message")).toHaveTextContent("Offline retrieval…");
+    expect(screen.getByTestId("progress-message")).toHaveTextContent("Searching the reference library…");
     expect(window.location.hash).toBe("#/processing");
 
     // the next poll is one interval (1.2 s) later

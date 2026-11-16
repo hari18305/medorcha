@@ -39,8 +39,8 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
             <p className="mt-2 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
               <InfoIcon className="mt-0.5 h-4 w-4 text-slate-500" />
               <span>
-                <span className="font-semibold">Not assessed.</span> This prototype has no findings model
-                for this modality. Treat this case as if no imaging had been provided — nothing from the
+                <span className="font-semibold">Not assessed.</span> This system has no findings check
+                for this image type. Treat this case as if no imaging had been provided — nothing from the
                 image was used in the differential or the evidence search.
               </span>
             </p>
@@ -53,8 +53,8 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
             <p className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
               <InfoIcon className="mt-0.5 h-4 w-4 text-amber-700" />
               <span>
-                <span className="font-semibold">Inconclusive read.</span> The image classifier could not tell
-                what this shows (its best label scored only {Math.round((imaging.confidence ?? 0) * 100)}%). Its
+                <span className="font-semibold">Inconclusive read.</span> The automated image check could not
+                tell what this shows (its best match scored only {Math.round((imaging.confidence ?? 0) * 100)}%). Its
                 labels were not used in the evidence search or the differential; the result rests on the
                 clinical information.
               </span>
@@ -73,7 +73,7 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
             <p className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
               <InfoIcon className="mt-0.5 h-4 w-4 text-amber-700" />
               <span>
-                <span className="font-semibold">Contested read.</span> The image classifier and a second reading
+                <span className="font-semibold">Contested read.</span> The automated image check and a second reading
                 of the image disagree
                 {imaging.cross_check_label ? <> (second reading: {imaging.cross_check_label})</> : null}. Neither was
                 used in the evidence search or the differential; the result rests on the clinical information.
@@ -81,7 +81,7 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
             </p>
             {imaging.findings?.length > 0 && (
               <p className="mt-2 text-xs text-slate-500">
-                Labels the classifier leaned toward, shown for transparency only: {imaging.findings.join(", ")}.
+                Labels the automated check leaned toward, shown for transparency only: {imaging.findings.join(", ")}.
               </p>
             )}
           </div>
@@ -103,11 +103,11 @@ export default function ImagingSection({ imaging, imageSubmitted = false }) {
               </ul>
             )}
             <div className="mt-4 max-w-xs">
-              <ConfidenceBar confidence={imaging.confidence} size="sm" label="BiomedCLIP confidence" />
+              <ConfidenceBar confidence={imaging.confidence} size="sm" label="Strength of the automated read" />
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              A fast zero-shot pre-filter over a small fixed label set for this modality — a sanity
-              check, not a diagnostic read of the image.
+              An automated screening aid that matches the image against a short fixed list of findings for this
+              image type. It is not a diagnostic read of the image and not a radiologist's report.
             </p>
           </div>
         )}

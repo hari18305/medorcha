@@ -270,7 +270,9 @@ def compute_confidence_breakdown(
     elif quality == "nonspecific":
         confidence = min(confidence, NONSPECIFIC_INPUT_CAP)
 
-    result = {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence}
+    # `weights` is recorded so an explanation can show exactly how many points each signal earned
+    # (weight x signal) without re-reading weights that may have been recalibrated since.
+    result = {"s_rag": s_rag, "s_web": s_web, "agreement": agreement, "confidence": confidence, "weights": dict(weights)}
     if clinical is not None:
         # "input_sufficient" keeps its meaning (anything to reason from at all);
         # "input_quality" adds the non-specific case.

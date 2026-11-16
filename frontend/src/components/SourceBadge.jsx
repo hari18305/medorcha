@@ -19,23 +19,23 @@ export function classifyEvidenceSource(item) {
 
 const BADGE_STYLES = {
   "offline-kb": {
-    label: "Offline KB",
-    hint: "Retrieved from the curated offline knowledge base",
+    label: "Reference library",
+    hint: "From the curated reference library (MedlinePlus and PubMed texts held on this system)",
     className: "bg-slate-100 text-slate-700 ring-slate-500/20",
   },
   live: {
-    label: "Live evidence",
-    hint: "Fetched live from a public literature / trial source",
+    label: "Recent research",
+    hint: "Fetched for this case from PubMed, Europe PMC, ClinicalTrials.gov or MedlinePlus",
     className: "bg-sky-50 text-sky-800 ring-sky-600/20",
   },
   "clinician-verified": {
-    label: "Clinician-verified precedent",
-    hint: "A past clinician override on a similar-sounding case — a precedent, not guaranteed correct",
+    label: "Past clinician decision",
+    hint: "A clinician overrode the diagnosis on a similar case. A precedent to weigh, not guaranteed correct",
     className: "bg-violet-50 text-violet-800 ring-violet-600/20",
   },
   "visual-precedent": {
-    label: "Visual precedent",
-    hint: "A past clinician override on a similar-looking image — a precedent, not guaranteed correct",
+    label: "Past decision, similar image",
+    hint: "A clinician overrode the diagnosis on a similar-looking image. A precedent to weigh, not guaranteed correct",
     className: "bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-600/20",
   },
 };

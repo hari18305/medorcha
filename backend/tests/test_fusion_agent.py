@@ -234,6 +234,46 @@ async def test_fabricated_citation_is_dropped(mock_anthropic_client):
     ]
 
 
+async def test_findings_for_and_against_are_kept_when_well_formed(mock_anthropic_client):
+    canned = {
+        "diagnoses": [
+            {
+                "name": "Primary spontaneous pneumothorax", "confidence": 0.7, "supporting_evidence": [], "rank": 1,
+                "findings_for": ["sudden pleuritic chest pain", "tall, slim young man", "  ", 7, "a fourth entry"],
+                "findings_against": ["no preceding trauma reported"],
+            }
+        ],
+        "overall_confidence": 0.6,
+        "conflicts": [],
+    }
+    mock_anthropic_client.messages.create.return_value = _canned(canned)
+
+    result = await fuse(CLINICAL, None, RAG, EMPTY_LIVE)
+
+    top = result.diagnoses[0]
+    assert top["findings_for"] == ["sudden pleuritic chest pain", "tall, slim young man", "a fourth entry"]  # blanks/non-strings dropped, max 3
+    assert top["findings_against"] == ["no preceding trauma reported"]
+
+
+async def test_malformed_findings_lists_never_fail_the_fusion_call(mock_anthropic_client):
+    canned = {
+        "diagnoses": [
+            {
+                "name": "Some diagnosis", "confidence": 0.5, "supporting_evidence": [], "rank": 1,
+                "findings_for": "not a list", "findings_against": ["[RAG1] a citation is not a finding"],
+            }
+        ],
+        "overall_confidence": 0.5,
+        "conflicts": [],
+    }
+    mock_anthropic_client.messages.create.return_value = _canned(canned)
+
+    result = await fuse(CLINICAL, None, RAG, EMPTY_LIVE)
+
+    mock_anthropic_client.messages.create.assert_awaited_once()  # no retry was needed
+    assert "findings_for" not in result.diagnoses[0] and "findings_against" not in result.diagnoses[0]
+
+
 async def test_retries_once_on_invalid_json_then_succeeds(mock_anthropic_client):
     canned = {
         "diagnoses": [{"name": "Tension-type headache", "confidence": 0.4, "supporting_evidence": [], "rank": 1}],

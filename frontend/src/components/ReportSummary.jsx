@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import ConfidenceBar, { ConfidenceGauge } from "./ConfidenceBar.jsx";
+import { ConfidenceGauge } from "./ConfidenceBar.jsx";
+import { FindingsConsidered, ResultOverview, WhyThisRanking } from "./ExplanationPanel.jsx";
 import ImagingSection from "./ImagingSection.jsx";
 import SourceBadge, { classifyEvidenceSource } from "./SourceBadge.jsx";
 import { AlertIcon, BookIcon, ExternalIcon, ShieldIcon } from "./icons.jsx";
+import { citationSupport, evidenceLabel, evidenceLevelWords } from "../utils/plainLanguage.js";
 
 /**
  * The data-display half of a FinalReport -- confidence, conflicts, imaging
@@ -78,10 +80,17 @@ export function splitCitations(input) {
 
 const FILTERS = [
   { id: "all", label: "All" },
-  { id: "offline-kb", label: "Offline KB" },
-  { id: "live", label: "Live" },
-  { id: "precedent", label: "Precedents" },
+  { id: "offline-kb", label: "Reference library" },
+  { id: "live", label: "Recent research" },
+  { id: "precedent", label: "Past decisions" },
 ];
+
+// Colour for the "N cited sources" chip on a diagnosis. A count of citations, not a quality grade.
+const SUPPORT_STYLES = {
+  several: "bg-emerald-50 text-emerald-800 ring-emerald-600/20",
+  one: "bg-sky-50 text-sky-800 ring-sky-600/20",
+  none: "bg-slate-100 text-slate-600 ring-slate-500/20",
+};
 
 function filterOf(item) {
   const kind = classifyEvidenceSource(item);
@@ -92,6 +101,7 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
   const diagnoses = [...(report.diagnoses ?? [])].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
   const evidence = assignEvidenceIds(report.evidence ?? []);
   const knownIds = new Set(evidence.map((item) => item.eid));
+  const byId = Object.fromEntries(evidence.map((item) => [item.eid, item]));
   const allConflicts = report.conflicts ?? [];
   const inputNote = allConflicts.find(isInsufficientInputNote);
   const conflicts = allConflicts.filter((c) => !isInsufficientInputNote(c));
@@ -124,10 +134,12 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0 space-y-6">
-        {/* Small screens have no sidebar column, so lead with the headline confidence. */}
-        <section className="card card-pad lg:hidden">
-          <ConfidenceGauge confidence={report.confidence} reviewRequired={Boolean(report.review_required)} />
-        </section>
+        {/* Reports stored before the score breakdown existed have only the plain gauge. */}
+        {!report.explanation?.score && (
+          <section className="card card-pad">
+            <ConfidenceGauge confidence={report.confidence} reviewRequired={Boolean(report.review_required)} />
+          </section>
+        )}
 
         {report.review_required && (
           <div
@@ -139,8 +151,8 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
             <div>
               <p className="text-sm font-semibold text-amber-950">Clinician review required</p>
               <p className="mt-0.5 text-sm text-amber-900">
-                This result is below the review threshold, or could not be fully checked. Do not act on it
-                until a clinician has reviewed it.
+                The evidence behind this result is not strong enough to rely on, or part of the check could not be
+                completed. Do not act on it until a clinician has reviewed it.
               </p>
               {inputNote && (
                 <p data-testid="insufficient-input-note" className="mt-2 text-sm text-amber-900">
@@ -151,37 +163,12 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
           </div>
         )}
 
-        {conflicts.length > 0 && (
-          <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50/70 p-4">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-rose-900">
-              <AlertIcon className="h-4 w-4" /> Conflicting evidence
-            </h3>
-            <ul className="mt-2 space-y-2 text-sm text-rose-900">
-              {conflicts.map((conflict, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  {isImageConflict(conflict) ? (
-                    <span
-                      data-conflict-kind="image"
-                      className="mt-0.5 flex-none rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-800 ring-1 ring-inset ring-fuchsia-600/20"
-                    >
-                      Image vs. BiomedCLIP
-                    </span>
-                  ) : (
-                    <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-rose-400" />
-                  )}
-                  <span>{conflict}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <ImagingSection imaging={report.imaging} imageSubmitted={imageSubmitted} />
+        <ResultOverview explanation={report.explanation} reviewRequired={Boolean(report.review_required)} />
 
         <section>
-          <div className="flex items-baseline justify-between">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4">
             <h3 className="text-base font-semibold text-slate-900">Differential diagnosis</h3>
-            <p className="text-xs text-slate-500">Ranked by the model; citations link to the evidence below</p>
+            <p className="text-xs text-slate-500">Most to least likely, as ranked by the system. Numbered references link to the evidence below.</p>
           </div>
           <div className="mt-3 space-y-3">
             {diagnoses.length === 0 && (
@@ -202,18 +189,27 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
                     {diagnosis.rank ?? index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
+                    {index === 0 && <p className="eyebrow mb-0.5">Leading consideration</p>}
                     <h4 className="text-base font-semibold leading-snug text-slate-900">{diagnosis.name}</h4>
-                    <div className="mt-2 max-w-sm">
-                      <ConfidenceBar confidence={diagnosis.confidence} size="sm" label="Model-stated confidence" />
-                    </div>
+                    <p className="mt-1.5">
+                      <span
+                        data-support={citationSupport(diagnosis).level}
+                        title="How many evidence items the system cited for this diagnosis. A count, not a measure of how likely it is."
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${SUPPORT_STYLES[citationSupport(diagnosis).level]}`}
+                      >
+                        {citationSupport(diagnosis).label}
+                      </span>
+                    </p>
                   </div>
                 </div>
+
+                <WhyThisRanking diagnosis={diagnosis} />
 
                 {diagnosis.supporting_evidence?.length > 0 ? (
                   <ul className="mt-4 space-y-2 border-t border-slate-100 pt-3">
                     {diagnosis.supporting_evidence.map((item, i) => (
                       <li key={i} className="text-sm leading-relaxed text-slate-700">
-                        <CitedText text={item} knownIds={knownIds} onJump={jumpTo} />
+                        <CitedText text={item} knownIds={knownIds} byId={byId} onJump={jumpTo} />
                       </li>
                     ))}
                   </ul>
@@ -226,6 +222,35 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
             ))}
           </div>
         </section>
+
+        {conflicts.length > 0 && (
+          <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50/70 p-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-rose-900">
+              <AlertIcon className="h-4 w-4" /> Conflicting evidence
+            </h3>
+            <ul className="mt-2 space-y-2 text-sm text-rose-900">
+              {conflicts.map((conflict, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  {isImageConflict(conflict) ? (
+                    <span
+                      data-conflict-kind="image"
+                      className="mt-0.5 flex-none rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-800 ring-1 ring-inset ring-fuchsia-600/20"
+                    >
+                      Image vs. text
+                    </span>
+                  ) : (
+                    <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-rose-400" />
+                  )}
+                  <span>{conflict}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <FindingsConsidered explanation={report.explanation} />
+
+        <ImagingSection imaging={report.imaging} imageSubmitted={imageSubmitted} />
 
         <section>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -279,20 +304,16 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
       </div>
 
       <aside className="min-w-0 space-y-4 lg:sticky lg:top-6">
-        <section className="card card-pad hidden lg:block">
-          <ConfidenceGauge confidence={report.confidence} reviewRequired={Boolean(report.review_required)} />
-        </section>
-
         {aside}
 
         <section className="card card-pad">
           <div className="flex items-center gap-2">
             <ShieldIcon className="h-4 w-4 text-brand-700" />
-            <h3 className="text-sm font-semibold text-slate-900">Pipeline run</h3>
+            <h3 className="text-sm font-semibold text-slate-900">How this was produced</h3>
           </div>
           <dl className="mt-3 divide-y divide-slate-100 text-sm">
             <RunFact
-              label="Refinement rounds"
+              label="Search refinements"
               value={
                 iterations > 0
                   ? `${iterations} of 3`
@@ -302,12 +323,12 @@ export default function ReportSummary({ report, imageSubmitted = false, aside = 
               }
             />
             <RunFact
-              label="Live literature"
+              label="Recent research"
               value={report.live_evidence_available === false ? "Unavailable" : "Checked"}
               tone={report.live_evidence_available === false ? "warn" : undefined}
             />
-            <RunFact label="Offline evidence" value={`${counts["offline-kb"] + counts.precedent} passages`} />
-            <RunFact label="Live evidence" value={`${counts.live} items`} />
+            <RunFact label="Reference library" value={`${counts["offline-kb"] + counts.precedent} passages`} />
+            <RunFact label="Research items" value={`${counts.live} items`} />
             <RunFact
               label="Imaging"
               value={
@@ -341,7 +362,18 @@ function RunFact({ label, value, tone }) {
 }
 
 /** Text with [RAG1]/[LIVE2] markers rendered as chips that jump to that evidence item. */
-function CitedText({ text, knownIds, onJump }) {
+// What a citation chip shows on hover: which source it is and the start of the text, so the proof is
+// readable next to the claim without scrolling to the evidence list.
+function previewOf(item) {
+  if (!item) return null;
+  const isLive = item.type === "live";
+  const name = isLive ? item.title : item.source;
+  const body = String((isLive ? item.summary : item.text) ?? "").replace(/\s+/g, " ").trim();
+  const snippet = body.length > 220 ? `${body.slice(0, 220).trimEnd()}…` : body;
+  return `${name}${snippet ? `: ${snippet}` : ""}`;
+}
+
+function CitedText({ text, knownIds, byId = {}, onJump }) {
   return (
     <>
       {splitCitations(text).map((part, index) => {
@@ -355,10 +387,10 @@ function CitedText({ text, knownIds, onJump }) {
             type="button"
             data-citation={part.value}
             onClick={() => onJump(part.value)}
-            title={`Show ${part.value} in the evidence list`}
+            title={`${previewOf(byId[part.value]) ?? evidenceLabel(part.value)}\n(click to show it in the evidence list)`}
             className={`${cls} bg-brand-50 text-brand-800 ring-brand-200 transition hover:bg-brand-100`}
           >
-            {part.value}
+            {evidenceLabel(part.value)}
           </button>
         ) : (
           <span
@@ -367,7 +399,7 @@ function CitedText({ text, knownIds, onJump }) {
             title="This item is not in the evidence list returned with this report"
             className={`${cls} bg-slate-100 text-slate-500 ring-slate-200`}
           >
-            {part.value}
+            {evidenceLabel(part.value)}
           </span>
         );
       })}
@@ -388,8 +420,8 @@ function EvidenceCard({ item, highlighted }) {
       className={`card p-4 text-sm transition ${highlighted ? "animate-flash border-brand-400" : ""}`}
     >
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex-none rounded-md bg-ink-800 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white">
-          {item.eid}
+        <span className="mt-0.5 flex-none whitespace-nowrap rounded-md bg-ink-800 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white">
+          {evidenceLabel(item.eid)}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
@@ -427,12 +459,12 @@ function EvidenceCard({ item, highlighted }) {
             {isLive ? (
               <>
                 {item.source}
-                {item.publication_date ? ` · ${item.publication_date}` : ""} · evidence level{" "}
-                <span className="font-medium text-slate-700">{item.evidence_level}</span>
+                {item.publication_date ? ` · ${item.publication_date}` : ""} · type:{" "}
+                <span className="font-medium text-slate-700">{evidenceLevelWords(item.evidence_level)}</span>
               </>
             ) : (
               <>
-                relevance <span className="font-medium tabular-nums text-slate-700">{Math.round((item.score ?? 0) * 100)}%</span>
+                match with this case <span className="font-medium tabular-nums text-slate-700">{Math.round((item.score ?? 0) * 100)}%</span>
               </>
             )}
           </p>

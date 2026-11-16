@@ -8,21 +8,21 @@ export const POLL_INTERVAL_MS = 1200;
 export const MAX_CONSECUTIVE_POLL_FAILURES = 5;
 
 export const STEP_TITLES = {
-  clinical: "Clinical extraction",
-  imaging: "Imaging read",
-  rag: "Offline retrieval",
-  evidence: "Live literature",
-  fusion: "Fusion and confidence",
-  optimizer: "Adaptive refinement",
+  clinical: "Reading the case",
+  imaging: "Reviewing the image",
+  rag: "Searching the reference library",
+  evidence: "Searching recent research",
+  fusion: "Weighing the evidence",
+  optimizer: "Re-checking the evidence",
 };
 
 export const STEP_HINTS = {
-  clinical: "Structuring symptoms, history and labs",
-  imaging: "BiomedCLIP zero-shot findings",
-  rag: "BioBERT search, rerank, clinician precedents",
+  clinical: "Picking out symptoms, history and laboratory values",
+  imaging: "Automated screening read of the image",
+  rag: "Matching the case against reference texts and past clinician decisions",
   evidence: "PubMed · Europe PMC · ClinicalTrials.gov · MedlinePlus",
-  fusion: "Ranked differential with cited evidence",
-  optimizer: "Refines the query and retries while confidence is below 65%",
+  fusion: "Ranking the diagnoses and citing the evidence",
+  optimizer: "Searching again with different wording while the evidence is weak",
 };
 
 export const stepTitle = (name) => STEP_TITLES[name] ?? name;
@@ -36,13 +36,15 @@ export function formatDuration(ms) {
   return `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`;
 }
 
-/** One line for an optimizer round, e.g. "Round 2 of 3: confidence 47% (expand)". */
+const STRATEGY_WORDS = { expand: "broader search", narrow: "narrower search", paraphrase: "reworded search" };
+
+/** One line for a refinement round, e.g. "Round 2 of 3: confidence 47% (broader search)". */
 export function describeRound(round) {
   const base = `Round ${round.iteration}${round.max ? ` of ${round.max}` : ""}`;
   if (round.status === "running") return `${base}: refining…`;
   if (round.status === "failed") return `${base}: failed, continuing`;
   const conf = round.confidence != null ? `confidence ${Math.round(round.confidence * 100)}%` : "done";
-  return `${base}: ${conf}${round.strategy ? ` (${round.strategy})` : ""}`;
+  return `${base}: ${conf}${round.strategy ? ` (${STRATEGY_WORDS[round.strategy] ?? round.strategy})` : ""}`;
 }
 
 /** What the processing screen should say, from a /diagnose/{id}/status body (or null before it exists). */

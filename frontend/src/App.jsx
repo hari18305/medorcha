@@ -193,8 +193,8 @@ export default function App() {
 
       <footer className="border-t border-slate-200 bg-white">
         <p className="mx-auto max-w-6xl px-5 py-4 text-xs text-slate-500 sm:px-8">
-          Confidence is a heuristic blend of retrieval strength, live-evidence level and source agreement. It is
-          not a probability that a diagnosis is correct. In the browser, case data lives only in this tab's memory and is not saved
+          The confidence figure shows how well the available evidence supports a result. It is not a probability that
+          a diagnosis is correct. In the browser, case data lives only in this tab's memory and is not saved
           to local storage.
         </p>
       </footer>

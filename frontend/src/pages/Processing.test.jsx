@@ -39,7 +39,7 @@ describe("Processing", () => {
 
   it("names the running step in the status line", () => {
     render(<Processing progress={STATUS} />);
-    expect(screen.getByTestId("progress-message")).toHaveTextContent("Live literature…");
+    expect(screen.getByTestId("progress-message")).toHaveTextContent("Searching recent research…");
   });
 
   it("renders every step with the status the server reported", () => {
@@ -63,13 +63,13 @@ describe("Processing", () => {
 
   it("shows a hint for steps that have not produced a result yet", () => {
     render(<Processing progress={STATUS} />);
-    expect(within(step("fusion")).getByText("Ranked differential with cited evidence")).toBeInTheDocument();
+    expect(within(step("fusion")).getByText("Ranking the diagnoses and citing the evidence")).toBeInTheDocument();
   });
 
   it("lists the optimizer's refinement rounds", () => {
     render(<Processing progress={STATUS} />);
     const rounds = within(screen.getByTestId("optimizer-rounds")).getAllByRole("listitem").map((li) => li.textContent);
-    expect(rounds).toEqual(["Round 1 of 3: confidence 47% (expand)", "Round 2 of 3: refining…"]);
+    expect(rounds).toEqual(["Round 1 of 3: confidence 47% (broader search)", "Round 2 of 3: refining…"]);
   });
 
   it("runs the elapsed clock from the browser, one second at a time", () => {

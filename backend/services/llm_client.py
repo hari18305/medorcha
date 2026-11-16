@@ -450,7 +450,7 @@ async def _call_text_only(prompt: str, model: str, system: str) -> str:
     client = get_llm_client()
     response = await client.messages.create(
         model=model,
-        max_tokens=2048,
+        max_tokens=3072,  # was 2048: fusion now also returns findings_for/findings_against
         system=system,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -470,7 +470,7 @@ async def _call_anthropic_family_multimodal(prompt: str, image_path: str, model:
     ]
     response = await client.messages.create(
         model=model,
-        max_tokens=2048,
+        max_tokens=3072,  # was 2048: fusion now also returns findings_for/findings_against
         system=system,
         messages=[{"role": "user", "content": content}],
     )
@@ -500,7 +500,7 @@ async def _call_gemini_multimodal(prompt: str, image_path: str, model: str, syst
         contents=contents,
         config=types.GenerateContentConfig(
             system_instruction=system,
-            max_output_tokens=2048 + THINKING_TOKEN_PADDING,
+            max_output_tokens=3072 + THINKING_TOKEN_PADDING,
         ),
     )
     return response.text

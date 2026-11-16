@@ -23,13 +23,13 @@ test("formatDuration is readable at each scale and null when unknown", () => {
 });
 
 test("stepTitle falls back to the raw name for an unknown step", () => {
-  assert.equal(stepTitle("rag"), "Offline retrieval");
+  assert.equal(stepTitle("rag"), "Searching the reference library");
   assert.equal(stepTitle("something_new"), "something_new");
 });
 
 test("describeRound covers running, done (with strategy) and failed rounds", () => {
   assert.equal(describeRound({ iteration: 1, max: 3, status: "running" }), "Round 1 of 3: refining…");
-  assert.equal(describeRound({ iteration: 2, max: 3, status: "done", confidence: 0.474, strategy: "expand" }), "Round 2 of 3: confidence 47% (expand)");
+  assert.equal(describeRound({ iteration: 2, max: 3, status: "done", confidence: 0.474, strategy: "expand" }), "Round 2 of 3: confidence 47% (broader search)");
   assert.equal(describeRound({ iteration: 3, max: 3, status: "failed" }), "Round 3 of 3: failed, continuing");
 });
 
@@ -38,7 +38,7 @@ test("summarizeProgress describes each phase from the status body", () => {
   assert.match(summarizeProgress({ status: "queued", queue_position: 1 }).message, /Waiting for a free worker…/);
   assert.match(summarizeProgress({ status: "queued", queue_position: 3 }).message, /2 cases ahead/);
   assert.match(summarizeProgress({ status: "queued", queue_position: 2 }).message, /1 case ahead/);
-  assert.equal(summarizeProgress({ status: "running", steps: [{ name: "rag", status: "running" }] }).message, "Offline retrieval…");
+  assert.equal(summarizeProgress({ status: "running", steps: [{ name: "rag", status: "running" }] }).message, "Searching the reference library…");
   assert.equal(summarizeProgress({ status: "running", steps: [] }).message, "Working…");
 });
 

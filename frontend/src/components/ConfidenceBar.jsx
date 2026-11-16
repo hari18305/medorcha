@@ -118,8 +118,8 @@ export function ConfidenceGauge({ confidence, reviewRequired }) {
       </div>
 
       <p className="mt-9 text-xs leading-relaxed text-slate-500">
-        A heuristic blend of retrieval strength, live-evidence level and agreement between sources. It is not a
-        probability that the diagnosis is correct.
+        How well the available evidence supports this result, combining the reference library, recent research and
+        agreement between sources. It is not a probability that the diagnosis is correct.
       </p>
     </div>
   );

@@ -117,3 +117,9 @@ class FinalReport(BaseModel):
     # "not assessed"). None when the case had no image or imaging analysis
     # failed -- and for reports stored before this field existed.
     imaging: ImagingFindings | None = None
+    # Plain-language explanation for the reviewing clinician (backend/services/explanation.py):
+    # headline, why review is or is not required, the evidence signals in words, the case findings
+    # (including normal findings and pertinent negatives) and what would help. Built deterministically
+    # from the same numbers the confidence score uses. None for reports stored before this field
+    # existed, or if building it failed.
+    explanation: dict | None = None
